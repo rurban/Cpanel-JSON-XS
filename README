@@ -204,7 +204,7 @@ COMPARISON
     JSON modules, followed by some benchmark values. JSON::XS was designed
     not to suffer from any of these problems or limitations.
 
-    JSON
+    JSON 1.07
         Slow (but very portable, as it is written in pure Perl).
 
         Undocumented/buggy Unicode handling (how JSON handles unicode values
@@ -216,7 +216,7 @@ COMPARISON
         e.g. the string 2.0 will encode to 2.0 instead of "2.0", and that
         will decode into the number 2.
 
-    JSON::PC
+    JSON::PC 0.01
         Very fast.
 
         Undocumented/buggy Unicode handling.
@@ -232,7 +232,7 @@ COMPARISON
         Unmaintained (maintainer unresponsive for many months, bugs are not
         getting fixed).
 
-    JSON::Syck
+    JSON::Syck 0.21
         Very buggy (often crashes).
 
         Very inflexible (no human-readable format supported, format pretty
@@ -261,7 +261,7 @@ COMPARISON
         syntax error. While a good protocol will at least recover, that is
         extra unnecessary work and the transaction will still not succeed).
 
-    JSON::DWIW
+    JSON::DWIW 0.04
         Very fast. Very natural. Very nice.
 
         Undocumented unicode handling (but the best of the pack. Unicode

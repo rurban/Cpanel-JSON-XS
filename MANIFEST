@@ -8,4 +8,6 @@ XS.xs
 eg/bench
 t/00_load.t
 t/01_utf8.t
+t/02_error.t
+t/03_types.t
 META.yml                                 Module meta-data (added by MakeMaker)

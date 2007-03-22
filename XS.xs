@@ -128,7 +128,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
           if (is_utf8)
             {
               uch = utf8n_to_uvuni (str, end - str, &clen, UTF8_CHECK_ONLY);
-              if (clen < 0)
+              if (clen == (STRLEN)-1)
                 croak ("malformed UTF-8 character in string, cannot convert to JSON");
             }
           else
@@ -164,8 +164,11 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
           else if (is_utf8)
             {
               need (enc, len += clen);
-              while (clen--)
-                *enc->cur++ = *str++;
+              do
+                {
+                  *enc->cur++ = *str++;
+                }
+              while (--clen);
             }
           else
             {
@@ -531,7 +534,7 @@ decode_str (dec_t *dec)
                   if (hi >= 0xd800 && hi < 0xdc00)
                     {
                       if (dec->cur [0] != '\\' || dec->cur [1] != 'u')
-                        ERR ("illegal surrogate character");
+                        ERR ("missing low surrogate character in surrogate pair");
 
                       dec->cur += 2;
 
@@ -544,8 +547,8 @@ decode_str (dec_t *dec)
 
                       hi = (hi - 0xD800) * 0x400 + (lo - 0xDC00) + 0x10000;
                     }
-                  else if (lo >= 0xdc00 && lo < 0xe000)
-                    ERR ("illegal surrogate character");
+                  else if (hi >= 0xdc00 && hi < 0xe000)
+                    ERR ("missing high surrogate character in surrogate pair");
 
                   if (hi >= 0x80)
                     {
@@ -558,6 +561,10 @@ decode_str (dec_t *dec)
                     APPEND_CH (hi);
                 }
                 break;
+
+              default:
+                --dec->cur;
+                ERR ("illegal backslash escape sequence in string");
             }
         }
       else if (ch >= 0x20 && ch <= 0x7f)
@@ -566,14 +573,20 @@ decode_str (dec_t *dec)
         {
           STRLEN clen;
           UV uch = utf8n_to_uvuni (dec->cur, dec->end - dec->cur, &clen, UTF8_CHECK_ONLY);
-          if (clen < 0)
+          if (clen == (STRLEN)-1)
             ERR ("malformed UTF-8 character in string, cannot convert to JSON");
 
           APPEND_GROW (clen);
-          memcpy (cur, dec->cur, clen);
-          cur += clen;
-          dec->cur += clen;
+          do
+            {
+              *cur++ = *dec->cur++;
+            }
+          while (--clen);
+
+          utf8 = 1;
         }
+      else if (dec->cur == dec->end)
+        ERR ("unexpected end of string while parsing json string");
       else
         ERR ("invalid character encountered");
     }
@@ -611,34 +624,50 @@ decode_num (dec_t *dec)
       if (*dec->cur >= '0' && *dec->cur <= '9')
          ERR ("malformed number (leading zero must not be followed by another digit)");
     }
-
-  // int
-  while (*dec->cur >= '0' && *dec->cur <= '9')
-    ++dec->cur;
+  else if (*dec->cur < '0' || *dec->cur > '9')
+    ERR ("malformed number (no digits after initial minus)");
+  else
+    do
+      {
+        ++dec->cur;
+      }
+    while (*dec->cur >= '0' && *dec->cur <= '9');
 
   // [frac]
   if (*dec->cur == '.')
     {
-      is_nv = 1;
+      ++dec->cur;
+
+      if (*dec->cur < '0' || *dec->cur > '9')
+        ERR ("malformed number (no digits after decimal point)");
 
       do
         {
           ++dec->cur;
         }
       while (*dec->cur >= '0' && *dec->cur <= '9');
+
+      is_nv = 1;
     }
 
   // [exp]
   if (*dec->cur == 'e' || *dec->cur == 'E')
     {
-      is_nv = 1;
-
       ++dec->cur;
+
       if (*dec->cur == '-' || *dec->cur == '+')
         ++dec->cur;
 
-      while (*dec->cur >= '0' && *dec->cur <= '9')
-        ++dec->cur;
+      if (*dec->cur < '0' || *dec->cur > '9')
+        ERR ("malformed number (no digits after exp sign)");
+
+      do
+        {
+          ++dec->cur;
+        }
+      while (*dec->cur >= '0' && *dec->cur <= '9');
+
+      is_nv = 1;
     }
 
   if (!is_nv)
@@ -666,29 +695,33 @@ decode_av (dec_t *dec)
 {
   AV *av = newAV ();
 
-  for (;;)
-    {
-      SV *value;
+  WS;
+  if (*dec->cur == ']')
+    ++dec->cur;
+  else
+    for (;;)
+      {
+        SV *value;
 
-      value = decode_sv (dec);
-      if (!value)
-        goto fail;
+        value = decode_sv (dec);
+        if (!value)
+          goto fail;
 
-      av_push (av, value);
+        av_push (av, value);
 
-      WS;
+        WS;
 
-      if (*dec->cur == ']')
-        {
-          ++dec->cur;
-          break;
-        }
-      
-      if (*dec->cur != ',')
-        ERR (", or ] expected while parsing array");
+        if (*dec->cur == ']')
+          {
+            ++dec->cur;
+            break;
+          }
+        
+        if (*dec->cur != ',')
+          ERR (", or ] expected while parsing array");
 
-      ++dec->cur;
-    }
+        ++dec->cur;
+      }
 
   return newRV_noinc ((SV *)av);
 
@@ -702,41 +735,45 @@ decode_hv (dec_t *dec)
 {
   HV *hv = newHV ();
 
-  for (;;)
-    {
-      SV *key, *value;
+  WS;
+  if (*dec->cur == '}')
+    ++dec->cur;
+  else
+    for (;;)
+      {
+        SV *key, *value;
 
-      WS; EXPECT_CH ('"');
+        WS; EXPECT_CH ('"');
 
-      key = decode_str (dec);
-      if (!key)
-        goto fail;
-
-      WS; EXPECT_CH (':');
-
-      value = decode_sv (dec);
-      if (!value)
-        {
-          SvREFCNT_dec (key);
+        key = decode_str (dec);
+        if (!key)
           goto fail;
-        }
 
-      //TODO: optimise
-      hv_store_ent (hv, key, value, 0);
+        WS; EXPECT_CH (':');
 
-      WS;
+        value = decode_sv (dec);
+        if (!value)
+          {
+            SvREFCNT_dec (key);
+            goto fail;
+          }
 
-      if (*dec->cur == '}')
-        {
-          ++dec->cur;
-          break;
-        }
+        //TODO: optimise
+        hv_store_ent (hv, key, value, 0);
 
-      if (*dec->cur != ',')
-        ERR (", or } expected while parsing object/hash");
+        WS;
 
-      ++dec->cur;
-    }
+        if (*dec->cur == '}')
+          {
+            ++dec->cur;
+            break;
+          }
+
+        if (*dec->cur != ',')
+          ERR (", or } expected while parsing object/hash");
+
+        ++dec->cur;
+      }
 
   return newRV_noinc ((SV *)hv);
 
@@ -786,7 +823,7 @@ decode_sv (dec_t *dec)
         if (dec->end - dec->cur >= 4 && !memcmp (dec->cur, "null", 4))
           {
             dec->cur += 4;
-            return newSViv (1);
+            return newSVsv (&PL_sv_undef);
           }
         else
           ERR ("'null' expected");
@@ -807,7 +844,9 @@ decode_json (SV *string, UV flags)
 {
   SV *sv;
 
-  if (!(flags & F_UTF8))
+  if (flags & F_UTF8)
+    sv_utf8_downgrade (string, 0);
+  else
     sv_utf8_upgrade (string);
 
   SvGROW (string, SvCUR (string) + 1); // should basically be a NOP
@@ -818,17 +857,21 @@ decode_json (SV *string, UV flags)
   dec.end   = SvEND (string);
   dec.err   = 0;
 
-  *dec.end = 1; // invalid anywhere
   sv = decode_sv (&dec);
-  *dec.end = 0;
 
   if (!sv)
     {
       IV offset = utf8_distance (dec.cur, SvPVX (string));
       SV *uni = sv_newmortal ();
+      // horrible hack to silence warning inside pv_uni_display
+      COP cop;
+      memset (&cop, 0, sizeof (cop));
+      cop.cop_warnings = pWARN_NONE;
+      SAVEVPTR (PL_curcop);
+      PL_curcop = &cop;
 
       pv_uni_display (uni, dec.cur, dec.end - dec.cur, 20, UNI_DISPLAY_QQ);
-      croak ("%s, at character %d (%s)",
+      croak ("%s, at character offset %d (%s)",
              dec.err,
              (int)offset,
              dec.cur != dec.end ? SvPV_nolen (uni) : "(end of string)");
