@@ -1,0 +1,9 @@
+Revision history for Perl extension JSON::XS
+
+0.1   Thu Mar 22 22:13:43 CET 2007
+	- first release, very untested, basically just to claim
+          the namespace.
+ 
+0.01  Thu Mar 22 06:08:12 CET 2007
+	- original version; cloned from Convert-Scalar
+

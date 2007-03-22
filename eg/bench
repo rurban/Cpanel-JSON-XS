@@ -1,0 +1,81 @@
+#!/opt/bin/perl
+
+# Usage: bench json-file
+
+use JSON;
+use JSON::DWIW;
+use JSON::PC;
+use JSON::XS;
+use JSON::Syck;
+
+use Time::HiRes;
+use List::Util;
+
+use utf8;
+
+my $dwiw = new JSON::DWIW;
+my $pc   = new JSON::PC;
+my $xs   = JSON::XS->new->pretty (1)->canonical (1);
+
+my $json; # the test string
+
+local $/;
+$json = <>;
+
+#if (1) {
+#   use Storable;
+#   open my $fh, "<:unix", "/opt/crossfire/share/cfserver/faces" or die "$!";
+#   my $faces = Storable::thaw do { <$fh> };
+#   $json = objToJson $faces;
+#   open my $fh2, ">:unix", "faces.json" or die "$!";
+#   print $fh2 $json;
+#   warn length $json;
+#}
+
+my %tst = (
+   "JSON::DWIW"   => ['$dwiw->to_json ($perl)', '$dwiw->from_json ($json)'],
+   "JSON::Syck"   => ['JSON::Syck::Dump $perl', 'JSON::Syck::Load $json'],
+   "JSON::PC"     => ['$pc->convert ($perl)'  , '$pc->parse ($json)'],
+   "JSON"         => ['objToJson $perl'       , 'jsonToObj $json'],
+   "JSON::XS"     => ['to_json $perl'         , 'from_json $json'],
+   "JSON::XS/2"   => ['$xs->encode ($perl)'   , '$xs->decode ($json)'],
+);
+
+sub bench($) {
+   my ($code) = @_;
+
+   my $perl = jsonToObj $json;
+   my $count = 100;
+   my $times = 15;
+
+   my $cent = eval "sub { " . (join ";", ($code) x $count) . "}";
+   $cent->();
+
+   my @meas;
+
+   while () {
+      push @meas, Time::HiRes::time;
+      $cent->();
+      $meas[-1] = Time::HiRes::time - $meas[-1];
+
+      my $mean = (List::Util::sum @meas) / @meas;
+      if (@meas >= $times) {
+         @meas = grep $_ > $mean * 0.9 && $_ < $mean * 1.1, @meas;
+         my @meas = grep $_ > $mean * 0.9999 && $_ < $mean * 1.1111, @meas;
+         if (@meas >= $times) {
+            return $count / $mean;
+         }
+      }
+   }
+}
+
+printf "%-10s | %10s | %10s |\n", "module", "encode", "decode";
+printf "-----------|------------|------------|\n";
+for my $module (sort keys %tst) {
+   my $enc = bench $tst{$module}[0];
+   my $dec = bench $tst{$module}[1];
+
+   printf "%-10s | %10.3f | %10.3f |\n", $module, $enc, $dec;
+}
+printf "-----------+------------+------------+\n";
+
