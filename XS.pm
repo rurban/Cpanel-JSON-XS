@@ -61,7 +61,7 @@ whatever way you like.
 package JSON::XS;
 
 BEGIN {
-   $VERSION = '0.1';
+   $VERSION = '0.2';
    @ISA = qw(Exporter);
 
    @EXPORT = qw(to_json from_json);
@@ -249,7 +249,7 @@ from any of these problems or limitations.
 
 =over 4
 
-=item JSON
+=item JSON 1.07
 
 Slow (but very portable, as it is written in pure Perl).
 
@@ -261,7 +261,7 @@ No roundtripping (strings get clobbered if they look like numbers, e.g.
 the string C<2.0> will encode to C<2.0> instead of C<"2.0">, and that will
 decode into the number 2.
 
-=item JSON::PC
+=item JSON::PC 0.01
 
 Very fast.
 
@@ -278,7 +278,7 @@ which is not a valid JSON string.
 Unmaintained (maintainer unresponsive for many months, bugs are not
 getting fixed).
 
-=item JSON::Syck
+=item JSON::Syck 0.21
 
 Very buggy (often crashes).
 
@@ -307,7 +307,7 @@ while the other might reject the transaction with a syntax error. While a
 good protocol will at least recover, that is extra unnecessary work and
 the transaction will still not succeed).
 
-=item JSON::DWIW
+=item JSON::DWIW 0.04
 
 Very fast. Very natural. Very nice.
 
