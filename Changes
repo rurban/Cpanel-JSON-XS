@@ -1,5 +1,21 @@
 Revision history for Perl extension JSON::XS
 
+0.2  Fri Mar 23 00:23:34 CET 2007
+	- the "could not sleep without debuggign release".
+          it should basically work now, with many bugs as
+          no production tests have been run yet.
+	- added more testcases.
+	- the expected shitload of bugfixes.
+	- handle utf8 flag correctly in decode.
+        - fix segfault in decoder.
+        - utf8n_to_uvuni sets retlen to -1, but retlen is an
+          unsigned types (argh).
+        - fix decoding of utf-8 strings.
+        - improved error diagnostics.
+        - fix decoding of 'null'.
+        - fix parsing of empty array/hashes
+        - silence warnings when we prepare the croak message.
+
 0.1   Thu Mar 22 22:13:43 CET 2007
 	- first release, very untested, basically just to claim
           the namespace.
