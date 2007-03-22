@@ -1,0 +1,11 @@
+README
+Changes
+MANIFEST
+COPYING
+Makefile.PL
+XS.pm
+XS.xs
+eg/bench
+t/00_load.t
+t/01_utf8.t
+META.yml                                 Module meta-data (added by MakeMaker)
