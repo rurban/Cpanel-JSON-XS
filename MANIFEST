@@ -10,4 +10,13 @@ t/00_load.t
 t/01_utf8.t
 t/02_error.t
 t/03_types.t
+t/04_dwiw_encode.t
+t/05_dwiw_decode.t
+t/06_pc_pretty.t
+t/07_pc_esc.t
+t/08_pc_base.t
+t/09_pc_extra_number.t
+t/10_pc_keysort.t
+t/11_pc_expo.t
+t/12_binary.t
 META.yml                                 Module meta-data (added by MakeMaker)
