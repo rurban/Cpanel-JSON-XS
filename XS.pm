@@ -6,6 +6,17 @@ JSON::XS - JSON serialising/deserialising, done correctly and fast
 
  use JSON::XS;
 
+ # exported functions, croak on error
+
+ $utf8_encoded_json_text = to_json $perl_hash_or_arrayref;
+ $perl_hash_or_arrayref  = from_json $utf8_encoded_json_text;
+
+ # oo-interface
+
+ $coder = JSON::XS->new->ascii->pretty->allow_nonref;
+ $pretty_printed_unencoded = $coder->encode ($perl_scalar);
+ $perl_scalar = $coder->decode ($unicode_json_text);
+
 =head1 DESCRIPTION
 
 This module converts Perl data structures to JSON and vice versa. Its
@@ -20,13 +31,17 @@ reports for other reasons.
 
 See COMPARISON, below, for a comparison to some other JSON modules.
 
+See MAPPING, below, on how JSON::XS maps perl values to JSON values and
+vice versa.
+
 =head2 FEATURES
 
 =over 4
 
 =item * correct handling of unicode issues
 
-This module knows how to handle Unicode, and even documents how it does so.
+This module knows how to handle Unicode, and even documents how and when
+it does so.
 
 =item * round-trip integrity
 
@@ -37,11 +52,13 @@ by JSON, the deserialised data structure is identical on the Perl level.
 =item * strict checking of JSON correctness
 
 There is no guessing, no generating of illegal JSON strings by default,
-and only JSON is accepted as input (the latter is a security feature).
+and only JSON is accepted as input by default (the latter is a security
+feature).
 
 =item * fast
 
-compared to other JSON modules, this module compares favourably.
+Compared to other JSON modules, this module compares favourably in terms
+of speed, too.
 
 =item * simple to use
 
@@ -50,8 +67,10 @@ interface.
 
 =item * reasonably versatile output formats
 
-You can choose between the most compact format possible, a pure-ascii
-format, or a pretty-printed format. Or you can combine those features in
+You can choose between the most compact guarenteed single-line format
+possible (nice for simple line-based protocols), a pure-ascii format (for
+when your transport is not 8-bit clean), or a pretty-printed format (for
+when you want to read that stuff). Or you can combine those features in
 whatever way you like.
 
 =back
@@ -61,7 +80,7 @@ whatever way you like.
 package JSON::XS;
 
 BEGIN {
-   $VERSION = '0.2';
+   $VERSION = '0.3';
    @ISA = qw(Exporter);
 
    @EXPORT = qw(to_json from_json);
@@ -84,8 +103,7 @@ Converts the given Perl data structure (a simple scalar or a reference to
 a hash or array) to a UTF-8 encoded, binary string (that is, the string contains
 octets only). Croaks on error.
 
-This function call is functionally identical to C<< JSON::XS->new->utf8
-(1)->encode ($perl_scalar) >>.
+This function call is functionally identical to C<< JSON::XS->new->utf8->encode ($perl_scalar) >>.
 
 =item $perl_scalar = from_json $json_string
 
@@ -93,8 +111,7 @@ The opposite of C<to_json>: expects an UTF-8 (binary) string and tries to
 parse that as an UTF-8 encoded JSON string, returning the resulting simple
 scalar or reference. Croaks on error.
 
-This function call is functionally identical to C<< JSON::XS->new->utf8
-(1)->decode ($json_string) >>.
+This function call is functionally identical to C<< JSON::XS->new->utf8->decode ($json_string) >>.
 
 =back
 
@@ -116,12 +133,13 @@ be chained:
    my $json = JSON::XS->new->utf8(1)->space_after(1)->encode ({a => [1,2]})
    => {"a": [1, 2]}
 
-=item $json = $json->ascii ($enable)
+=item $json = $json->ascii ([$enable])
 
-If C<$enable> is true, then the C<encode> method will not generate
-characters outside the code range C<0..127>. Any unicode characters
-outside that range will be escaped using either a single \uXXXX (BMP
-characters) or a double \uHHHH\uLLLLL escape sequence, as per RFC4627.
+If C<$enable> is true (or missing), then the C<encode> method will
+not generate characters outside the code range C<0..127>. Any unicode
+characters outside that range will be escaped using either a single
+\uXXXX (BMP characters) or a double \uHHHH\uLLLLL escape sequence, as per
+RFC4627.
 
 If C<$enable> is false, then the C<encode> method will not escape Unicode
 characters unless necessary.
@@ -129,24 +147,28 @@ characters unless necessary.
   JSON::XS->new->ascii (1)->encode (chr 0x10401)
   => \ud801\udc01
 
-=item $json = $json->utf8 ($enable)
+=item $json = $json->utf8 ([$enable])
 
-If C<$enable> is true, then the C<encode> method will encode the JSON
-string into UTF-8, as required by many protocols, while the C<decode>
-method expects to be handled an UTF-8-encoded string.  Please note that
-UTF-8-encoded strings do not contain any characters outside the range
-C<0..255>, they are thus useful for bytewise/binary I/O.
+If C<$enable> is true (or missing), then the C<encode> method will encode
+the JSON string into UTF-8, as required by many protocols, while the
+C<decode> method expects to be handled an UTF-8-encoded string.  Please
+note that UTF-8-encoded strings do not contain any characters outside the
+range C<0..255>, they are thus useful for bytewise/binary I/O.
 
 If C<$enable> is false, then the C<encode> method will return the JSON
 string as a (non-encoded) unicode string, while C<decode> expects thus a
 unicode string.  Any decoding or encoding (e.g. to UTF-8 or UTF-16) needs
 to be done yourself, e.g. using the Encode module.
 
-=item $json = $json->pretty ($enable)
+Example, output UTF-16-encoded JSON:
+
+=item $json = $json->pretty ([$enable])
 
 This enables (or disables) all of the C<indent>, C<space_before> and
 C<space_after> (and in the future possibly more) flags in one call to
 generate the most readable (or most compact) form possible.
+
+Example, pretty-print some simple structure:
 
    my $json = JSON::XS->new->pretty(1)->encode ({a => [1,2]})
    =>
@@ -157,9 +179,9 @@ generate the most readable (or most compact) form possible.
       ]
    }
 
-=item $json = $json->indent ($enable)
+=item $json = $json->indent ([$enable])
 
-If C<$enable> is true, then the C<encode> method will use a multiline
+If C<$enable> is true (or missing), then the C<encode> method will use a multiline
 format as output, putting every array member or object/hash key-value pair
 into its own line, identing them properly.
 
@@ -168,9 +190,9 @@ resulting JSON strings is guarenteed not to contain any C<newlines>.
 
 This setting has no effect when decoding JSON strings.
 
-=item $json = $json->space_before ($enable)
+=item $json = $json->space_before ([$enable])
 
-If C<$enable> is true, then the C<encode> method will add an extra
+If C<$enable> is true (or missing), then the C<encode> method will add an extra
 optional space before the C<:> separating keys from values in JSON objects.
 
 If C<$enable> is false, then the C<encode> method will not add any extra
@@ -179,9 +201,13 @@ space at those places.
 This setting has no effect when decoding JSON strings. You will also most
 likely combine this setting with C<space_after>.
 
-=item $json = $json->space_after ($enable)
+Example, space_before enabled, space_after and indent disabled:
 
-If C<$enable> is true, then the C<encode> method will add an extra
+   {"key" :"value"}
+
+=item $json = $json->space_after ([$enable])
+
+If C<$enable> is true (or missing), then the C<encode> method will add an extra
 optional space after the C<:> separating keys from values in JSON objects
 and extra whitespace after the C<,> separating key-value pairs and array
 members.
@@ -191,9 +217,13 @@ space at those places.
 
 This setting has no effect when decoding JSON strings.
 
-=item $json = $json->canonical ($enable)
+Example, space_before and indent disabled, space_after enabled:
 
-If C<$enable> is true, then the C<encode> method will output JSON objects
+   {"key": "value"}
+
+=item $json = $json->canonical ([$enable])
+
+If C<$enable> is true (or missing), then the C<encode> method will output JSON objects
 by sorting their keys. This is adding a comparatively high overhead.
 
 If C<$enable> is false, then the C<encode> method will output key-value
@@ -207,9 +237,9 @@ as key-value pairs have no inherent ordering in Perl.
 
 This setting has no effect when decoding JSON strings.
 
-=item $json = $json->allow_nonref ($enable)
+=item $json = $json->allow_nonref ([$enable])
 
-If C<$enable> is true, then the C<encode> method can convert a
+If C<$enable> is true (or missing), then the C<encode> method can convert a
 non-reference into its corresponding string, number or null JSON value,
 which is an extension to RFC4627. Likewise, C<decode> will accept those JSON
 values instead of croaking.
@@ -218,6 +248,33 @@ If C<$enable> is false, then the C<encode> method will croak if it isn't
 passed an arrayref or hashref, as JSON strings must either be an object
 or array. Likewise, C<decode> will croak if given something that is not a
 JSON object or array.
+
+Example, encode a Perl scalar as JSON value with enabled C<allow_nonref>,
+resulting in an invalid JSON text:
+
+   JSON::XS->new->allow_nonref->encode ("Hello, World!")
+   => "Hello, World!"
+
+=item $json = $json->shrink ([$enable])
+
+Perl usually over-allocates memory a bit when allocating space for
+strings.  This flag optionally resizes strings generated by either
+C<encode> or C<decode> to their minimum size possible. This can save
+memory when your JSON strings are either very very long or you have many
+short strings. It will also try to downgrade any strings to octet-form
+if possible: perl stores strings internally either in an encoding called
+UTF-X or in octet-form. The latter cannot store everything but uses less
+space in general.
+
+If C<$enable> is true (or missing), the string returned by C<encode> will be shrunk-to-fit,
+while all strings generated by C<decode> will also be shrunk-to-fit.
+
+If C<$enable> is false, then the normal perl allocation algorithms are used.
+If you work with your data, then this is likely to be faster.
+
+In the future, this setting might control other things, such as converting
+strings that look like integers or floats into integers or floats
+internally (there is no difference on the Perl level), saving space.
 
 =item $json_string = $json->encode ($perl_scalar)
 
@@ -236,6 +293,126 @@ returning the resulting simple scalar or reference. Croaks on error.
 JSON numbers and strings become simple Perl scalars. JSON arrays become
 Perl arrayrefs and JSON objects become Perl hashrefs. C<true> becomes
 C<1>, C<false> becomes C<0> and C<null> becomes C<undef>.
+
+=back
+
+=head1 MAPPING
+
+This section describes how JSON::XS maps Perl values to JSON values and
+vice versa. These mappings are designed to "do the right thing" in most
+circumstances automatically, preserving round-tripping characteristics
+(what you put in comes out as something equivalent).
+
+For the more enlightened: note that in the following descriptions,
+lowercase I<perl> refers to the Perl interpreter, while uppcercase I<Perl>
+refers to the abstract Perl language itself.
+
+=head2 JSON -> PERL
+
+=over 4
+
+=item object
+
+A JSON object becomes a reference to a hash in Perl. No ordering of object
+keys is preserved.
+
+=item array
+
+A JSON array becomes a reference to an array in Perl.
+
+=item string
+
+A JSON string becomes a string scalar in Perl - Unicode codepoints in JSON
+are represented by the same codepoints in the Perl string, so no manual
+decoding is necessary.
+
+=item number
+
+A JSON number becomes either an integer or numeric (floating point)
+scalar in perl, depending on its range and any fractional parts. On the
+Perl level, there is no difference between those as Perl handles all the
+conversion details, but an integer may take slightly less memory and might
+represent more values exactly than (floating point) numbers.
+
+=item true, false
+
+These JSON atoms become C<0>, C<1>, respectively. Information is lost in
+this process. Future versions might represent those values differently,
+but they will be guarenteed to act like these integers would normally in
+Perl.
+
+=item null
+
+A JSON null atom becomes C<undef> in Perl.
+
+=back
+
+=head2 PERL -> JSON
+
+The mapping from Perl to JSON is slightly more difficult, as Perl is a
+truly typeless language, so we can only guess which JSON type is meant by
+a Perl value.
+
+=over 4
+
+=item hash references
+
+Perl hash references become JSON objects. As there is no inherent ordering
+in hash keys, they will usually be encoded in a pseudo-random order that
+can change between runs of the same program but stays generally the same
+within the single run of a program. JSON::XS can optionally sort the hash
+keys (determined by the I<canonical> flag), so the same datastructure
+will serialise to the same JSON text (given same settings and version of
+JSON::XS), but this incurs a runtime overhead.
+
+=item array references
+
+Perl array references become JSON arrays.
+
+=item blessed objects
+
+Blessed objects are not allowed. JSON::XS currently tries to encode their
+underlying representation (hash- or arrayref), but this behaviour might
+change in future versions.
+
+=item simple scalars
+
+Simple Perl scalars (any scalar that is not a reference) are the most
+difficult objects to encode: JSON::XS will encode undefined scalars as
+JSON null value, scalars that have last been used in a string context
+before encoding as JSON strings and anything else as number value:
+
+   # dump as number
+   to_json [2]                      # yields [2]
+   to_json [-3.0e17]                # yields [-3e+17]
+   my $value = 5; to_json [$value]  # yields [5]
+
+   # used as string, so dump as string
+   print $value;
+   to_json [$value]                 # yields ["5"]
+
+   # undef becomes null
+   to_json [undef]                  # yields [null]
+
+You can force the type to be a string by stringifying it:
+
+   my $x = 3.1; # some variable containing a number
+   "$x";        # stringified
+   $x .= "";    # another, more awkward way to stringify
+   print $x;    # perl does it for you, too, quite often
+
+You can force the type to be a number by numifying it:
+
+   my $x = "3"; # some variable containing a string
+   $x += 0;     # numify it, ensuring it will be dumped as a number
+   $x *= 1;     # same thing, the choise is yours.
+
+You can not currently output JSON booleans or force the type in other,
+less obscure, ways. Tell me if you need this capability.
+
+=item circular data structures
+
+Those will be encoded until memory or stackspace runs out.
 
 =back
 
@@ -366,8 +543,12 @@ search API (http://nanoref.com/yahooapis/mgPdGg):
 Again, JSON::XS leads by far in the encoding case, while still beating
 every other module in the decoding case.
 
-Last example is an almost 8MB large hash with many large binary values
-(PNG files), resulting in a lot of escaping:
+=head1 RESOURCE LIMITS
+
+JSON::XS does not impose any limits on the size of JSON texts or Perl
+values they represent - if your machine can handle it, JSON::XS will
+encode or decode it. Future versions might optionally impose structure
+depth and memory use resource limits.
 
 =head1 BUGS
 

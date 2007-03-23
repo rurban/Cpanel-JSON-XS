@@ -14,6 +14,7 @@
 #define F_SPACE_AFTER  0x00000020
 #define F_JSON_RPC     0x00000040
 #define F_ALLOW_NONREF 0x00000080
+#define F_SHRINK       0x00000100
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
 #define F_DEFAULT   0
@@ -55,6 +56,15 @@ SvJSON (SV *sv)
   return &SvUVX (SvRV (sv));
 }
 
+static void
+shrink (SV *sv)
+{
+  sv_utf8_downgrade (sv, 1);
+#ifdef SvPV_shrink_to_cur
+  SvPV_shrink_to_cur (sv);
+#endif
+}
+
 /////////////////////////////////////////////////////////////////////////////
 
 static void
@@ -87,94 +97,95 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
     {
       unsigned char ch = *(unsigned char *)str;
 
-      if (ch == '"')
+      if (ch >= 0x20 && ch < 0x80) // most common case
         {
-          need (enc, len += 1);
-          *enc->cur++ = '\\';
-          *enc->cur++ = '"';
-          ++str;
-        }
-      else if (ch == '\\')
-        {
-          need (enc, len += 1);
-          *enc->cur++ = '\\';
-          *enc->cur++ = '\\';
-          ++str;
-        }
-      else if (ch >= 0x20 && ch < 0x80) // most common case
-        {
-          *enc->cur++ = ch;
-          ++str;
-        }
-      else if (ch == '\015')
-        {
-          need (enc, len += 1);
-          *enc->cur++ = '\\';
-          *enc->cur++ = 'r';
-          ++str;
-        }
-      else if (ch == '\012')
-        {
-          need (enc, len += 1);
-          *enc->cur++ = '\\';
-          *enc->cur++ = 'n';
+          if (ch == '"') // but with slow exceptions
+            {
+              need (enc, len += 1);
+              *enc->cur++ = '\\';
+              *enc->cur++ = '"';
+            }
+          else if (ch == '\\')
+            {
+              need (enc, len += 1);
+              *enc->cur++ = '\\';
+              *enc->cur++ = '\\';
+            }
+          else
+            *enc->cur++ = ch;
+
           ++str;
         }
       else
         {
-          STRLEN clen;
-          UV uch;
+          switch (ch)
+            {
+              case '\010': need (enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'b'; ++str; break;
+              case '\011': need (enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 't'; ++str; break;
+              case '\012': need (enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'n'; ++str; break;
+              case '\014': need (enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'f'; ++str; break;
+              case '\015': need (enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'r'; ++str; break;
 
-          if (is_utf8)
-            {
-              uch = utf8n_to_uvuni (str, end - str, &clen, UTF8_CHECK_ONLY);
-              if (clen == (STRLEN)-1)
-                croak ("malformed UTF-8 character in string, cannot convert to JSON");
-            }
-          else
-            {
-              uch = ch;
-              clen = 1;
-            }
+              default:
+                {
+                  STRLEN clen;
+                  UV uch;
 
-          if (uch < 0x80 || enc->flags & F_ASCII)
-            {
-              if (uch > 0xFFFFUL)
-                {
-                  need (enc, len += 11);
-                  sprintf (enc->cur, "\\u%04x\\u%04x",
-                           (uch - 0x10000) / 0x400 + 0xD800,
-                           (uch - 0x10000) % 0x400 + 0xDC00);
-                  enc->cur += 12;
-                }
-              else
-                {
-                  static char hexdigit [16] = "0123456789abcdef";
-                  need (enc, len += 5);
-                  *enc->cur++ = '\\';
-                  *enc->cur++ = 'u';
-                  *enc->cur++ = hexdigit [ uch >> 12      ];
-                  *enc->cur++ = hexdigit [(uch >>  8) & 15];
-                  *enc->cur++ = hexdigit [(uch >>  4) & 15];
-                  *enc->cur++ = hexdigit [(uch >>  0) & 15];
-                }
+                  if (is_utf8)
+                    {
+                      uch = utf8n_to_uvuni (str, end - str, &clen, UTF8_CHECK_ONLY);
+                      if (clen == (STRLEN)-1)
+                        croak ("malformed or illegal unicode character in string [%.11s], cannot convert to JSON", str);
+                    }
+                  else
+                    {
+                      uch = ch;
+                      clen = 1;
+                    }
 
-              str += clen;
-            }
-          else if (is_utf8)
-            {
-              need (enc, len += clen);
-              do
-                {
-                  *enc->cur++ = *str++;
+                  if (uch > 0x10FFFFUL)
+                    croak ("out of range codepoint (0x%lx) encountered, unrepresentable in JSON", (unsigned long)uch);
+
+                  if (uch < 0x80 || enc->flags & F_ASCII)
+                    {
+                      if (uch > 0xFFFFUL)
+                        {
+                          need (enc, len += 11);
+                          sprintf (enc->cur, "\\u%04x\\u%04x",
+                                   (uch - 0x10000) / 0x400 + 0xD800,
+                                   (uch - 0x10000) % 0x400 + 0xDC00);
+                          enc->cur += 12;
+                        }
+                      else
+                        {
+                          static char hexdigit [16] = "0123456789abcdef";
+                          need (enc, len += 5);
+                          *enc->cur++ = '\\';
+                          *enc->cur++ = 'u';
+                          *enc->cur++ = hexdigit [ uch >> 12      ];
+                          *enc->cur++ = hexdigit [(uch >>  8) & 15];
+                          *enc->cur++ = hexdigit [(uch >>  4) & 15];
+                          *enc->cur++ = hexdigit [(uch >>  0) & 15];
+                        }
+
+                      str += clen;
+                    }
+                  else if (is_utf8)
+                    {
+                      need (enc, len += clen);
+                      do
+                        {
+                          *enc->cur++ = *str++;
+                        }
+                      while (--clen);
+                    }
+                  else
+                    {
+                      need (enc, len += 10); // never more than 11 bytes needed
+                      enc->cur = uvuni_to_utf8_flags (enc->cur, uch, 0);
+                      ++str;
+                    }
                 }
-              while (--clen);
-            }
-          else
-            {
-              need (enc, 10); // never more than 11 bytes needed
-              enc->cur = uvuni_to_utf8_flags (enc->cur, uch, 0);
-              ++str;
             }
         }
 
@@ -311,16 +322,20 @@ encode_hv (enc_t *enc, HV *hv)
             qsort (hes, count, sizeof (HE *), he_cmp_fast);
           else
             {
-              // hack to disable "use bytes"
-              COP *oldcop = PL_curcop, cop;
+              // hack to forcefully disable "use bytes"
+              COP cop = *PL_curcop;
               cop.op_private = 0;
+
+              ENTER;
+              SAVETMPS;
+
+              SAVEVPTR (PL_curcop);
               PL_curcop = &cop;
 
-              SAVETMPS;
               qsort (hes, count, sizeof (HE *), he_cmp_slow);
-              FREETMPS;
 
-              PL_curcop = oldcop;
+              FREETMPS;
+              LEAVE;
             }
 
           for (i = 0; i < count; ++i)
@@ -386,31 +401,33 @@ encode_sv (enc_t *enc, SV *sv)
     }
   else if (SvROK (sv))
     {
+      SV *rv = SvRV (sv);
+
       if (!--enc->max_recurse)
         croak ("data structure too deep (hit recursion limit)");
 
-      sv = SvRV (sv);
-
-      switch (SvTYPE (sv))
+      switch (SvTYPE (rv))
         {
-          case SVt_PVAV: encode_av (enc, (AV *)sv); break;
-          case SVt_PVHV: encode_hv (enc, (HV *)sv); break;
+          case SVt_PVAV: encode_av (enc, (AV *)rv); break;
+          case SVt_PVHV: encode_hv (enc, (HV *)rv); break;
 
           default:
-            croak ("JSON can only represent references to arrays or hashes");
+            croak ("encountered %s, but JSON can only represent references to arrays or hashes",
+                   SvPV_nolen (sv));
         }
     }
   else if (!SvOK (sv))
     encode_str (enc, "null", 4, 0);
   else
-    croak ("encountered perl type that JSON cannot handle");
+    croak ("encountered perl type (%s,0x%x) that JSON cannot handle, you might want to report this",
+           SvPV_nolen (sv), SvFLAGS (sv));
 }
 
 static SV *
 encode_json (SV *scalar, UV flags)
 {
   if (!(flags & F_ALLOW_NONREF) && !SvROK (scalar))
-    croak ("hash- or arraref required (not a simple scalar, use allow_nonref to allow this)");
+    croak ("hash- or arrayref expected (not a simple scalar, use allow_nonref to allow this)");
 
   enc_t enc;
   enc.flags       = flags;
@@ -427,6 +444,10 @@ encode_json (SV *scalar, UV flags)
     SvUTF8_on (enc.sv);
 
   SvCUR_set (enc.sv, enc.cur - SvPVX (enc.sv));
+
+  if (enc.flags & F_SHRINK)
+    shrink (enc.sv);
+
   return enc.sv;
 }
 
@@ -574,7 +595,7 @@ decode_str (dec_t *dec)
           STRLEN clen;
           UV uch = utf8n_to_uvuni (dec->cur, dec->end - dec->cur, &clen, UTF8_CHECK_ONLY);
           if (clen == (STRLEN)-1)
-            ERR ("malformed UTF-8 character in string, cannot convert to JSON");
+            ERR ("malformed UTF-8 character in JSON string");
 
           APPEND_GROW (clen);
           do
@@ -600,6 +621,9 @@ decode_str (dec_t *dec)
 
   if (utf8)
     SvUTF8_on (sv);
+
+  if (dec->flags & F_SHRINK)
+    shrink (sv);
 
   return sv;
 
@@ -831,7 +855,7 @@ decode_sv (dec_t *dec)
         break;
 
       default:
-        ERR ("malformed json string");
+        ERR ("malformed json string, neither array, object, number, string or atom");
         break;
     }
 
@@ -861,16 +885,20 @@ decode_json (SV *string, UV flags)
 
   if (!sv)
     {
-      IV offset = utf8_distance (dec.cur, SvPVX (string));
+      IV offset = dec.flags & F_UTF8
+                  ? dec.cur - SvPVX (string)
+                  : utf8_distance (dec.cur, SvPVX (string));
       SV *uni = sv_newmortal ();
+
       // horrible hack to silence warning inside pv_uni_display
-      COP cop;
-      memset (&cop, 0, sizeof (cop));
+      COP cop = *PL_curcop;
       cop.cop_warnings = pWARN_NONE;
+      ENTER;
       SAVEVPTR (PL_curcop);
       PL_curcop = &cop;
-
       pv_uni_display (uni, dec.cur, dec.end - dec.cur, 20, UNI_DISPLAY_QQ);
+      LEAVE;
+
       croak ("%s, at character offset %d (%s)",
              dec.err,
              (int)offset,
@@ -880,7 +908,7 @@ decode_json (SV *string, UV flags)
   sv = sv_2mortal (sv);
 
   if (!(dec.flags & F_ALLOW_NONREF) && !SvROK (sv))
-    croak ("JSON object or array expected (but number, string, true, false or null found, use allow_nonref to allow this)");
+    croak ("JSON text must be an object or array (but found number, string, true, false or null, use allow_nonref to allow this)");
 
   return sv;
 }
@@ -912,7 +940,7 @@ SV *new (char *dummy)
 	OUTPUT:
         RETVAL
 
-SV *ascii (SV *self, int enable)
+SV *ascii (SV *self, int enable = 1)
 	ALIAS:
         ascii        = F_ASCII
         utf8         = F_UTF8
@@ -923,6 +951,7 @@ SV *ascii (SV *self, int enable)
         json_rpc     = F_JSON_RPC
         pretty       = F_PRETTY
         allow_nonref = F_ALLOW_NONREF
+        shrink       = F_SHRINK
 	CODE:
 {
   	UV *uv = SvJSON (self);

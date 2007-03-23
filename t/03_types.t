@@ -8,7 +8,6 @@ sub ok($) {
    print $_[0] ? "" : "not ", "ok ", ++$test, "\n";
 }
 
-use PApp::Util;
 ok (!defined JSON::XS->new->allow_nonref (1)->decode ('null'));
 ok (JSON::XS->new->allow_nonref (1)->decode ('true') == 1);
 ok (JSON::XS->new->allow_nonref (1)->decode ('false') == 0);
