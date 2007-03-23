@@ -1,5 +1,31 @@
 Revision history for Perl extension JSON::XS
 
+TODO: allow a configurable recursion limit and/or or other forms of resource limiting (string size, memory usage...)
+TODO: maybe simply use \0 and \1 as true/false when encoding (and overloaded/blessed versions thereof on
+      decoding?)
+
+0.3  Fri Mar 23 19:33:21 CET 2007
+	- remove spurious PApp::Util reference (John McNamara).
+	- adapted lots of tests from other json modules
+          (idea by Chris Carline).
+        - documented mapping from json to perl and vice versa.
+        - improved the documentation by adding more examples.
+        - added short escaping forms, reducing the created
+          json texts a bit.
+        - added shrink flag.
+        - when flag methods are called without enable argument
+          they will by default enable their flag.
+        - considerably improved string encoding speed (at least
+          with gcc 4).
+        - added a test that covers lots of different characters.
+        - clarified some error messages.
+        - error messages now use correct character offset
+          with F_UTF8.
+        - improve the "no bytes" and "no warnings" hacks in
+          case the called functions do... stuff.
+        - croak when encoding to ascii and an out-of-range
+          (non-unicode) codepoint is encountered.
+
 0.2  Fri Mar 23 00:23:34 CET 2007
 	- the "could not sleep without debuggign release".
           it should basically work now, with many bugs as

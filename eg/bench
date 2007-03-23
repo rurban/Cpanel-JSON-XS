@@ -22,6 +22,8 @@ my $json; # the test string
 local $/;
 $json = <>;
 
+# $json = to_json [join "", map +(chr rand 255), 0..8191];
+
 #if (1) {
 #   use Storable;
 #   open my $fh, "<:unix", "/opt/crossfire/share/cfserver/faces" or die "$!";
@@ -33,10 +35,10 @@ $json = <>;
 #}
 
 my %tst = (
-   "JSON::DWIW"   => ['$dwiw->to_json ($perl)', '$dwiw->from_json ($json)'],
-   "JSON::Syck"   => ['JSON::Syck::Dump $perl', 'JSON::Syck::Load $json'],
-   "JSON::PC"     => ['$pc->convert ($perl)'  , '$pc->parse ($json)'],
    "JSON"         => ['objToJson $perl'       , 'jsonToObj $json'],
+   "JSON::DWIW"   => ['$dwiw->to_json ($perl)', '$dwiw->from_json ($json)'],
+   "JSON::PC"     => ['$pc->convert ($perl)'  , '$pc->parse ($json)'],
+   "JSON::Syck"   => ['JSON::Syck::Dump $perl', 'JSON::Syck::Load $json'],
    "JSON::XS"     => ['to_json $perl'         , 'from_json $json'],
    "JSON::XS/2"   => ['$xs->encode ($perl)'   , '$xs->decode ($json)'],
 );
@@ -45,7 +47,7 @@ sub bench($) {
    my ($code) = @_;
 
    my $perl = jsonToObj $json;
-   my $count = 100;
+   my $count = 20;
    my $times = 15;
 
    my $cent = eval "sub { " . (join ";", ($code) x $count) . "}";
