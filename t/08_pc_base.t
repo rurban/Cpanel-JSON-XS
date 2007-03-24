@@ -3,7 +3,7 @@ use Test::More;
 # copied over from JSON::PC and modified to use JSON::XS
 
 use strict;
-BEGIN { plan tests => 22 };
+BEGIN { plan tests => 21 };
 use JSON::XS;
 
 my ($js,$obj);
@@ -84,11 +84,6 @@ like($@, qr/unexpected end/i);
 $obj = { foo => sub { "bar"; } };
 eval q{ $js = $pc->encode($obj) };
 like($@, qr/JSON can only/i, 'invalid value (coderef)');
-
-
-$obj = { foo => *STDERR };
-$js = $pc->encode($obj);
-is($js, '{"foo":"*main::STDERR"}', "type blog");
 
 $obj = { foo => \*STDERR };
 eval q{ $js = $pc->encode($obj) };

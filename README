@@ -42,7 +42,7 @@ DESCRIPTION
         the Perl level. (e.g. the string "2.0" doesn't suddenly become "2").
 
     * strict checking of JSON correctness
-        There is no guessing, no generating of illegal JSON strings by
+        There is no guessing, no generating of illegal JSON texts by
         default, and only JSON is accepted as input by default (the latter
         is a security feature).
 
@@ -65,21 +65,27 @@ FUNCTIONAL INTERFACE
     The following convinience methods are provided by this module. They are
     exported by default:
 
-    $json_string = to_json $perl_scalar
+    $json_text = to_json $perl_scalar
         Converts the given Perl data structure (a simple scalar or a
         reference to a hash or array) to a UTF-8 encoded, binary string
         (that is, the string contains octets only). Croaks on error.
 
-        This function call is functionally identical to
-        "JSON::XS->new->utf8->encode ($perl_scalar)".
+        This function call is functionally identical to:
 
-    $perl_scalar = from_json $json_string
+           $json_text = JSON::XS->new->utf8->encode ($perl_scalar)
+
+        except being faster.
+
+    $perl_scalar = from_json $json_text
         The opposite of "to_json": expects an UTF-8 (binary) string and
-        tries to parse that as an UTF-8 encoded JSON string, returning the
+        tries to parse that as an UTF-8 encoded JSON text, returning the
         resulting simple scalar or reference. Croaks on error.
 
-        This function call is functionally identical to
-        "JSON::XS->new->utf8->decode ($json_string)".
+        This function call is functionally identical to:
+
+           $perl_scalar = JSON::XS->new->utf8->decode ($json_text)
+
+        except being faster.
 
 OBJECT-ORIENTED INTERFACE
     The object oriented interface lets you configure your own encoding or
@@ -93,36 +99,47 @@ OBJECT-ORIENTED INTERFACE
         The mutators for flags all return the JSON object again and thus
         calls can be chained:
 
-           my $json = JSON::XS->new->utf8(1)->space_after(1)->encode ({a => [1,2]})
+           my $json = JSON::XS->new->utf8->space_after->encode ({a => [1,2]})
            => {"a": [1, 2]}
 
     $json = $json->ascii ([$enable])
         If $enable is true (or missing), then the "encode" method will not
-        generate characters outside the code range 0..127. Any unicode
-        characters outside that range will be escaped using either a single
-        \uXXXX (BMP characters) or a double \uHHHH\uLLLLL escape sequence,
-        as per RFC4627.
+        generate characters outside the code range 0..127 (which is ASCII).
+        Any unicode characters outside that range will be escaped using
+        either a single \uXXXX (BMP characters) or a double \uHHHH\uLLLLL
+        escape sequence, as per RFC4627.
 
         If $enable is false, then the "encode" method will not escape
-        Unicode characters unless necessary.
+        Unicode characters unless required by the JSON syntax. This results
+        in a faster and more compact format.
 
-          JSON::XS->new->ascii (1)->encode (chr 0x10401)
-          => \ud801\udc01
+          JSON::XS->new->ascii (1)->encode ([chr 0x10401])
+          => ["\ud801\udc01"]
 
     $json = $json->utf8 ([$enable])
         If $enable is true (or missing), then the "encode" method will
-        encode the JSON string into UTF-8, as required by many protocols,
+        encode the JSON result into UTF-8, as required by many protocols,
         while the "decode" method expects to be handled an UTF-8-encoded
         string. Please note that UTF-8-encoded strings do not contain any
         characters outside the range 0..255, they are thus useful for
-        bytewise/binary I/O.
+        bytewise/binary I/O. In future versions, enabling this option might
+        enable autodetection of the UTF-16 and UTF-32 encoding families, as
+        described in RFC4627.
 
         If $enable is false, then the "encode" method will return the JSON
         string as a (non-encoded) unicode string, while "decode" expects
         thus a unicode string. Any decoding or encoding (e.g. to UTF-8 or
         UTF-16) needs to be done yourself, e.g. using the Encode module.
 
-        Example, output UTF-16-encoded JSON:
+        Example, output UTF-16BE-encoded JSON:
+
+          use Encode;
+          $jsontext = encode "UTF-16BE", JSON::XS->new->encode ($object);
+
+        Example, decode UTF-32LE-encoded JSON:
+
+          use Encode;
+          $object = JSON::XS->new->decode (decode "UTF-32LE", $jsontext);
 
     $json = $json->pretty ([$enable])
         This enables (or disables) all of the "indent", "space_before" and
@@ -147,10 +164,9 @@ OBJECT-ORIENTED INTERFACE
         properly.
 
         If $enable is false, no newlines or indenting will be produced, and
-        the resulting JSON strings is guarenteed not to contain any
-        "newlines".
+        the resulting JSON text is guarenteed not to contain any "newlines".
 
-        This setting has no effect when decoding JSON strings.
+        This setting has no effect when decoding JSON texts.
 
     $json = $json->space_before ([$enable])
         If $enable is true (or missing), then the "encode" method will add
@@ -160,7 +176,7 @@ OBJECT-ORIENTED INTERFACE
         If $enable is false, then the "encode" method will not add any extra
         space at those places.
 
-        This setting has no effect when decoding JSON strings. You will also
+        This setting has no effect when decoding JSON texts. You will also
         most likely combine this setting with "space_after".
 
         Example, space_before enabled, space_after and indent disabled:
@@ -176,7 +192,7 @@ OBJECT-ORIENTED INTERFACE
         If $enable is false, then the "encode" method will not add any extra
         space at those places.
 
-        This setting has no effect when decoding JSON strings.
+        This setting has no effect when decoding JSON texts.
 
         Example, space_before and indent disabled, space_after enabled:
 
@@ -192,12 +208,12 @@ OBJECT-ORIENTED INTERFACE
         between runs of the same script).
 
         This option is useful if you want the same data structure to be
-        encoded as the same JSON string (given the same overall settings).
-        If it is disabled, the same hash migh be encoded differently even if
+        encoded as the same JSON text (given the same overall settings). If
+        it is disabled, the same hash migh be encoded differently even if
         contains the same data, as key-value pairs have no inherent ordering
         in Perl.
 
-        This setting has no effect when decoding JSON strings.
+        This setting has no effect when decoding JSON texts.
 
     $json = $json->allow_nonref ([$enable])
         If $enable is true (or missing), then the "encode" method can
@@ -206,7 +222,7 @@ OBJECT-ORIENTED INTERFACE
         "decode" will accept those JSON values instead of croaking.
 
         If $enable is false, then the "encode" method will croak if it isn't
-        passed an arrayref or hashref, as JSON strings must either be an
+        passed an arrayref or hashref, as JSON texts must either be an
         object or array. Likewise, "decode" will croak if given something
         that is not a JSON object or array.
 
@@ -220,7 +236,7 @@ OBJECT-ORIENTED INTERFACE
         Perl usually over-allocates memory a bit when allocating space for
         strings. This flag optionally resizes strings generated by either
         "encode" or "decode" to their minimum size possible. This can save
-        memory when your JSON strings are either very very long or you have
+        memory when your JSON texts are either very very long or you have
         many short strings. It will also try to downgrade any strings to
         octet-form if possible: perl stores strings internally either in an
         encoding called UTF-X or in octet-form. The latter cannot store
@@ -238,7 +254,7 @@ OBJECT-ORIENTED INTERFACE
         or floats internally (there is no difference on the Perl level),
         saving space.
 
-    $json_string = $json->encode ($perl_scalar)
+    $json_text = $json->encode ($perl_scalar)
         Converts the given Perl data structure (a simple scalar or a
         reference to a hash or array) to its JSON representation. Simple
         scalars will be converted into JSON string or number sequences,
@@ -247,10 +263,9 @@ OBJECT-ORIENTED INTERFACE
         become JSON "null" values. Neither "true" nor "false" values will be
         generated.
 
-    $perl_scalar = $json->decode ($json_string)
-        The opposite of "encode": expects a JSON string and tries to parse
-        it, returning the resulting simple scalar or reference. Croaks on
-        error.
+    $perl_scalar = $json->decode ($json_text)
+        The opposite of "encode": expects a JSON text and tries to parse it,
+        returning the resulting simple scalar or reference. Croaks on error.
 
         JSON numbers and strings become simple Perl scalars. JSON arrays
         become Perl arrayrefs and JSON objects become Perl hashrefs. "true"
@@ -388,7 +403,7 @@ COMPARISON
         magic values will make it croak).
 
         Does not even generate valid JSON ("{1,2}" gets converted to "{1:2}"
-        which is not a valid JSON string.
+        which is not a valid JSON text.
 
         Unmaintained (maintainer unresponsive for many months, bugs are not
         getting fixed).
@@ -399,7 +414,7 @@ COMPARISON
         Very inflexible (no human-readable format supported, format pretty
         much undocumented. I need at least a format for easy reading by
         humans and a single-line compact format for use in a protocol, and
-        preferably a way to generate ASCII-only JSON strings).
+        preferably a way to generate ASCII-only JSON texts).
 
         Completely broken (and confusingly documented) Unicode handling
         (unicode escapes are not working properly, you need to set
@@ -432,8 +447,8 @@ COMPARISON
 
         No roundtripping.
 
-        Does not generate valid JSON (key strings are often unquoted, empty
-        keys result in nothing being output)
+        Does not generate valid JSON texts (key strings are often unquoted,
+        empty keys result in nothing being output)
 
         Does not check input for validity.
 
