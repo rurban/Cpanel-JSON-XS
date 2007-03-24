@@ -4,6 +4,11 @@ TODO: allow a configurable recursion limit and/or or other forms of resource lim
 TODO: maybe simply use \0 and \1 as true/false when encoding (and overloaded/blessed versions thereof on
       decoding?)
 
+0.31 Sat Mar 24 02:14:34 CET 2007
+	- documentation updates.
+        - do some casting to hopefully fix Andreas' problem.
+        - nuke bogus json rpc stuff.
+
 0.3  Fri Mar 23 19:33:21 CET 2007
 	- remove spurious PApp::Util reference (John McNamara).
 	- adapted lots of tests from other json modules
