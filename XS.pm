@@ -80,7 +80,7 @@ whatever way you like.
 package JSON::XS;
 
 BEGIN {
-   $VERSION = '0.3';
+   $VERSION = '0.31';
    @ISA = qw(Exporter);
 
    @EXPORT = qw(to_json from_json);
@@ -314,7 +314,7 @@ refers to the abstract Perl language itself.
 =item object
 
 A JSON object becomes a reference to a hash in Perl. No ordering of object
-keys is preserved.
+keys is preserved (JSON does not preserver object key ordering itself).
 
 =item array
 
@@ -360,7 +360,7 @@ a Perl value.
 Perl hash references become JSON objects. As there is no inherent ordering
 in hash keys, they will usually be encoded in a pseudo-random order that
 can change between runs of the same program but stays generally the same
-within the single run of a program. JSON::XS can optionally sort the hash
+within a single run of a program. JSON::XS can optionally sort the hash
 keys (determined by the I<canonical> flag), so the same datastructure
 will serialise to the same JSON text (given same settings and version of
 JSON::XS), but this incurs a runtime overhead.
@@ -509,10 +509,11 @@ tables. They have been generated with the help of the C<eg/bench> program
 in the JSON::XS distribution, to make it easy to compare on your own
 system.
 
-First is a comparison between various modules using a very simple JSON
-string, showing the number of encodes/decodes per second (JSON::XS is
-the functional interface, while JSON::XS/2 is the OO interface with
-pretty-printing and hashkey sorting enabled).
+First comes a comparison between various modules using a very short JSON
+string (83 bytes), showing the number of encodes/decodes per second
+(JSON::XS is the functional interface, while JSON::XS/2 is the OO
+interface with pretty-printing and hashkey sorting enabled). Higher is
+better:
 
    module     |     encode |     decode |
    -----------|------------|------------|
@@ -527,7 +528,7 @@ pretty-printing and hashkey sorting enabled).
 That is, JSON::XS is 6 times faster than than JSON::DWIW and about 80
 times faster than JSON, even with pretty-printing and key sorting.
 
-Using a longer test string (roughly 8KB, generated from Yahoo! Locals
+Using a longer test string (roughly 18KB, generated from Yahoo! Locals
 search API (http://nanoref.com/yahooapis/mgPdGg):
 
    module     |     encode |     decode |
@@ -542,6 +543,12 @@ search API (http://nanoref.com/yahooapis/mgPdGg):
 
 Again, JSON::XS leads by far in the encoding case, while still beating
 every other module in the decoding case.
+
+On large strings containing lots of unicode characters, some modules
+(such as JSON::PC) decode faster than JSON::XS, but the result will be
+broken due to missing unicode handling. Others refuse to decode or encode
+properly, so it was impossible to prepare a fair comparison table for that
+case.
 
 =head1 RESOURCE LIMITS
 

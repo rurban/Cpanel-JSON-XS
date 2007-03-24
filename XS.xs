@@ -12,7 +12,6 @@
 #define F_CANONICAL    0x00000008
 #define F_SPACE_BEFORE 0x00000010
 #define F_SPACE_AFTER  0x00000020
-#define F_JSON_RPC     0x00000040
 #define F_ALLOW_NONREF 0x00000080
 #define F_SHRINK       0x00000100
 
@@ -152,8 +151,8 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                         {
                           need (enc, len += 11);
                           sprintf (enc->cur, "\\u%04x\\u%04x",
-                                   (uch - 0x10000) / 0x400 + 0xD800,
-                                   (uch - 0x10000) % 0x400 + 0xDC00);
+                                   (int)((uch - 0x10000) / 0x400 + 0xD800),
+                                   (int)((uch - 0x10000) % 0x400 + 0xDC00));
                           enc->cur += 12;
                         }
                       else
@@ -948,7 +947,6 @@ SV *ascii (SV *self, int enable = 1)
         canonical    = F_CANONICAL
         space_before = F_SPACE_BEFORE
         space_after  = F_SPACE_AFTER
-        json_rpc     = F_JSON_RPC
         pretty       = F_PRETTY
         allow_nonref = F_ALLOW_NONREF
         shrink       = F_SHRINK
