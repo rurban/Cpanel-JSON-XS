@@ -4,6 +4,15 @@ TODO: allow a configurable recursion limit and/or or other forms of resource lim
 TODO: maybe simply use \0 and \1 as true/false when encoding (and overloaded/blessed versions thereof on
       decoding?)
 
+0.5  Sat Mar 24 20:41:51 CET 2007
+	- added the UTF-16 encoding example hinted at in previous
+          versions.
+        - minor documentation fixes.
+        - fix a bug in and optimise canonicalising fastpath
+          (reported by Craig Manley).
+        - remove a subtest that breaks with bleadperl (reported
+          by Andreas König).
+
 0.31 Sat Mar 24 02:14:34 CET 2007
 	- documentation updates.
         - do some casting to hopefully fix Andreas' problem.

@@ -276,8 +276,8 @@ he_cmp_fast (const void *a_, const void *b_)
   STRLEN la = HeKLEN (a);
   STRLEN lb = HeKLEN (b);
 
-  if (!(cmp == memcmp (HeKEY (a), HeKEY (b), la < lb ? la : lb)))
-    cmp = la < lb ? -1 : la == lb ? 0 : 1;
+  if (!(cmp = memcmp (HeKEY (a), HeKEY (b), la < lb ? la : lb)))
+    cmp = la - lb;
 
   return cmp;
 }

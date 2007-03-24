@@ -51,7 +51,7 @@ by JSON, the deserialised data structure is identical on the Perl level.
 
 =item * strict checking of JSON correctness
 
-There is no guessing, no generating of illegal JSON strings by default,
+There is no guessing, no generating of illegal JSON texts by default,
 and only JSON is accepted as input by default (the latter is a security
 feature).
 
@@ -80,7 +80,7 @@ whatever way you like.
 package JSON::XS;
 
 BEGIN {
-   $VERSION = '0.31';
+   $VERSION = '0.5';
    @ISA = qw(Exporter);
 
    @EXPORT = qw(to_json from_json);
@@ -97,21 +97,29 @@ exported by default:
 
 =over 4
 
-=item $json_string = to_json $perl_scalar
+=item $json_text = to_json $perl_scalar
 
 Converts the given Perl data structure (a simple scalar or a reference to
 a hash or array) to a UTF-8 encoded, binary string (that is, the string contains
 octets only). Croaks on error.
 
-This function call is functionally identical to C<< JSON::XS->new->utf8->encode ($perl_scalar) >>.
+This function call is functionally identical to:
 
-=item $perl_scalar = from_json $json_string
+   $json_text = JSON::XS->new->utf8->encode ($perl_scalar)
+
+except being faster.
+
+=item $perl_scalar = from_json $json_text
 
 The opposite of C<to_json>: expects an UTF-8 (binary) string and tries to
-parse that as an UTF-8 encoded JSON string, returning the resulting simple
+parse that as an UTF-8 encoded JSON text, returning the resulting simple
 scalar or reference. Croaks on error.
 
-This function call is functionally identical to C<< JSON::XS->new->utf8->decode ($json_string) >>.
+This function call is functionally identical to:
+
+   $perl_scalar = JSON::XS->new->utf8->decode ($json_text)
+
+except being faster.
 
 =back
 
@@ -130,37 +138,48 @@ strings. All boolean flags described below are by default I<disabled>.
 The mutators for flags all return the JSON object again and thus calls can
 be chained:
 
-   my $json = JSON::XS->new->utf8(1)->space_after(1)->encode ({a => [1,2]})
+   my $json = JSON::XS->new->utf8->space_after->encode ({a => [1,2]})
    => {"a": [1, 2]}
 
 =item $json = $json->ascii ([$enable])
 
-If C<$enable> is true (or missing), then the C<encode> method will
-not generate characters outside the code range C<0..127>. Any unicode
-characters outside that range will be escaped using either a single
-\uXXXX (BMP characters) or a double \uHHHH\uLLLLL escape sequence, as per
-RFC4627.
+If C<$enable> is true (or missing), then the C<encode> method will not
+generate characters outside the code range C<0..127> (which is ASCII). Any
+unicode characters outside that range will be escaped using either a
+single \uXXXX (BMP characters) or a double \uHHHH\uLLLLL escape sequence,
+as per RFC4627.
 
 If C<$enable> is false, then the C<encode> method will not escape Unicode
-characters unless necessary.
+characters unless required by the JSON syntax. This results in a faster
+and more compact format.
 
-  JSON::XS->new->ascii (1)->encode (chr 0x10401)
-  => \ud801\udc01
+  JSON::XS->new->ascii (1)->encode ([chr 0x10401])
+  => ["\ud801\udc01"]
 
 =item $json = $json->utf8 ([$enable])
 
 If C<$enable> is true (or missing), then the C<encode> method will encode
-the JSON string into UTF-8, as required by many protocols, while the
+the JSON result into UTF-8, as required by many protocols, while the
 C<decode> method expects to be handled an UTF-8-encoded string.  Please
 note that UTF-8-encoded strings do not contain any characters outside the
-range C<0..255>, they are thus useful for bytewise/binary I/O.
+range C<0..255>, they are thus useful for bytewise/binary I/O. In future
+versions, enabling this option might enable autodetection of the UTF-16
+and UTF-32 encoding families, as described in RFC4627.
 
 If C<$enable> is false, then the C<encode> method will return the JSON
 string as a (non-encoded) unicode string, while C<decode> expects thus a
 unicode string.  Any decoding or encoding (e.g. to UTF-8 or UTF-16) needs
 to be done yourself, e.g. using the Encode module.
 
-Example, output UTF-16-encoded JSON:
+Example, output UTF-16BE-encoded JSON:
+
+  use Encode;
+  $jsontext = encode "UTF-16BE", JSON::XS->new->encode ($object);
+
+Example, decode UTF-32LE-encoded JSON:
+
+  use Encode;
+  $object = JSON::XS->new->decode (decode "UTF-32LE", $jsontext);
 
 =item $json = $json->pretty ([$enable])
 
@@ -186,9 +205,9 @@ format as output, putting every array member or object/hash key-value pair
 into its own line, identing them properly.
 
 If C<$enable> is false, no newlines or indenting will be produced, and the
-resulting JSON strings is guarenteed not to contain any C<newlines>.
+resulting JSON text is guarenteed not to contain any C<newlines>.
 
-This setting has no effect when decoding JSON strings.
+This setting has no effect when decoding JSON texts.
 
 =item $json = $json->space_before ([$enable])
 
@@ -198,8 +217,8 @@ optional space before the C<:> separating keys from values in JSON objects.
 If C<$enable> is false, then the C<encode> method will not add any extra
 space at those places.
 
-This setting has no effect when decoding JSON strings. You will also most
-likely combine this setting with C<space_after>.
+This setting has no effect when decoding JSON texts. You will also
+most likely combine this setting with C<space_after>.
 
 Example, space_before enabled, space_after and indent disabled:
 
@@ -215,7 +234,7 @@ members.
 If C<$enable> is false, then the C<encode> method will not add any extra
 space at those places.
 
-This setting has no effect when decoding JSON strings.
+This setting has no effect when decoding JSON texts.
 
 Example, space_before and indent disabled, space_after enabled:
 
@@ -231,11 +250,11 @@ pairs in the order Perl stores them (which will likely change between runs
 of the same script).
 
 This option is useful if you want the same data structure to be encoded as
-the same JSON string (given the same overall settings). If it is disabled,
+the same JSON text (given the same overall settings). If it is disabled,
 the same hash migh be encoded differently even if contains the same data,
 as key-value pairs have no inherent ordering in Perl.
 
-This setting has no effect when decoding JSON strings.
+This setting has no effect when decoding JSON texts.
 
 =item $json = $json->allow_nonref ([$enable])
 
@@ -245,7 +264,7 @@ which is an extension to RFC4627. Likewise, C<decode> will accept those JSON
 values instead of croaking.
 
 If C<$enable> is false, then the C<encode> method will croak if it isn't
-passed an arrayref or hashref, as JSON strings must either be an object
+passed an arrayref or hashref, as JSON texts must either be an object
 or array. Likewise, C<decode> will croak if given something that is not a
 JSON object or array.
 
@@ -260,7 +279,7 @@ resulting in an invalid JSON text:
 Perl usually over-allocates memory a bit when allocating space for
 strings.  This flag optionally resizes strings generated by either
 C<encode> or C<decode> to their minimum size possible. This can save
-memory when your JSON strings are either very very long or you have many
+memory when your JSON texts are either very very long or you have many
 short strings. It will also try to downgrade any strings to octet-form
 if possible: perl stores strings internally either in an encoding called
 UTF-X or in octet-form. The latter cannot store everything but uses less
@@ -276,7 +295,7 @@ In the future, this setting might control other things, such as converting
 strings that look like integers or floats into integers or floats
 internally (there is no difference on the Perl level), saving space.
 
-=item $json_string = $json->encode ($perl_scalar)
+=item $json_text = $json->encode ($perl_scalar)
 
 Converts the given Perl data structure (a simple scalar or a reference
 to a hash or array) to its JSON representation. Simple scalars will be
@@ -285,9 +304,9 @@ become JSON arrays and references to hashes become JSON objects. Undefined
 Perl values (e.g. C<undef>) become JSON C<null> values. Neither C<true>
 nor C<false> values will be generated.
 
-=item $perl_scalar = $json->decode ($json_string)
+=item $perl_scalar = $json->decode ($json_text)
 
-The opposite of C<encode>: expects a JSON string and tries to parse it,
+The opposite of C<encode>: expects a JSON text and tries to parse it,
 returning the resulting simple scalar or reference. Croaks on error.
 
 JSON numbers and strings become simple Perl scalars. JSON arrays become
@@ -450,7 +469,7 @@ Has problems handling many Perl values (e.g. regex results and other magic
 values will make it croak).
 
 Does not even generate valid JSON (C<{1,2}> gets converted to C<{1:2}>
-which is not a valid JSON string.
+which is not a valid JSON text.
 
 Unmaintained (maintainer unresponsive for many months, bugs are not
 getting fixed).
@@ -462,7 +481,7 @@ Very buggy (often crashes).
 Very inflexible (no human-readable format supported, format pretty much
 undocumented. I need at least a format for easy reading by humans and a
 single-line compact format for use in a protocol, and preferably a way to
-generate ASCII-only JSON strings).
+generate ASCII-only JSON texts).
 
 Completely broken (and confusingly documented) Unicode handling (unicode
 escapes are not working properly, you need to set ImplicitUnicode to
@@ -495,7 +514,7 @@ Very inflexible.
 
 No roundtripping.
 
-Does not generate valid JSON (key strings are often unquoted, empty keys
+Does not generate valid JSON texts (key strings are often unquoted, empty keys
 result in nothing being output)
 
 Does not check input for validity.
