@@ -19,32 +19,18 @@
 #define F_DEFAULT   0
 
 #define INIT_SIZE   32 // initial scalar size to be allocated
+#define INDENT_STEP 3  // spaces per indentation level
+
+#define UTF8_MAX_LEN      11 // for perls UTF-X: max. number of octets per character
+#define SHORT_STRING_LEN 512 // special-case strings of up to this size
 
 #define SB do {
 #define SE } while (0)
 
-static HV *json_stash;
+static HV *json_stash; // JSON::XS::
 
-// structure used for encoding JSON
-typedef struct
-{
-  char *cur;
-  STRLEN len; // SvLEN (sv)
-  char *end;  // SvEND (sv)
-  SV *sv;
-  UV flags;
-  int max_recurse;
-  int indent;
-} enc_t;
-
-// structure used for decoding JSON
-typedef struct
-{
-  char *cur;
-  char *end;
-  const char *err;
-  UV flags;
-} dec_t;
+/////////////////////////////////////////////////////////////////////////////
+// utility functions
 
 static UV *
 SvJSON (SV *sv)
@@ -59,12 +45,48 @@ static void
 shrink (SV *sv)
 {
   sv_utf8_downgrade (sv, 1);
+  if (SvLEN (sv) > SvCUR (sv) + 1)
+    {
 #ifdef SvPV_shrink_to_cur
-  SvPV_shrink_to_cur (sv);
+      SvPV_shrink_to_cur (sv);
+#elif defined (SvPV_renew)
+      SvPV_renew (sv, SvCUR (sv) + 1);
 #endif
+    }
+}
+
+// decode an utf-8 character and return it, or (UV)-1 in
+// case of an error.
+// we special-case "safe" characters from U+80 .. U+7FF,
+// but use the very good perl function to parse anything else.
+// note that we never call this function for a ascii codepoints
+static UV
+decode_utf8 (unsigned char *s, STRLEN len, STRLEN *clen)
+{
+  if (s[0] > 0xdf || s[0] < 0xc2)
+    return utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
+  else if (len > 1 && s[1] >= 0x80 && s[1] <= 0xbf)
+    {
+      *clen = 2;
+      return ((s[0] & 0x1f) << 6) | (s[1] & 0x3f);
+    }
+  else
+    return (UV)-1;
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// encoder
+
+// structure used for encoding JSON
+typedef struct
+{
+  char *cur;  // SvPVX (sv) + current output position
+  char *end;  // SvEND (sv)
+  SV *sv;     // result scalar
+  UV flags;   // F_*
+  int indent; // indentation level
+  int max_depth; // max. recursion level
+} enc_t;
 
 static void
 need (enc_t *enc, STRLEN len)
@@ -132,7 +154,8 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
 
                   if (is_utf8)
                     {
-                      uch = utf8n_to_uvuni (str, end - str, &clen, UTF8_CHECK_ONLY);
+                      //uch = utf8n_to_uvuni (str, end - str, &clen, UTF8_CHECK_ONLY);
+                      uch = decode_utf8 (str, end - str, &clen);
                       if (clen == (STRLEN)-1)
                         croak ("malformed or illegal unicode character in string [%.11s], cannot convert to JSON", str);
                     }
@@ -180,7 +203,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                     }
                   else
                     {
-                      need (enc, len += 10); // never more than 11 bytes needed
+                      need (enc, len += UTF8_MAX_LEN - 1); // never more than 11 bytes needed
                       enc->cur = uvuni_to_utf8_flags (enc->cur, uch, 0);
                       ++str;
                     }
@@ -192,25 +215,46 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
     }
 }
 
-#define INDENT SB \
-  if (enc->flags & F_INDENT)		\
-    {					\
-      int i_;				\
-      need (enc, enc->indent);		\
-      for (i_ = enc->indent * 3; i_--; )\
-        encode_ch (enc, ' ');		\
-    }					\
-  SE
+static void
+encode_indent (enc_t *enc)
+{
+  if (enc->flags & F_INDENT)
+    {
+      int spaces = enc->indent * INDENT_STEP;
 
-#define SPACE SB need (enc, 1); encode_ch (enc, ' '); SE
-#define NL    SB if (enc->flags & F_INDENT) { need (enc, 1); encode_ch (enc, '\n'); } SE
-#define COMMA SB \
-  encode_ch (enc, ',');			\
-  if (enc->flags & F_INDENT)		\
-    NL;					\
-  else if (enc->flags & F_SPACE_AFTER)	\
-    SPACE;				\
-  SE
+      need (enc, spaces);
+      memset (enc->cur, ' ', spaces);
+      enc->cur += spaces;
+    }
+}
+
+static void
+encode_space (enc_t *enc)
+{
+  need (enc, 1);
+  encode_ch (enc, ' ');
+}
+
+static void
+encode_nl (enc_t *enc)
+{
+  if (enc->flags & F_INDENT)
+    {
+      need (enc, 1);
+      encode_ch (enc, '\n');
+    }
+}
+
+static void
+encode_comma (enc_t *enc)
+{
+  encode_ch (enc, ',');
+
+  if (enc->flags & F_INDENT)
+    encode_nl (enc);
+  else if (enc->flags & F_SPACE_AFTER)
+    encode_space (enc);
+}
 
 static void encode_sv (enc_t *enc, SV *sv);
 
@@ -219,22 +263,22 @@ encode_av (enc_t *enc, AV *av)
 {
   int i, len = av_len (av);
 
-  encode_ch (enc, '['); NL;
+  encode_ch (enc, '['); encode_nl (enc);
   ++enc->indent;
 
   for (i = 0; i <= len; ++i)
     {
-      INDENT;
+      encode_indent (enc);
       encode_sv (enc, *av_fetch (av, i, 0));
 
       if (i < len)
-        COMMA;
+        encode_comma (enc);
     }
 
-  NL;
+  encode_nl (enc);
 
   --enc->indent;
-  INDENT; encode_ch (enc, ']');
+  encode_indent (enc); encode_ch (enc, ']');
 }
 
 static void
@@ -258,9 +302,9 @@ encode_he (enc_t *enc, HE *he)
 
   encode_ch (enc, '"');
 
-  if (enc->flags & F_SPACE_BEFORE) SPACE;
+  if (enc->flags & F_SPACE_BEFORE) encode_space (enc);
   encode_ch (enc, ':');
-  if (enc->flags & F_SPACE_AFTER ) SPACE;
+  if (enc->flags & F_SPACE_AFTER ) encode_space (enc);
   encode_sv (enc, HeVAL (he));
 }
 
@@ -294,7 +338,7 @@ encode_hv (enc_t *enc, HV *hv)
 {
   int count, i;
 
-  encode_ch (enc, '{'); NL; ++enc->indent;
+  encode_ch (enc, '{'); encode_nl (enc); ++enc->indent;
 
   if ((count = hv_iterinit (hv)))
     {
@@ -304,7 +348,7 @@ encode_hv (enc_t *enc, HV *hv)
       // that randomises hash orderings
       if (enc->flags & F_CANONICAL)
         {
-          HE *he, *hes [count];
+          HE *he, *hes [count]; // if your compiler dies here, you need to enable C99 mode
           int fast = 1;
 
           i = 0;
@@ -339,14 +383,14 @@ encode_hv (enc_t *enc, HV *hv)
 
           for (i = 0; i < count; ++i)
             {
-              INDENT;
+              encode_indent (enc);
               encode_he (enc, hes [i]);
 
               if (i < count - 1)
-                COMMA;
+                encode_comma (enc);
             }
 
-          NL;
+          encode_nl (enc);
         }
       else
         {
@@ -355,20 +399,20 @@ encode_hv (enc_t *enc, HV *hv)
 
           for (;;)
             {
-              INDENT;
+              encode_indent (enc);
               encode_he (enc, he);
 
               if (!(he = hv_iternext (hv)))
                 break;
 
-              COMMA;
+              encode_comma (enc);
             }
 
-          NL;
+          encode_nl (enc);
         }
     }
 
-  --enc->indent; INDENT; encode_ch (enc, '}');
+  --enc->indent; encode_indent (enc); encode_ch (enc, '}');
 }
 
 static void
@@ -402,7 +446,7 @@ encode_sv (enc_t *enc, SV *sv)
     {
       SV *rv = SvRV (sv);
 
-      if (!--enc->max_recurse)
+      if (enc->indent >= enc->max_depth)
         croak ("data structure too deep (hit recursion limit)");
 
       switch (SvTYPE (rv))
@@ -429,12 +473,12 @@ encode_json (SV *scalar, UV flags)
     croak ("hash- or arrayref expected (not a simple scalar, use allow_nonref to allow this)");
 
   enc_t enc;
-  enc.flags       = flags;
-  enc.sv          = sv_2mortal (NEWSV (0, INIT_SIZE));
-  enc.cur         = SvPVX (enc.sv);
-  enc.end         = SvEND (enc.sv);
-  enc.max_recurse = 0;
-  enc.indent      = 0;
+  enc.flags     = flags;
+  enc.sv        = sv_2mortal (NEWSV (0, INIT_SIZE));
+  enc.cur       = SvPVX (enc.sv);
+  enc.end       = SvEND (enc.sv);
+  enc.indent    = 0;
+  enc.max_depth = 0x7fffffffUL;
 
   SvPOK_only (enc.sv);
   encode_sv (&enc, scalar);
@@ -451,16 +495,31 @@ encode_json (SV *scalar, UV flags)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// decoder
 
-#define WS \
-  for (;;)				\
-    {					\
-      char ch = *dec->cur;		\
-      if (ch > 0x20			\
-          || (ch != 0x20 && ch != 0x0a && ch != 0x0d && ch != 0x09)) \
-        break;				\
-      ++dec->cur;			\
+// structure used for decoding JSON
+typedef struct
+{
+  char *cur; // current parser pointer
+  char *end; // end of input string
+  const char *err; // parse error, if != 0
+  UV flags;  // F_*
+} dec_t;
+
+static void
+decode_ws (dec_t *dec)
+{
+  for (;;)
+    {
+      char ch = *dec->cur;
+
+      if (ch > 0x20
+          || (ch != 0x20 && ch != 0x0a && ch != 0x0d && ch != 0x09)) 
+        break;
+
+      ++dec->cur;
     }
+}
 
 #define ERR(reason) SB dec->err = reason; goto fail; SE
 #define EXPECT_CH(ch) SB \
@@ -477,15 +536,12 @@ static UV
 decode_4hex (dec_t *dec)
 {
   signed char d1, d2, d3, d4;
+  unsigned char *cur = (unsigned char *)dec->cur;
 
-  d1 = decode_hexdigit [((unsigned char *)dec->cur) [0]];
-  if (d1 < 0) ERR ("four hexadecimal digits expected");
-  d2 = decode_hexdigit [((unsigned char *)dec->cur) [1]];
-  if (d2 < 0) ERR ("four hexadecimal digits expected");
-  d3 = decode_hexdigit [((unsigned char *)dec->cur) [2]];
-  if (d3 < 0) ERR ("four hexadecimal digits expected");
-  d4 = decode_hexdigit [((unsigned char *)dec->cur) [3]];
-  if (d4 < 0) ERR ("four hexadecimal digits expected");
+  d1 = decode_hexdigit [cur [0]]; if (d1 < 0) ERR ("four hexadecimal digits expected");
+  d2 = decode_hexdigit [cur [1]]; if (d2 < 0) ERR ("four hexadecimal digits expected");
+  d3 = decode_hexdigit [cur [2]]; if (d3 < 0) ERR ("four hexadecimal digits expected");
+  d4 = decode_hexdigit [cur [3]]; if (d4 < 0) ERR ("four hexadecimal digits expected");
 
   dec->cur += 4;
 
@@ -498,136 +554,142 @@ fail:
   return (UV)-1;
 }
 
-#define APPEND_GROW(n) SB \
-  if (cur + (n) >= end)				\
-    {						\
-      STRLEN ofs = cur - SvPVX (sv);		\
-      SvGROW (sv, ofs + (n) + 1);		\
-      cur = SvPVX (sv) + ofs;			\
-      end = SvEND (sv);				\
-    }						\
-  SE
-
-#define APPEND_CH(ch) SB \
-  APPEND_GROW (1);	\
-  *cur++ = (ch);	\
-  SE
-
 static SV *
 decode_str (dec_t *dec)
 {
-  SV *sv = NEWSV (0,2);
+  SV *sv = 0;
   int utf8 = 0;
-  char *cur = SvPVX (sv);
-  char *end = SvEND (sv);
 
-  for (;;)
+  do
     {
-      unsigned char ch = *(unsigned char *)dec->cur;
+      char buf [SHORT_STRING_LEN + UTF8_MAX_LEN];
+      char *cur = buf;
 
-      if (ch == '"')
-        break;
-      else if (ch == '\\')
+      do
         {
-          switch (*++dec->cur)
+          unsigned char ch = *(unsigned char *)dec->cur++;
+
+          if (ch == '"')
             {
-              case '\\':
-              case '/':
-              case '"': APPEND_CH (*dec->cur++); break;
-
-              case 'b': APPEND_CH ('\010'); ++dec->cur; break;
-              case 't': APPEND_CH ('\011'); ++dec->cur; break;
-              case 'n': APPEND_CH ('\012'); ++dec->cur; break;
-              case 'f': APPEND_CH ('\014'); ++dec->cur; break;
-              case 'r': APPEND_CH ('\015'); ++dec->cur; break;
-
-              case 'u':
+              --dec->cur;
+              break;
+            }
+          else if (ch == '\\')
+            {
+              switch (*dec->cur)
                 {
-                  UV lo, hi;
-                  ++dec->cur;
+                  case '\\':
+                  case '/':
+                  case '"': *cur++ = *dec->cur++; break;
 
-                  hi = decode_4hex (dec);
-                  if (hi == (UV)-1)
-                    goto fail;
+                  case 'b': ++dec->cur; *cur++ = '\010'; break;
+                  case 't': ++dec->cur; *cur++ = '\011'; break;
+                  case 'n': ++dec->cur; *cur++ = '\012'; break;
+                  case 'f': ++dec->cur; *cur++ = '\014'; break;
+                  case 'r': ++dec->cur; *cur++ = '\015'; break;
 
-                  // possibly a surrogate pair
-                  if (hi >= 0xd800 && hi < 0xdc00)
+                  case 'u':
                     {
-                      if (dec->cur [0] != '\\' || dec->cur [1] != 'u')
-                        ERR ("missing low surrogate character in surrogate pair");
+                      UV lo, hi;
+                      ++dec->cur;
 
-                      dec->cur += 2;
-
-                      lo = decode_4hex (dec);
-                      if (lo == (UV)-1)
+                      hi = decode_4hex (dec);
+                      if (hi == (UV)-1)
                         goto fail;
 
-                      if (lo < 0xdc00 || lo >= 0xe000)
-                        ERR ("surrogate pair expected");
+                      // possibly a surrogate pair
+                      if (hi >= 0xd800)
+                        if (hi < 0xdc00)
+                          {
+                            if (dec->cur [0] != '\\' || dec->cur [1] != 'u')
+                              ERR ("missing low surrogate character in surrogate pair");
 
-                      hi = (hi - 0xD800) * 0x400 + (lo - 0xDC00) + 0x10000;
+                            dec->cur += 2;
+
+                            lo = decode_4hex (dec);
+                            if (lo == (UV)-1)
+                              goto fail;
+
+                            if (lo < 0xdc00 || lo >= 0xe000)
+                              ERR ("surrogate pair expected");
+
+                            hi = (hi - 0xD800) * 0x400 + (lo - 0xDC00) + 0x10000;
+                          }
+                        else if (hi < 0xe000)
+                          ERR ("missing high surrogate character in surrogate pair");
+
+                      if (hi >= 0x80)
+                        {
+                          utf8 = 1;
+
+                          cur = (char *)uvuni_to_utf8_flags (cur, hi, 0);
+                        }
+                      else
+                        *cur++ = hi;
                     }
-                  else if (hi >= 0xdc00 && hi < 0xe000)
-                    ERR ("missing high surrogate character in surrogate pair");
+                    break;
 
-                  if (hi >= 0x80)
-                    {
-                      utf8 = 1;
-
-                      APPEND_GROW (4); // at most 4 bytes for 21 bits
-                      cur = (char *)uvuni_to_utf8_flags (cur, hi, 0);
-                    }
-                  else
-                    APPEND_CH (hi);
+                  default:
+                    --dec->cur;
+                    ERR ("illegal backslash escape sequence in string");
                 }
-                break;
-
-              default:
-                --dec->cur;
-                ERR ("illegal backslash escape sequence in string");
             }
-        }
-      else if (ch >= 0x20 && ch <= 0x7f)
-        APPEND_CH (*dec->cur++);
-      else if (ch >= 0x80)
-        {
-          STRLEN clen;
-          UV uch = utf8n_to_uvuni (dec->cur, dec->end - dec->cur, &clen, UTF8_CHECK_ONLY);
-          if (clen == (STRLEN)-1)
-            ERR ("malformed UTF-8 character in JSON string");
-
-          APPEND_GROW (clen);
-          do
+          else if (ch >= 0x20 && ch <= 0x7f)
+            *cur++ = ch;
+          else if (ch >= 0x80)
             {
-              *cur++ = *dec->cur++;
-            }
-          while (--clen);
+              --dec->cur;
 
-          utf8 = 1;
+              STRLEN clen;
+              UV uch = decode_utf8 (dec->cur, dec->end - dec->cur, &clen);
+              if (clen == (STRLEN)-1)
+                ERR ("malformed UTF-8 character in JSON string");
+
+              do
+                {
+                  *cur++ = *dec->cur++;
+                }
+              while (--clen);
+
+              utf8 = 1;
+            }
+          else if (!ch)
+            ERR ("unexpected end of string while parsing json string");
+          else
+            ERR ("invalid character encountered");
+
         }
-      else if (dec->cur == dec->end)
-        ERR ("unexpected end of string while parsing json string");
+      while (cur < buf + SHORT_STRING_LEN);
+
+      STRLEN len = cur - buf;
+
+      if (sv)
+        {
+          SvGROW (sv, SvCUR (sv) + len + 1);
+          memcpy (SvPVX (sv) + SvCUR (sv), buf, len);
+          SvCUR_set (sv, SvCUR (sv) + len);
+        }
       else
-        ERR ("invalid character encountered");
+        sv = newSVpvn (buf, len);
     }
+  while (*dec->cur != '"');
 
   ++dec->cur;
 
-  SvCUR_set (sv, cur - SvPVX (sv));
+  if (sv)
+    {
+      SvPOK_only (sv);
+      *SvEND (sv) = 0;
 
-  SvPOK_only (sv);
-  *SvEND (sv) = 0;
-
-  if (utf8)
-    SvUTF8_on (sv);
-
-  if (dec->flags & F_SHRINK)
-    shrink (sv);
+      if (utf8)
+        SvUTF8_on (sv);
+    }
+  else
+    sv = newSVpvn ("", 0);
 
   return sv;
 
 fail:
-  SvREFCNT_dec (sv);
   return 0;
 }
 
@@ -718,7 +780,7 @@ decode_av (dec_t *dec)
 {
   AV *av = newAV ();
 
-  WS;
+  decode_ws (dec);
   if (*dec->cur == ']')
     ++dec->cur;
   else
@@ -732,7 +794,7 @@ decode_av (dec_t *dec)
 
         av_push (av, value);
 
-        WS;
+        decode_ws (dec);
 
         if (*dec->cur == ']')
           {
@@ -758,7 +820,7 @@ decode_hv (dec_t *dec)
 {
   HV *hv = newHV ();
 
-  WS;
+  decode_ws (dec);
   if (*dec->cur == '}')
     ++dec->cur;
   else
@@ -766,13 +828,13 @@ decode_hv (dec_t *dec)
       {
         SV *key, *value;
 
-        WS; EXPECT_CH ('"');
+        decode_ws (dec); EXPECT_CH ('"');
 
         key = decode_str (dec);
         if (!key)
           goto fail;
 
-        WS; EXPECT_CH (':');
+        decode_ws (dec); EXPECT_CH (':');
 
         value = decode_sv (dec);
         if (!value)
@@ -784,7 +846,7 @@ decode_hv (dec_t *dec)
         //TODO: optimise
         hv_store_ent (hv, key, value, 0);
 
-        WS;
+        decode_ws (dec);
 
         if (*dec->cur == '}')
           {
@@ -808,7 +870,7 @@ fail:
 static SV *
 decode_sv (dec_t *dec)
 {
-  WS;
+  decode_ws (dec);
   switch (*dec->cur)
     {
       case '"': ++dec->cur; return decode_str (dec); 
@@ -911,6 +973,9 @@ decode_json (SV *string, UV flags)
 
   return sv;
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// XS interface functions
 
 MODULE = JSON::XS		PACKAGE = JSON::XS
 
