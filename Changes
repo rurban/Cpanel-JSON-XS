@@ -1,8 +1,15 @@
 Revision history for Perl extension JSON::XS
 
-TODO: allow a configurable recursion limit and/or or other forms of resource limiting (string size, memory usage...)
 TODO: maybe simply use \0 and \1 as true/false when encoding (and overloaded/blessed versions thereof on
       decoding?)
+
+0.8  Mon Mar 26 00:10:48 CEST 2007
+	- fix a memleak when decoding hashes.
+	- export jsonToBj and objToJson as aliases
+          to to_json and from_json, to reduce incompatibilities
+          between JSON/JSON::PC and JSON::XS. (experimental).
+        - implement a maximum nesting depth for both en- and de-coding.
+        - added a security considerations sections.
 
 0.7  Sun Mar 25 01:46:30 CET 2007
 	- code cleanup.
