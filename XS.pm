@@ -79,11 +79,13 @@ whatever way you like.
 
 package JSON::XS;
 
-BEGIN {
-   $VERSION = '0.5';
-   @ISA = qw(Exporter);
+use strict;
 
-   @EXPORT = qw(to_json from_json);
+BEGIN {
+   our $VERSION = '0.7';
+   our @ISA = qw(Exporter);
+
+   our @EXPORT = qw(to_json from_json);
    require Exporter;
 
    require XSLoader;
@@ -529,45 +531,48 @@ in the JSON::XS distribution, to make it easy to compare on your own
 system.
 
 First comes a comparison between various modules using a very short JSON
-string (83 bytes), showing the number of encodes/decodes per second
-(JSON::XS is the functional interface, while JSON::XS/2 is the OO
-interface with pretty-printing and hashkey sorting enabled). Higher is
-better:
+string:
+
+   {"method": "handleMessage", "params": ["user1", "we were just talking"], "id": null}
+
+It shows the number of encodes/decodes per second (JSON::XS uses the
+functional interface, while JSON::XS/2 uses the OO interface with
+pretty-printing and hashkey sorting enabled). Higher is better:
 
    module     |     encode |     decode |
    -----------|------------|------------|
-   JSON       |      14006 |       6820 |
-   JSON::DWIW |     200937 |     120386 |
-   JSON::PC   |      85065 |     129366 |
-   JSON::Syck |      59898 |      44232 |
-   JSON::XS   |    1171478 |     342435 |
-   JSON::XS/2 |     730760 |     328714 |
+   JSON       |  11488.516 |   7823.035 |
+   JSON::DWIW |  94708.054 | 129094.260 |
+   JSON::PC   |  63884.157 | 128528.212 |
+   JSON::Syck |  34898.677 |  42096.911 |
+   JSON::XS   | 654027.064 | 396423.669 |
+   JSON::XS/2 | 371564.190 | 371725.613 |
    -----------+------------+------------+
 
-That is, JSON::XS is 6 times faster than than JSON::DWIW and about 80
-times faster than JSON, even with pretty-printing and key sorting.
+That is, JSON::XS is more than six times faster than JSON::DWIW on
+encoding, more than three times faster on decoding, and about thirty times
+faster than JSON, even with pretty-printing and key sorting.
 
 Using a longer test string (roughly 18KB, generated from Yahoo! Locals
 search API (http://nanoref.com/yahooapis/mgPdGg):
 
    module     |     encode |     decode |
    -----------|------------|------------|
-   JSON       |        673 |         38 |
-   JSON::DWIW |       5271 |        770 |
-   JSON::PC   |       9901 |       2491 |
-   JSON::Syck |       2360 |        786 |
-   JSON::XS   |      37398 |       3202 |
-   JSON::XS/2 |      13765 |       3153 |
+   JSON       |    273.023 |     44.674 |
+   JSON::DWIW |   1089.383 |   1145.704 |
+   JSON::PC   |   3097.419 |   2393.921 |
+   JSON::Syck |    514.060 |    843.053 |
+   JSON::XS   |   6479.668 |   3636.364 |
+   JSON::XS/2 |   3774.221 |   3599.124 |
    -----------+------------+------------+
 
-Again, JSON::XS leads by far in the encoding case, while still beating
-every other module in the decoding case.
+Again, JSON::XS leads by far.
 
-On large strings containing lots of unicode characters, some modules
-(such as JSON::PC) decode faster than JSON::XS, but the result will be
-broken due to missing unicode handling. Others refuse to decode or encode
-properly, so it was impossible to prepare a fair comparison table for that
-case.
+On large strings containing lots of high unicode characters, some modules
+(such as JSON::PC) seem to decode faster than JSON::XS, but the result
+will be broken due to missing (or wrong) unicode handling. Others refuse
+to decode or encode properly, so it was impossible to prepare a fair
+comparison table for that case.
 
 =head1 RESOURCE LIMITS
 
