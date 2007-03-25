@@ -5,7 +5,7 @@
 use JSON;
 use JSON::DWIW;
 use JSON::PC;
-use JSON::XS;
+use JSON::XS qw(to_json from_json);
 use JSON::Syck;
 
 use Time::HiRes;
