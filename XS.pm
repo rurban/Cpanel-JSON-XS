@@ -6,12 +6,17 @@ JSON::XS - JSON serialising/deserialising, done correctly and fast
 
  use JSON::XS;
 
- # exported functions, croak on error
+ # exported functions, they croak on error
+ # and expect/generate UTF-8
 
  $utf8_encoded_json_text = to_json $perl_hash_or_arrayref;
  $perl_hash_or_arrayref  = from_json $utf8_encoded_json_text;
 
- # oo-interface
+ # objToJson and jsonToObj aliases to to_json and from_json
+ # are exported for compatibility to the JSON module,
+ # but should not be used in new code.
+
+ # OO-interface
 
  $coder = JSON::XS->new->ascii->pretty->allow_nonref;
  $pretty_printed_unencoded = $coder->encode ($perl_scalar);
@@ -38,7 +43,7 @@ vice versa.
 
 =over 4
 
-=item * correct handling of unicode issues
+=item * correct unicode handling
 
 This module knows how to handle Unicode, and even documents how and when
 it does so.
@@ -47,7 +52,8 @@ it does so.
 
 When you serialise a perl data structure using only datatypes supported
 by JSON, the deserialised data structure is identical on the Perl level.
-(e.g. the string "2.0" doesn't suddenly become "2").
+(e.g. the string "2.0" doesn't suddenly become "2" just because it looks
+like a number).
 
 =item * strict checking of JSON correctness
 
@@ -68,10 +74,10 @@ interface.
 =item * reasonably versatile output formats
 
 You can choose between the most compact guarenteed single-line format
-possible (nice for simple line-based protocols), a pure-ascii format (for
-when your transport is not 8-bit clean), or a pretty-printed format (for
-when you want to read that stuff). Or you can combine those features in
-whatever way you like.
+possible (nice for simple line-based protocols), a pure-ascii format
+(for when your transport is not 8-bit clean, still supports the whole
+unicode range), or a pretty-printed format (for when you want to read that
+stuff). Or you can combine those features in whatever way you like.
 
 =back
 
@@ -82,10 +88,10 @@ package JSON::XS;
 use strict;
 
 BEGIN {
-   our $VERSION = '0.7';
+   our $VERSION = '0.8';
    our @ISA = qw(Exporter);
 
-   our @EXPORT = qw(to_json from_json);
+   our @EXPORT = qw(to_json from_json objToJson jsonToObj);
    require Exporter;
 
    require XSLoader;
@@ -124,6 +130,7 @@ This function call is functionally identical to:
 except being faster.
 
 =back
+
 
 =head1 OBJECT-ORIENTED INTERFACE
 
@@ -297,6 +304,26 @@ In the future, this setting might control other things, such as converting
 strings that look like integers or floats into integers or floats
 internally (there is no difference on the Perl level), saving space.
 
+=item $json = $json->max_depth ([$maximum_nesting_depth])
+
+Sets the maximum nesting level (default C<8192>) accepted while encoding
+or decoding. If the JSON text or Perl data structure has an equal or
+higher nesting level then this limit, then the encoder and decoder will
+stop and croak at that point.
+
+Nesting level is defined by number of hash- or arrayrefs that the encoder
+needs to traverse to reach a given point or the number of C<{> or C<[>
+characters without their matching closing parenthesis crossed to reach a
+given character in a string.
+
+Setting the maximum depth to one disallows any nesting, so that ensures
+that the object is only a single hash/object or array.
+
+The argument to C<max_depth> will be rounded up to the next nearest power
+of two.
+
+See SECURITY CONSIDERATIONS, below, for more info on why this is useful.
+
 =item $json_text = $json->encode ($perl_scalar)
 
 Converts the given Perl data structure (a simple scalar or a reference
@@ -316,6 +343,7 @@ Perl arrayrefs and JSON objects become Perl hashrefs. C<true> becomes
 C<1>, C<false> becomes C<0> and C<null> becomes C<undef>.
 
 =back
+
 
 =head1 MAPPING
 
@@ -436,6 +464,7 @@ less obscure, ways. Tell me if you need this capability.
 Those will be encoded until memory or stackspace runs out.
 
 =back
+
 
 =head1 COMPARISON
 
@@ -574,19 +603,42 @@ will be broken due to missing (or wrong) unicode handling. Others refuse
 to decode or encode properly, so it was impossible to prepare a fair
 comparison table for that case.
 
-=head1 RESOURCE LIMITS
 
-JSON::XS does not impose any limits on the size of JSON texts or Perl
-values they represent - if your machine can handle it, JSON::XS will
-encode or decode it. Future versions might optionally impose structure
-depth and memory use resource limits.
+=head1 SECURITY CONSIDERATIONS
+
+When you are using JSON in a protocol, talking to untrusted potentially
+hostile creatures requires relatively few measures.
+
+First of all, your JSON decoder should be secure, that is, should not have
+any buffer overflows. Obviously, this module should ensure that and I am
+trying hard on making that true, but you never know.
+
+Second, you need to avoid resource-starving attacks. That means you should
+limit the size of JSON texts you accept, or make sure then when your
+resources run out, thats just fine (e.g. by using a separate process that
+can crash safely). The size of a JSON text in octets or characters is
+usually a good indication of the size of the resources required to decode
+it into a Perl structure.
+
+Third, JSON::XS recurses using the C stack when decoding objects and
+arrays. The C stack is a limited resource: for instance, on my amd64
+machine with 8MB of stack size I can decode around 180k nested arrays
+but only 14k nested JSON objects. If that is exceeded, the program
+crashes. Thats why the default nesting limit is set to 8192. If your
+process has a smaller stack, you should adjust this setting accordingly
+with the C<max_depth> method.
+
+And last but least, something else could bomb you that I forgot to think
+of. In that case, you get to keep the pieces. I am alway sopen for hints,
+though...
+
 
 =head1 BUGS
 
 While the goal of this module is to be correct, that unfortunately does
 not mean its bug-free, only that I think its design is bug-free. It is
-still very young and not well-tested. If you keep reporting bugs they will
-be fixed swiftly, though.
+still relatively early in its development. If you keep reporting bugs they
+will be fixed swiftly, though.
 
 =cut
 

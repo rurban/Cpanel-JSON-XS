@@ -19,4 +19,5 @@ t/09_pc_extra_number.t
 t/10_pc_keysort.t
 t/11_pc_expo.t
 t/12_binary.t
+t/13_limit.t
 META.yml                                 Module meta-data (added by MakeMaker)

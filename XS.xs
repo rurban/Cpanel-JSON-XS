@@ -6,17 +6,24 @@
 #include "string.h"
 #include "stdlib.h"
 
-#define F_ASCII        0x00000001
-#define F_UTF8         0x00000002
-#define F_INDENT       0x00000004
-#define F_CANONICAL    0x00000008
-#define F_SPACE_BEFORE 0x00000010
-#define F_SPACE_AFTER  0x00000020
-#define F_ALLOW_NONREF 0x00000080
-#define F_SHRINK       0x00000100
+#define F_ASCII        0x00000001UL
+#define F_UTF8         0x00000002UL
+#define F_INDENT       0x00000004UL
+#define F_CANONICAL    0x00000008UL
+#define F_SPACE_BEFORE 0x00000010UL
+#define F_SPACE_AFTER  0x00000020UL
+#define F_ALLOW_NONREF 0x00000080UL
+#define F_SHRINK       0x00000100UL
+#define F_MAXDEPTH     0xf8000000UL
+#define S_MAXDEPTH     27
+
+#define DEC_DEPTH(flags) (1UL << ((flags & F_MAXDEPTH) >> S_MAXDEPTH))
+
+// F_SELFCONVERT? <=> to_json/toJson
+// F_BLESSED?     <=> { $__class__$ => }
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
-#define F_DEFAULT   0
+#define F_DEFAULT   (13UL << S_MAXDEPTH)
 
 #define INIT_SIZE   32 // initial scalar size to be allocated
 #define INDENT_STEP 3  // spaces per indentation level
@@ -83,9 +90,9 @@ typedef struct
   char *cur;  // SvPVX (sv) + current output position
   char *end;  // SvEND (sv)
   SV *sv;     // result scalar
-  UV flags;   // F_*
-  int indent; // indentation level
-  int max_depth; // max. recursion level
+  U32 flags;   // F_*
+  U32 indent; // indentation level
+  U32 maxdepth; // max. indentation/recursion level
 } enc_t;
 
 static void
@@ -446,7 +453,7 @@ encode_sv (enc_t *enc, SV *sv)
     {
       SV *rv = SvRV (sv);
 
-      if (enc->indent >= enc->max_depth)
+      if (enc->indent >= enc->maxdepth)
         croak ("data structure too deep (hit recursion limit)");
 
       switch (SvTYPE (rv))
@@ -467,7 +474,7 @@ encode_sv (enc_t *enc, SV *sv)
 }
 
 static SV *
-encode_json (SV *scalar, UV flags)
+encode_json (SV *scalar, U32 flags)
 {
   if (!(flags & F_ALLOW_NONREF) && !SvROK (scalar))
     croak ("hash- or arrayref expected (not a simple scalar, use allow_nonref to allow this)");
@@ -478,7 +485,7 @@ encode_json (SV *scalar, UV flags)
   enc.cur       = SvPVX (enc.sv);
   enc.end       = SvEND (enc.sv);
   enc.indent    = 0;
-  enc.max_depth = 0x7fffffffUL;
+  enc.maxdepth  = DEC_DEPTH (flags);
 
   SvPOK_only (enc.sv);
   encode_sv (&enc, scalar);
@@ -503,7 +510,9 @@ typedef struct
   char *cur; // current parser pointer
   char *end; // end of input string
   const char *err; // parse error, if != 0
-  UV flags;  // F_*
+  U32 flags;  // F_*
+  U32 depth; // recursion depth
+  U32 maxdepth; // recursion depth limit
 } dec_t;
 
 static void
@@ -522,11 +531,15 @@ decode_ws (dec_t *dec)
 }
 
 #define ERR(reason) SB dec->err = reason; goto fail; SE
+
 #define EXPECT_CH(ch) SB \
   if (*dec->cur != ch)		\
     ERR (# ch " expected");	\
   ++dec->cur;			\
   SE
+
+#define DEC_INC_DEPTH if (++dec->depth > dec->maxdepth) ERR ("json datastructure exceeds maximum nesting level (set a higher max_depth)")
+#define DEC_DEC_DEPTH --dec->depth
 
 static SV *decode_sv (dec_t *dec);
 
@@ -780,7 +793,9 @@ decode_av (dec_t *dec)
 {
   AV *av = newAV ();
 
+  DEC_INC_DEPTH;
   decode_ws (dec);
+
   if (*dec->cur == ']')
     ++dec->cur;
   else
@@ -808,10 +823,12 @@ decode_av (dec_t *dec)
         ++dec->cur;
       }
 
+  DEC_DEC_DEPTH;
   return newRV_noinc ((SV *)av);
 
 fail:
   SvREFCNT_dec (av);
+  DEC_DEC_DEPTH;
   return 0;
 }
 
@@ -820,7 +837,9 @@ decode_hv (dec_t *dec)
 {
   HV *hv = newHV ();
 
+  DEC_INC_DEPTH;
   decode_ws (dec);
+
   if (*dec->cur == '}')
     ++dec->cur;
   else
@@ -843,8 +862,8 @@ decode_hv (dec_t *dec)
             goto fail;
           }
 
-        //TODO: optimise
         hv_store_ent (hv, key, value, 0);
+        SvREFCNT_dec (key);
 
         decode_ws (dec);
 
@@ -860,10 +879,12 @@ decode_hv (dec_t *dec)
         ++dec->cur;
       }
 
+  DEC_DEC_DEPTH;
   return newRV_noinc ((SV *)hv);
 
 fail:
   SvREFCNT_dec (hv);
+  DEC_DEC_DEPTH;
   return 0;
 }
 
@@ -925,7 +946,7 @@ fail:
 }
 
 static SV *
-decode_json (SV *string, UV flags)
+decode_json (SV *string, U32 flags)
 {
   SV *sv;
 
@@ -937,11 +958,14 @@ decode_json (SV *string, UV flags)
   SvGROW (string, SvCUR (string) + 1); // should basically be a NOP
 
   dec_t dec;
-  dec.flags = flags;
-  dec.cur   = SvPVX (string);
-  dec.end   = SvEND (string);
-  dec.err   = 0;
+  dec.flags    = flags;
+  dec.cur      = SvPVX (string);
+  dec.end      = SvEND (string);
+  dec.err      = 0;
+  dec.depth    = 0;
+  dec.maxdepth = DEC_DEPTH (dec.flags);
 
+  *dec.end = 0; // this should basically be a nop, too, but make sure its there
   sv = decode_sv (&dec);
 
   if (!sv)
@@ -984,14 +1008,13 @@ BOOT:
 	int i;
 
         memset (decode_hexdigit, 0xff, 256);
-        for (i = 10; i--; )
-          decode_hexdigit ['0' + i] = i;
 
-        for (i = 7; i--; )
-          {
-            decode_hexdigit ['a' + i] = 10 + i;
-            decode_hexdigit ['A' + i] = 10 + i;
-          }
+        for (i = 0; i < 256; ++i)
+          decode_hexdigit [i] =
+            i >= '0' && i <= '9' ? i - '0'
+            : i >= 'a' && i <= 'f' ? i - 'a' + 10
+            : i >= 'A' && i <= 'F' ? i - 'A' + 10
+            : -1;
 
 	json_stash = gv_stashpv ("JSON::XS", 1);
 }
@@ -1028,6 +1051,24 @@ SV *ascii (SV *self, int enable = 1)
 	OUTPUT:
         RETVAL
 
+SV *max_depth (SV *self, int max_depth = 0x80000000UL)
+	CODE:
+{
+  	UV *uv = SvJSON (self);
+        UV log2 = 0;
+
+        if (max_depth > 0x80000000UL) max_depth = 0x80000000UL;
+
+        while ((1UL << log2) < max_depth)
+          ++log2;
+
+        *uv = *uv & ~F_MAXDEPTH | (log2 << S_MAXDEPTH);
+
+        RETVAL = newSVsv (self);
+}
+	OUTPUT:
+        RETVAL
+
 void encode (SV *self, SV *scalar)
 	PPCODE:
         XPUSHs (encode_json (scalar, *SvJSON (self)));
@@ -1039,10 +1080,14 @@ void decode (SV *self, SV *jsonstr)
 PROTOTYPES: ENABLE
 
 void to_json (SV *scalar)
+	ALIAS:
+        objToJson = 0
 	PPCODE:
-        XPUSHs (encode_json (scalar, F_UTF8));
+        XPUSHs (encode_json (scalar, F_DEFAULT | F_UTF8));
 
 void from_json (SV *jsonstr)
+	ALIAS:
+        jsonToObj = 0
 	PPCODE:
-        XPUSHs (decode_json (jsonstr, F_UTF8));
+        XPUSHs (decode_json (jsonstr, F_DEFAULT | F_UTF8));
 
