@@ -15,14 +15,15 @@ use utf8;
 
 my $dwiw = new JSON::DWIW;
 my $pc   = new JSON::PC;
-my $xs   = JSON::XS->new->pretty (1)->canonical (1);
+my $xs2  = JSON::XS->new->utf8->pretty->canonical;
+my $xs3  = JSON::XS->new->utf8->shrink;
 
 my $json; # the test string
 
 local $/;
 $json = <>;
 
-# $json = to_json [join "", map +(chr rand 255), 0..8191];
+#srand 0; $json = JSON::XS->new->utf8(1)->ascii(0)->encode ([join "", map +(chr rand 255), 0..2047]);
 
 #if (1) {
 #   use Storable;
@@ -40,7 +41,8 @@ my %tst = (
    "JSON::PC"     => ['$pc->convert ($perl)'  , '$pc->parse ($json)'],
    "JSON::Syck"   => ['JSON::Syck::Dump $perl', 'JSON::Syck::Load $json'],
    "JSON::XS"     => ['to_json $perl'         , 'from_json $json'],
-   "JSON::XS/2"   => ['$xs->encode ($perl)'   , '$xs->decode ($json)'],
+   "JSON::XS/2"   => ['$xs2->encode ($perl)'  , '$xs2->decode ($json)'],
+   "JSON::XS/3"   => ['$xs3->encode ($perl)'  , '$xs3->decode ($json)'],
 );
 
 sub bench($) {
@@ -48,7 +50,7 @@ sub bench($) {
 
    my $perl = jsonToObj $json;
    my $count = 20;
-   my $times = 15;
+   my $times = 25;
 
    my $cent = eval "sub { " . (join ";", ($code) x $count) . "}";
    $cent->();

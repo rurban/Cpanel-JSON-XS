@@ -4,6 +4,16 @@ TODO: allow a configurable recursion limit and/or or other forms of resource lim
 TODO: maybe simply use \0 and \1 as true/false when encoding (and overloaded/blessed versions thereof on
       decoding?)
 
+0.7  Sun Mar 25 01:46:30 CET 2007
+	- code cleanup.
+	- fix a memory overflow bug when indenting.
+        - pretty-printing now up to 15% faster.
+        - improve decoding speed of strings by
+          up to 50% by specialcasing short strings.
+        - further decoding speedups for strings using
+          lots of \u escapes.
+        - improve utf8 decoding speed for U+80 .. U+7FF.
+
 0.5  Sat Mar 24 20:41:51 CET 2007
 	- added the UTF-16 encoding example hinted at in previous
           versions.
