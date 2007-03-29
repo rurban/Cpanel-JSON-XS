@@ -9,8 +9,8 @@ sub ok($;$) {
 
 my $js = JSON::XS->new;
 
-ok (ref $js->decode (("[" x 8192) . ("]" x 8192)));
-ok (ref $js->decode (("{\"\":" x 8191) . "[]" . ("}" x 8191)));
+ok (ref $js->decode (("[" x 4096) . ("]" x 4096)));
+ok (ref $js->decode (("{\"\":" x 4095) . "[]" . ("}" x 4095)));
 ok (ref $js->max_depth (32)->decode (("[" x 32) . ("]" x 32)));
 
 ok ($js->max_depth(1)->encode ([]));
