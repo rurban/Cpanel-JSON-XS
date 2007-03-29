@@ -1,4 +1,4 @@
-BEGIN { $| = 1; print "1..19\n"; }
+BEGIN { $| = 1; print "1..25\n"; }
 
 use utf8;
 use JSON::XS;
@@ -7,6 +7,13 @@ our $test;
 sub ok($) {
    print $_[0] ? "" : "not ", "ok ", ++$test, "\n";
 }
+
+eval { JSON::XS->new->encode ([\-1]) }; ok $@ =~ /cannot encode reference/;
+eval { JSON::XS->new->encode ([\undef]) }; ok $@ =~ /cannot encode reference/;
+eval { JSON::XS->new->encode ([\2]) }; ok $@ =~ /cannot encode reference/;
+eval { JSON::XS->new->encode ([\{}]) }; ok $@ =~ /cannot encode reference/;
+eval { JSON::XS->new->encode ([\[]]) }; ok $@ =~ /cannot encode reference/;
+eval { JSON::XS->new->encode ([\\1]) }; ok $@ =~ /cannot encode reference/;
 
 eval { JSON::XS->new->allow_nonref (1)->decode ('"\u1234\udc00"') }; ok $@ =~ /missing high /;
 eval { JSON::XS->new->allow_nonref->decode ('"\ud800"') }; ok $@ =~ /missing low /;
