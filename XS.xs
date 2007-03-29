@@ -23,7 +23,7 @@
 // F_BLESSED?     <=> { $__class__$ => }
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
-#define F_DEFAULT   (13UL << S_MAXDEPTH)
+#define F_DEFAULT   (12UL << S_MAXDEPTH)
 
 #define INIT_SIZE   32 // initial scalar size to be allocated
 #define INDENT_STEP 3  // spaces per indentation level
@@ -270,6 +270,9 @@ encode_av (enc_t *enc, AV *av)
 {
   int i, len = av_len (av);
 
+  if (enc->indent >= enc->maxdepth)
+    croak ("data structure too deep (hit recursion limit)");
+
   encode_ch (enc, '['); encode_nl (enc);
   ++enc->indent;
 
@@ -344,6 +347,9 @@ static void
 encode_hv (enc_t *enc, HV *hv)
 {
   int count, i;
+
+  if (enc->indent >= enc->maxdepth)
+    croak ("data structure too deep (hit recursion limit)");
 
   encode_ch (enc, '{'); encode_nl (enc); ++enc->indent;
 
@@ -422,6 +428,33 @@ encode_hv (enc_t *enc, HV *hv)
   --enc->indent; encode_indent (enc); encode_ch (enc, '}');
 }
 
+// encode objects, arrays and special \0=false and \1=true values.
+static void
+encode_rv (enc_t *enc, SV *sv)
+{
+  SvGETMAGIC (sv);
+
+  svtype svt = SvTYPE (sv);
+
+  if (svt == SVt_PVHV)
+    encode_hv (enc, (HV *)sv);
+  else if (svt == SVt_PVAV)
+    encode_av (enc, (AV *)sv);
+  else if (svt < SVt_PVAV)
+    {
+      if (SvNIOK (sv) && SvIV (sv) == 0)
+        encode_str (enc, "false", 5, 0);
+      else if (SvNIOK (sv) && SvIV (sv) == 1)
+        encode_str (enc, "true", 4, 0);
+      else
+        croak ("cannot encode reference to scalar '%s' unless the scalar is 0 or 1",
+               SvPV_nolen (sv_2mortal (newRV_inc (sv))));
+    }
+  else
+    croak ("encountered %s, but JSON can only represent references to arrays or hashes",
+           SvPV_nolen (sv_2mortal (newRV_inc (sv))));
+}
+
 static void
 encode_sv (enc_t *enc, SV *sv)
 {
@@ -450,22 +483,7 @@ encode_sv (enc_t *enc, SV *sv)
             : snprintf (enc->cur, 64, "%"IVdf, (IV)SvIVX (sv));
     }
   else if (SvROK (sv))
-    {
-      SV *rv = SvRV (sv);
-
-      if (enc->indent >= enc->maxdepth)
-        croak ("data structure too deep (hit recursion limit)");
-
-      switch (SvTYPE (rv))
-        {
-          case SVt_PVAV: encode_av (enc, (AV *)rv); break;
-          case SVt_PVHV: encode_hv (enc, (HV *)rv); break;
-
-          default:
-            croak ("encountered %s, but JSON can only represent references to arrays or hashes",
-                   SvPV_nolen (sv));
-        }
-    }
+    encode_rv (enc, SvRV (sv));
   else if (!SvOK (sv))
     encode_str (enc, "null", 4, 0);
   else
