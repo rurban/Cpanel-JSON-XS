@@ -1,4 +1,4 @@
-BEGIN { $| = 1; print "1..25\n"; }
+BEGIN { $| = 1; print "1..29\n"; }
 
 use utf8;
 use JSON::XS;
@@ -34,4 +34,9 @@ eval { JSON::XS->new->allow_nonref (1)->decode ("\"\x01\"") }; ok $@ =~ /invalid
 eval { JSON::XS->new->decode ('[5') }; ok $@ =~ /parsing array/;
 eval { JSON::XS->new->decode ('{"5"') }; ok $@ =~ /':' expected/;
 eval { JSON::XS->new->decode ('{"5":null') }; ok $@ =~ /parsing object/;
-eval { JSON::XS->new->decode ('{"5":5 5') }; ok $@ =~ /parsing object/;
+
+eval { JSON::XS->new->decode (undef) }; ok $@ =~ /malformed/;
+eval { JSON::XS->new->decode (\5) }; ok !!$@; # Can't coerce readonly
+eval { JSON::XS->new->decode ([]) }; ok $@ =~ /malformed/;
+eval { JSON::XS->new->decode (\*STDERR) }; ok $@ =~ /malformed/;
+eval { JSON::XS->new->decode (*STDERR) }; ok !!$@; # cannot coerce GLOB
