@@ -968,6 +968,8 @@ decode_json (SV *string, U32 flags)
 {
   SV *sv;
 
+  SvUPGRADE (string, SVt_PV);
+
   if (flags & F_UTF8)
     sv_utf8_downgrade (string, 0);
   else

@@ -3,13 +3,18 @@ Revision history for Perl extension JSON::XS
 TODO: maybe use some overload magic to decode true and false into something
       not 0 or 1 in perl. or use attached magic?
 
+1.01 Sat Mar 31 16:15:40 CEST 2007
+	- do not segfault when from_json/decode gets passed
+          a non-string object (reported by Florian Ragwitz).
+          This has no effect on normal operation.
+
 1.0  Thu Mar 29 04:43:34 CEST 2007
 	- the long awaited (by me) 1.0 version.
         - add \0 (JSON::XS::false) and \1 (JSON::XS::true) mappings to JSON
           true and false.
 	- add some more notes to shrink, as suggested by Alex Efros.
         - improve testsuite.
-        - half the default nesting depth limit, to hopefully make it
+        - halve the default nesting depth limit, to hopefully make it
           work on Freebsd (unfortunately, the cpan tester did not
           send me his report, so I cannot ask about the stack limit on fbsd).
 
