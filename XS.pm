@@ -88,7 +88,7 @@ package JSON::XS;
 use strict;
 
 BEGIN {
-   our $VERSION = '1.01';
+   our $VERSION = '1.1';
    our @ISA = qw(Exporter);
 
    our @EXPORT = qw(to_json from_json objToJson jsonToObj);
@@ -311,7 +311,7 @@ internally (there is no difference on the Perl level), saving space.
 
 =item $json = $json->max_depth ([$maximum_nesting_depth])
 
-Sets the maximum nesting level (default C<4096>) accepted while encoding
+Sets the maximum nesting level (default C<512>) accepted while encoding
 or decoding. If the JSON text or Perl data structure has an equal or
 higher nesting level then this limit, then the encoder and decoder will
 stop and croak at that point.
@@ -475,10 +475,6 @@ You can force the type to be a number by numifying it:
 You can not currently output JSON booleans or force the type in other,
 less obscure, ways. Tell me if you need this capability.
 
-=item circular data structures
-
-Those will be encoded until memory or stackspace runs out.
-
 =back
 
 
@@ -638,11 +634,12 @@ it into a Perl structure.
 
 Third, JSON::XS recurses using the C stack when decoding objects and
 arrays. The C stack is a limited resource: for instance, on my amd64
-machine with 8MB of stack size I can decode around 180k nested arrays
-but only 14k nested JSON objects. If that is exceeded, the program
-crashes. Thats why the default nesting limit is set to 4096. If your
-process has a smaller stack, you should adjust this setting accordingly
-with the C<max_depth> method.
+machine with 8MB of stack size I can decode around 180k nested arrays but
+only 14k nested JSON objects (due to perl itself recursing deeply on croak
+to free the temporary). If that is exceeded, the program crashes. to be
+conservative, the default nesting limit is set to 512. If your process
+has a smaller stack, you should adjust this setting accordingly with the
+C<max_depth> method.
 
 And last but least, something else could bomb you that I forgot to think
 of. In that case, you get to keep the pieces. I am alway sopen for hints,

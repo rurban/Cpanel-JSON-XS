@@ -1,4 +1,4 @@
-BEGIN { $| = 1; print "1..29\n"; }
+BEGIN { $| = 1; print "1..31\n"; }
 
 use utf8;
 use JSON::XS;
@@ -40,3 +40,7 @@ eval { JSON::XS->new->decode (\5) }; ok !!$@; # Can't coerce readonly
 eval { JSON::XS->new->decode ([]) }; ok $@ =~ /malformed/;
 eval { JSON::XS->new->decode (\*STDERR) }; ok $@ =~ /malformed/;
 eval { JSON::XS->new->decode (*STDERR) }; ok !!$@; # cannot coerce GLOB
+
+eval { from_json ("\"\xa0") }; ok $@ =~ /malformed.*character/;
+eval { from_json ("\"\xa0\"") }; ok $@ =~ /malformed.*character/;
+
