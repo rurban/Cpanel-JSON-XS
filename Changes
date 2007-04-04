@@ -3,6 +3,18 @@ Revision history for Perl extension JSON::XS
 TODO: maybe use some overload magic to decode true and false into something
       not 0 or 1 in perl. or use attached magic?
 
+1.1  Wed Apr  4 01:45:00 CEST 2007
+	- clarify documentation (pointed out by Quinn Weaver).
+        - decode_utf8 sometimes did not correctly flag errors,
+          leading to segfaults.
+        - further reduced default nesting depth to 512 due to the test
+          failure by that anonymous "chris" whose e-mail address seems
+          to be impossible to get. Tests on other freebsd systems indicate
+          that this is likely a problem in his/her configuration and not this
+          module.
+        - renamed json => JSON in error messages.
+        - corrected the character offset in some error messages.
+
 1.01 Sat Mar 31 16:15:40 CEST 2007
 	- do not segfault when from_json/decode gets passed
           a non-string object (reported by Florian Ragwitz).

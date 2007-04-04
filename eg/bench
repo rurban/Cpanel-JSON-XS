@@ -36,7 +36,7 @@ $json = <>;
 #}
 
 my %tst = (
-   "JSON"         => ['objToJson $perl'       , 'jsonToObj $json'],
+#   "JSON"         => ['objToJson $perl'       , 'jsonToObj $json'],
    "JSON::DWIW"   => ['$dwiw->to_json ($perl)', '$dwiw->from_json ($json)'],
    "JSON::PC"     => ['$pc->convert ($perl)'  , '$pc->parse ($json)'],
    "JSON::Syck"   => ['JSON::Syck::Dump $perl', 'JSON::Syck::Load $json'],
