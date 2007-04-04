@@ -1,4 +1,4 @@
-BEGIN { $| = 1; print "1..7\n"; }
+BEGIN { $| = 1; print "1..9\n"; }
 
 use JSON::XS;
 
@@ -7,10 +7,15 @@ sub ok($;$) {
    print $_[0] ? "" : "not ", "ok ", ++$test, "\n";
 }
 
+my $def = 512;
+
 my $js = JSON::XS->new;
 
-ok (ref $js->decode (("[" x 4096) . ("]" x 4096)));
-ok (ref $js->decode (("{\"\":" x 4095) . "[]" . ("}" x 4095)));
+ok (!eval { $js->decode (("[" x ($def + 1)) . ("]" x ($def + 1))) });
+ok (ref $js->decode (("[" x $def) . ("]" x $def)));
+ok (ref $js->decode (("{\"\":" x ($def - 1)) . "[]" . ("}" x ($def - 1))));
+ok (!eval { $js->decode (("{\"\":" x $def) . "[]" . ("}" x $def)) });
+
 ok (ref $js->max_depth (32)->decode (("[" x 32) . ("]" x 32)));
 
 ok ($js->max_depth(1)->encode ([]));

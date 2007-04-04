@@ -23,7 +23,7 @@
 // F_BLESSED?     <=> { $__class__$ => }
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
-#define F_DEFAULT   (12UL << S_MAXDEPTH)
+#define F_DEFAULT   (9UL << S_MAXDEPTH)
 
 #define INIT_SIZE   32 // initial scalar size to be allocated
 #define INDENT_STEP 3  // spaces per indentation level
@@ -78,7 +78,10 @@ decode_utf8 (unsigned char *s, STRLEN len, STRLEN *clen)
       return ((s[0] & 0x1f) << 6) | (s[1] & 0x3f);
     }
   else
-    return (UV)-1;
+    {
+      *clen = (STRLEN)-1;
+      return (UV)-1;
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -677,18 +680,20 @@ decode_str (dec_t *dec)
                 ERR ("malformed UTF-8 character in JSON string");
 
               do
-                {
-                  *cur++ = *dec->cur++;
-                }
+                *cur++ = *dec->cur++;
               while (--clen);
 
               utf8 = 1;
             }
-          else if (!ch)
-            ERR ("unexpected end of string while parsing json string");
           else
-            ERR ("invalid character encountered");
+            {
+              --dec->cur;
 
+              if (!ch)
+                ERR ("unexpected end of string while parsing JSON string");
+              else
+                ERR ("invalid character encountered while parsing JSON string");
+            }
         }
       while (cur < buf + SHORT_STRING_LEN);
 
@@ -955,7 +960,7 @@ decode_sv (dec_t *dec)
         break;
 
       default:
-        ERR ("malformed json string, neither array, object, number, string or atom");
+        ERR ("malformed JSON string, neither array, object, number, string or atom");
         break;
     }
 
@@ -1004,7 +1009,7 @@ decode_json (SV *string, U32 flags)
       pv_uni_display (uni, dec.cur, dec.end - dec.cur, 20, UNI_DISPLAY_QQ);
       LEAVE;
 
-      croak ("%s, at character offset %d (%s)",
+      croak ("%s, at character offset %d [\"%s\"]",
              dec.err,
              (int)offset,
              dec.cur != dec.end ? SvPV_nolen (uni) : "(end of string)");
