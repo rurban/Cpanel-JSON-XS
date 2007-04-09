@@ -5,6 +5,11 @@
 #include "assert.h"
 #include "string.h"
 #include "stdlib.h"
+#include "stdio.h"
+
+#if defined(__BORLANDC__) || defined(_MSC_VER)
+# define snprintf _snprintf // C compilers have this in stdio.h
+#endif
 
 #define F_ASCII        0x00000001UL
 #define F_UTF8         0x00000002UL
@@ -106,7 +111,7 @@ need (enc_t *enc, STRLEN len)
       STRLEN cur = enc->cur - SvPVX (enc->sv);
       SvGROW (enc->sv, cur + len + 1);
       enc->cur = SvPVX (enc->sv) + cur;
-      enc->end = SvPVX (enc->sv) + SvLEN (enc->sv);
+      enc->end = SvPVX (enc->sv) + SvLEN (enc->sv) - 1;
     }
 }
 
@@ -410,7 +415,6 @@ encode_hv (enc_t *enc, HV *hv)
         }
       else
         {
-          SV *sv;
           HE *he = hv_iternext (hv);
 
           for (;;)
@@ -435,9 +439,10 @@ encode_hv (enc_t *enc, HV *hv)
 static void
 encode_rv (enc_t *enc, SV *sv)
 {
-  SvGETMAGIC (sv);
+  svtype svt;
 
-  svtype svt = SvTYPE (sv);
+  SvGETMAGIC (sv);
+  svt = SvTYPE (sv);
 
   if (svt == SVt_PVHV)
     encode_hv (enc, (HV *)sv);
@@ -497,10 +502,11 @@ encode_sv (enc_t *enc, SV *sv)
 static SV *
 encode_json (SV *scalar, U32 flags)
 {
+  enc_t enc;
+
   if (!(flags & F_ALLOW_NONREF) && !SvROK (scalar))
     croak ("hash- or arrayref expected (not a simple scalar, use allow_nonref to allow this)");
 
-  enc_t enc;
   enc.flags     = flags;
   enc.sv        = sv_2mortal (NEWSV (0, INIT_SIZE));
   enc.cur       = SvPVX (enc.sv);
@@ -515,6 +521,7 @@ encode_json (SV *scalar, U32 flags)
     SvUTF8_on (enc.sv);
 
   SvCUR_set (enc.sv, enc.cur - SvPVX (enc.sv));
+  *SvEND (enc.sv) = 0; // many xs functions expect a trailing 0 for text strings
 
   if (enc.flags & F_SHRINK)
     shrink (enc.sv);
@@ -672,10 +679,12 @@ decode_str (dec_t *dec)
             *cur++ = ch;
           else if (ch >= 0x80)
             {
+              STRLEN clen;
+              UV uch;
+
               --dec->cur;
 
-              STRLEN clen;
-              UV uch = decode_utf8 (dec->cur, dec->end - dec->cur, &clen);
+              uch = decode_utf8 (dec->cur, dec->end - dec->cur, &clen);
               if (clen == (STRLEN)-1)
                 ERR ("malformed UTF-8 character in JSON string");
 
@@ -697,16 +706,18 @@ decode_str (dec_t *dec)
         }
       while (cur < buf + SHORT_STRING_LEN);
 
-      STRLEN len = cur - buf;
+      {
+        STRLEN len = cur - buf;
 
-      if (sv)
-        {
-          SvGROW (sv, SvCUR (sv) + len + 1);
-          memcpy (SvPVX (sv) + SvCUR (sv), buf, len);
-          SvCUR_set (sv, SvCUR (sv) + len);
-        }
-      else
-        sv = newSVpvn (buf, len);
+        if (sv)
+          {
+            SvGROW (sv, SvCUR (sv) + len + 1);
+            memcpy (SvPVX (sv) + SvCUR (sv), buf, len);
+            SvCUR_set (sv, SvCUR (sv) + len);
+          }
+        else
+          sv = newSVpvn (buf, len);
+      }
     }
   while (*dec->cur != '"');
 
@@ -971,6 +982,7 @@ fail:
 static SV *
 decode_json (SV *string, U32 flags)
 {
+  dec_t dec;
   SV *sv;
 
   SvUPGRADE (string, SVt_PV);
@@ -982,7 +994,6 @@ decode_json (SV *string, U32 flags)
 
   SvGROW (string, SvCUR (string) + 1); // should basically be a NOP
 
-  dec_t dec;
   dec.flags    = flags;
   dec.cur      = SvPVX (string);
   dec.end      = SvEND (string);
@@ -1076,7 +1087,7 @@ SV *ascii (SV *self, int enable = 1)
 	OUTPUT:
         RETVAL
 
-SV *max_depth (SV *self, int max_depth = 0x80000000UL)
+SV *max_depth (SV *self, UV max_depth = 0x80000000UL)
 	CODE:
 {
   	UV *uv = SvJSON (self);
