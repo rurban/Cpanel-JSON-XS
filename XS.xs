@@ -1011,16 +1011,7 @@ decode_json (SV *string, U32 flags, UV *offset_return)
   *dec.end = 0; // this should basically be a nop, too, but make sure it's there
   sv = decode_sv (&dec);
 
-  if (offset_return || !sv)
-    {
-      offset = dec.flags & F_UTF8
-               ? dec.cur - SvPVX (string)
-               : utf8_distance (dec.cur, SvPVX (string));
-
-      if (offset_return)
-        *offset_return = offset;
-    }
-  else
+  if (!(offset_return || !sv))
     {
       // check for trailing garbage
       decode_ws (&dec);
@@ -1031,6 +1022,16 @@ decode_json (SV *string, U32 flags, UV *offset_return)
           SvREFCNT_dec (sv);
           sv = 0;
         }
+    }
+
+  if (offset_return || !sv)
+    {
+      offset = dec.flags & F_UTF8
+               ? dec.cur - SvPVX (string)
+               : utf8_distance (dec.cur, SvPVX (string));
+
+      if (offset_return)
+        *offset_return = offset;
     }
 
   if (!sv)
