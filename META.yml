@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         JSON-XS
-version:      1.11
+version:      1.2
 version_from: XS.pm
 installdirs:  site
 requires:

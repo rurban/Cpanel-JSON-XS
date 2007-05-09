@@ -88,7 +88,7 @@ package JSON::XS;
 use strict;
 
 BEGIN {
-   our $VERSION = '1.11';
+   our $VERSION = '1.2';
    our @ISA = qw(Exporter);
 
    our @EXPORT = qw(to_json from_json objToJson jsonToObj);
@@ -156,14 +156,43 @@ If C<$enable> is true (or missing), then the C<encode> method will not
 generate characters outside the code range C<0..127> (which is ASCII). Any
 unicode characters outside that range will be escaped using either a
 single \uXXXX (BMP characters) or a double \uHHHH\uLLLLL escape sequence,
-as per RFC4627.
+as per RFC4627. The resulting encoded JSON text can be treated as a native
+unicode string, an ascii-encoded, latin1-encoded or UTF-8 encoded string,
+or any other superset of ASCII.
 
 If C<$enable> is false, then the C<encode> method will not escape Unicode
-characters unless required by the JSON syntax. This results in a faster
-and more compact format.
+characters unless required by the JSON syntax or other flags. This results
+in a faster and more compact format.
+
+The main use for this flag is to produce JSON texts that can be
+transmitted over a 7-bit channel, as the encoded JSON texts will not
+contain any 8 bit characters.
 
   JSON::XS->new->ascii (1)->encode ([chr 0x10401])
   => ["\ud801\udc01"]
+
+=item $json = $json->latin1 ([$enable])
+
+If C<$enable> is true (or missing), then the C<encode> method will encode
+the resulting JSON text as latin1 (or iso-8859-1), escaping any characters
+outside the code range C<0..255>. The resulting string can be treated as a
+latin1-encoded JSON text or a native unicode string. The C<decode> method
+will not be affected in any way by this flag, as C<decode> by default
+expects unicode, which is a strict superset of latin1.
+
+If C<$enable> is false, then the C<encode> method will not escape Unicode
+characters unless required by the JSON syntax or other flags.
+
+The main use for this flag is efficiently encoding binary data as JSON
+text, as most octets will not be escaped, resulting in a smaller encoded
+size. The disadvantage is that the resulting JSON text is encoded
+in latin1 (and must correctly be treated as such when storing and
+transfering), a rare encoding for JSON. It is therefore most useful when
+you want to store data structures known to contain binary data efficiently
+in files or databases, not when talking to other JSON encoders/decoders.
+
+  JSON::XS->new->latin1->encode (["\x{89}\x{abc}"]
+  => ["\x{89}\\u0abc"]    # (perl syntax, U+abc escaped, U+89 not)
 
 =item $json = $json->utf8 ([$enable])
 
@@ -346,6 +375,20 @@ returning the resulting simple scalar or reference. Croaks on error.
 JSON numbers and strings become simple Perl scalars. JSON arrays become
 Perl arrayrefs and JSON objects become Perl hashrefs. C<true> becomes
 C<1>, C<false> becomes C<0> and C<null> becomes C<undef>.
+
+=item ($perl_scalar, $characters) = $json->decode_prefix ($json_text)
+
+This works like the C<decode> method, but instead of raising an exception
+when there is trailing garbage after the first JSON object, it will
+silently stop parsing there and return the number of characters consumed
+so far.
+
+This is useful if your JSON texts are not delimited by an outer protocol
+(which is not the brightest thing to do in the first place) and you need
+to know where the JSON text ends.
+
+   JSON::XS->new->decode_prefix ("[1] the tail")
+   => ([], 3)
 
 =back
 
@@ -642,7 +685,7 @@ has a smaller stack, you should adjust this setting accordingly with the
 C<max_depth> method.
 
 And last but least, something else could bomb you that I forgot to think
-of. In that case, you get to keep the pieces. I am alway sopen for hints,
+of. In that case, you get to keep the pieces. I am always open for hints,
 though...
 
 

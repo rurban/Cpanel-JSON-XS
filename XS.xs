@@ -12,13 +12,14 @@
 #endif
 
 #define F_ASCII        0x00000001UL
-#define F_UTF8         0x00000002UL
-#define F_INDENT       0x00000004UL
-#define F_CANONICAL    0x00000008UL
-#define F_SPACE_BEFORE 0x00000010UL
-#define F_SPACE_AFTER  0x00000020UL
-#define F_ALLOW_NONREF 0x00000080UL
-#define F_SHRINK       0x00000100UL
+#define F_LATIN1       0x00000002UL
+#define F_UTF8         0x00000004UL
+#define F_INDENT       0x00000008UL
+#define F_CANONICAL    0x00000010UL
+#define F_SPACE_BEFORE 0x00000020UL
+#define F_SPACE_AFTER  0x00000040UL
+#define F_ALLOW_NONREF 0x00000100UL
+#define F_SHRINK       0x00000200UL
 #define F_MAXDEPTH     0xf8000000UL
 #define S_MAXDEPTH     27
 
@@ -33,7 +34,6 @@
 #define INIT_SIZE   32 // initial scalar size to be allocated
 #define INDENT_STEP 3  // spaces per indentation level
 
-#define UTF8_MAX_LEN      11 // for perls UTF-X: max. number of octets per character
 #define SHORT_STRING_LEN 512 // special-case strings of up to this size
 
 #define SB do {
@@ -183,7 +183,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                   if (uch > 0x10FFFFUL)
                     croak ("out of range codepoint (0x%lx) encountered, unrepresentable in JSON", (unsigned long)uch);
 
-                  if (uch < 0x80 || enc->flags & F_ASCII)
+                  if (uch < 0x80 || enc->flags & F_ASCII || (enc->flags & F_LATIN1 && uch > 0xFF))
                     {
                       if (uch > 0xFFFFUL)
                         {
@@ -207,6 +207,11 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
 
                       str += clen;
                     }
+                  else if (enc->flags & F_LATIN1)
+                    {
+                      *enc->cur++ = uch;
+                      str += clen;
+                    }
                   else if (is_utf8)
                     {
                       need (enc, len += clen);
@@ -218,7 +223,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                     }
                   else
                     {
-                      need (enc, len += UTF8_MAX_LEN - 1); // never more than 11 bytes needed
+                      need (enc, len += UTF8_MAXBYTES - 1); // never more than 11 bytes needed
                       enc->cur = uvuni_to_utf8_flags (enc->cur, uch, 0);
                       ++str;
                     }
@@ -517,11 +522,11 @@ encode_json (SV *scalar, U32 flags)
   SvPOK_only (enc.sv);
   encode_sv (&enc, scalar);
 
-  if (!(flags & (F_ASCII | F_UTF8)))
-    SvUTF8_on (enc.sv);
-
   SvCUR_set (enc.sv, enc.cur - SvPVX (enc.sv));
   *SvEND (enc.sv) = 0; // many xs functions expect a trailing 0 for text strings
+
+  if (!(flags & (F_ASCII | F_LATIN1 | F_UTF8)))
+    SvUTF8_on (enc.sv);
 
   if (enc.flags & F_SHRINK)
     shrink (enc.sv);
@@ -603,7 +608,7 @@ decode_str (dec_t *dec)
 
   do
     {
-      char buf [SHORT_STRING_LEN + UTF8_MAX_LEN];
+      char buf [SHORT_STRING_LEN + UTF8_MAXBYTES];
       char *cur = buf;
 
       do
@@ -980,11 +985,13 @@ fail:
 }
 
 static SV *
-decode_json (SV *string, U32 flags)
+decode_json (SV *string, U32 flags, UV *offset_return)
 {
   dec_t dec;
+  UV offset;
   SV *sv;
 
+  SvGETMAGIC (string);
   SvUPGRADE (string, SVt_PV);
 
   if (flags & F_UTF8)
@@ -1001,14 +1008,33 @@ decode_json (SV *string, U32 flags)
   dec.depth    = 0;
   dec.maxdepth = DEC_DEPTH (dec.flags);
 
-  *dec.end = 0; // this should basically be a nop, too, but make sure its there
+  *dec.end = 0; // this should basically be a nop, too, but make sure it's there
   sv = decode_sv (&dec);
+
+  if (offset_return || !sv)
+    {
+      offset = dec.flags & F_UTF8
+               ? dec.cur - SvPVX (string)
+               : utf8_distance (dec.cur, SvPVX (string));
+
+      if (offset_return)
+        *offset_return = offset;
+    }
+  else
+    {
+      // check for trailing garbage
+      decode_ws (&dec);
+
+      if (*dec.cur)
+        {
+          dec.err = "garbage after JSON object";
+          SvREFCNT_dec (sv);
+          sv = 0;
+        }
+    }
 
   if (!sv)
     {
-      IV offset = dec.flags & F_UTF8
-                  ? dec.cur - SvPVX (string)
-                  : utf8_distance (dec.cur, SvPVX (string));
       SV *uni = sv_newmortal ();
 
       // horrible hack to silence warning inside pv_uni_display
@@ -1066,6 +1092,7 @@ SV *new (char *dummy)
 SV *ascii (SV *self, int enable = 1)
 	ALIAS:
         ascii        = F_ASCII
+        latin1       = F_LATIN1
         utf8         = F_UTF8
         indent       = F_INDENT
         canonical    = F_CANONICAL
@@ -1111,7 +1138,16 @@ void encode (SV *self, SV *scalar)
 
 void decode (SV *self, SV *jsonstr)
 	PPCODE:
-        XPUSHs (decode_json (jsonstr, *SvJSON (self)));
+        XPUSHs (decode_json (jsonstr, *SvJSON (self), 0));
+
+void decode_prefix (SV *self, SV *jsonstr)
+	PPCODE:
+{
+  	UV offset;
+        EXTEND (SP, 2);
+        PUSHs (decode_json (jsonstr, *SvJSON (self), &offset));
+        PUSHs (sv_2mortal (newSVuv (offset)));
+}
 
 PROTOTYPES: ENABLE
 
@@ -1125,5 +1161,5 @@ void from_json (SV *jsonstr)
 	ALIAS:
         jsonToObj = 0
 	PPCODE:
-        XPUSHs (decode_json (jsonstr, F_DEFAULT | F_UTF8));
+        XPUSHs (decode_json (jsonstr, F_DEFAULT | F_UTF8, 0));
 
