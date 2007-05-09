@@ -6,6 +6,9 @@ TODO: get rid of dynamic arrays to support so-called C compilers
       by fucking microsoft that do not do C. argl, snprintf is also
       missing.
 
+1.21 Wed May  9 18:40:32 CEST 2007
+	- character offset reported for trailing garbage is random.
+
 1.2  Wed May  9 18:35:01 CEST 2007
         - decode did not work with magical scalars (doh!).
         - added latin1 flag to produce JSON texts in the latin1 subset
