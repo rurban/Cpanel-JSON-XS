@@ -20,4 +20,6 @@ t/10_pc_keysort.t
 t/11_pc_expo.t
 t/12_binary.t
 t/13_limit.t
+t/14_latin1.t
+t/15_prefix.t
 META.yml                                 Module meta-data (added by MakeMaker)

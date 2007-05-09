@@ -6,6 +6,17 @@ TODO: get rid of dynamic arrays to support so-called C compilers
       by fucking microsoft that do not do C. argl, snprintf is also
       missing.
 
+1.2  Wed May  9 18:35:01 CEST 2007
+        - decode did not work with magical scalars (doh!).
+        - added latin1 flag to produce JSON texts in the latin1 subset
+          of unicode.
+        - flag trailing garbage as error.
+        - new decode_prefix method that returns the number
+          of characters consumed by a decode.
+        - max octets/char in perls UTF-X is actually 13, not 11,
+          as pointed out by Glenn Linderman.
+	- fixed typoe reported by YAMASHINA Hio.
+
 1.11 Mon Apr  9 07:05:49 CEST 2007
 	- properly 0-terminate sv's returned by encode to help
           C libraries that expect that 0 to be there.

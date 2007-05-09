@@ -7,6 +7,7 @@ use JSON::DWIW;
 use JSON::PC;
 use JSON::XS qw(to_json from_json);
 use JSON::Syck;
+use Storable ();
 
 use Time::HiRes;
 use List::Util;
@@ -22,6 +23,9 @@ my $json; # the test string
 
 local $/;
 $json = <>;
+
+# fix syck-brokenised stuff
+$json = JSON::XS->new->ascii(1)->encode (JSON::Syck::Load $json);
 
 #srand 0; $json = JSON::XS->new->utf8(1)->ascii(0)->encode ([join "", map +(chr rand 255), 0..2047]);
 
@@ -43,13 +47,16 @@ my %tst = (
    "JSON::XS"     => ['to_json $perl'         , 'from_json $json'],
    "JSON::XS/2"   => ['$xs2->encode ($perl)'  , '$xs2->decode ($json)'],
    "JSON::XS/3"   => ['$xs3->encode ($perl)'  , '$xs3->decode ($json)'],
+   "Storable"     => ['Storable::nfreeze $perl', 'Storable::thaw $pst'],
 );
 
 sub bench($) {
    my ($code) = @_;
 
    my $perl = jsonToObj $json;
-   my $count = 20;
+   my $pst  = Storable::nfreeze $perl;
+
+   my $count = 2;
    my $times = 25;
 
    my $cent = eval "sub { " . (join ";", ($code) x $count) . "}";
