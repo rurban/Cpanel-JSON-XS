@@ -88,7 +88,7 @@ package JSON::XS;
 use strict;
 
 BEGIN {
-   our $VERSION = '1.2';
+   our $VERSION = '1.21';
    our @ISA = qw(Exporter);
 
    our @EXPORT = qw(to_json from_json objToJson jsonToObj);
