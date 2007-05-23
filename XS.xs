@@ -374,8 +374,13 @@ encode_hv (enc_t *enc, HV *hv)
       // that randomises hash orderings
       if (enc->flags & F_CANONICAL)
         {
-          HE *he, *hes [count]; // if your compiler dies here, you need to enable C99 mode
           int fast = 1;
+          HE *he;
+#if defined(__BORLANDC__) || defined(_MSC_VER)
+          HE **hes = _alloca (count * sizeof (HE));
+#else
+          HE *hes [count]; // if your compiler dies here, you need to enable C99 mode
+#endif
 
           i = 0;
           while ((he = hv_iternext (hv)))
