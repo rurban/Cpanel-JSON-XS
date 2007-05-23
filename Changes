@@ -2,9 +2,11 @@ Revision history for Perl extension JSON::XS
 
 TODO: maybe use some overload magic to decode true and false into something
       not 0 or 1 in perl. or use attached magic?
-TODO: get rid of dynamic arrays to support so-called C compilers
-      by fucking microsoft that do not do C. argl, snprintf is also
-      missing.
+
+1.22 Thu May 24 00:07:25 CEST 2007
+	- require 5.8.8 explicitly as older perls do not seem to offer
+          the required macros.
+        - possibly made it compile on so-called C compilers by microsoft.
 
 1.21 Wed May  9 18:40:32 CEST 2007
 	- character offset reported for trailing garbage is random.
