@@ -1,6 +1,6 @@
 use ExtUtils::MakeMaker;
 
-use 5.008;
+use 5.008008;
 
 WriteMakefile(
     dist	=> {
