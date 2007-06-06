@@ -88,7 +88,7 @@ package JSON::XS;
 use strict;
 
 BEGIN {
-   our $VERSION = '1.22';
+   our $VERSION = '1.23';
    our @ISA = qw(Exporter);
 
    our @EXPORT = qw(to_json from_json objToJson jsonToObj);
@@ -614,10 +614,11 @@ tables. They have been generated with the help of the C<eg/bench> program
 in the JSON::XS distribution, to make it easy to compare on your own
 system.
 
-First comes a comparison between various modules using a very short JSON
-string:
+First comes a comparison between various modules using a very short
+single-line JSON string:
 
-   {"method": "handleMessage", "params": ["user1", "we were just talking"], "id": null}
+   {"method": "handleMessage", "params": ["user1", "we were just talking"], \
+   "id": null, "array":[1,11,234,-5,1e5,1e7, true,  false]}
 
 It shows the number of encodes/decodes per second (JSON::XS uses the
 functional interface, while JSON::XS/2 uses the OO interface with
@@ -625,29 +626,34 @@ pretty-printing and hashkey sorting enabled). Higher is better:
 
    module     |     encode |     decode |
    -----------|------------|------------|
-   JSON       |  11488.516 |   7823.035 |
-   JSON::DWIW |  94708.054 | 129094.260 |
-   JSON::PC   |  63884.157 | 128528.212 |
-   JSON::Syck |  34898.677 |  42096.911 |
-   JSON::XS   | 654027.064 | 396423.669 |
-   JSON::XS/2 | 371564.190 | 371725.613 |
+   JSON       |   7645.468 |   4208.613 |
+   JSON::DWIW |  68534.379 |  79437.576 |
+   JSON::PC   |  65948.176 |  78251.940 |
+   JSON::Syck |  23379.621 |  28416.694 |
+   JSON::XS   | 388361.481 | 199728.762 |
+   JSON::XS/2 | 218453.333 | 192399.266 |
+   JSON::XS/3 | 338250.323 | 192399.266 |
+   Storable   |  15732.573 |  28571.553 |
    -----------+------------+------------+
 
-That is, JSON::XS is more than six times faster than JSON::DWIW on
-encoding, more than three times faster on decoding, and about thirty times
-faster than JSON, even with pretty-printing and key sorting.
+That is, JSON::XS is about five times faster than JSON::DWIW on encoding,
+about three times faster on decoding, and over fourty times faster
+than JSON, even with pretty-printing and key sorting. It also compares
+favourably to Storable for small amounts of data.
 
 Using a longer test string (roughly 18KB, generated from Yahoo! Locals
 search API (http://nanoref.com/yahooapis/mgPdGg):
 
    module     |     encode |     decode |
    -----------|------------|------------|
-   JSON       |    273.023 |     44.674 |
-   JSON::DWIW |   1089.383 |   1145.704 |
-   JSON::PC   |   3097.419 |   2393.921 |
-   JSON::Syck |    514.060 |    843.053 |
-   JSON::XS   |   6479.668 |   3636.364 |
-   JSON::XS/2 |   3774.221 |   3599.124 |
+   JSON       |    254.685 |     37.665 |
+   JSON::DWIW |   1014.244 |   1087.678 |
+   JSON::PC   |   3602.116 |   2307.352 |
+   JSON::Syck |    558.035 |    776.263 |
+   JSON::XS   |   5747.196 |   3543.684 |
+   JSON::XS/2 |   3968.121 |   3589.170 |
+   JSON::XS/3 |   6105.246 |   3561.134 |
+   Storable   |   4456.337 |   5320.020 |
    -----------+------------+------------+
 
 Again, JSON::XS leads by far.

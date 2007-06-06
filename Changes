@@ -3,13 +3,18 @@ Revision history for Perl extension JSON::XS
 TODO: maybe use some overload magic to decode true and false into something
       not 0 or 1 in perl. or use attached magic?
 
+1.23 Wed Jun  6 20:13:06 CEST 2007
+	- greatly improved small integer encoding and decoding speed.
+	- implement a number of µ-optimisations.
+        - updated benchmarks.
+
 1.22 Thu May 24 00:07:25 CEST 2007
 	- require 5.8.8 explicitly as older perls do not seem to offer
           the required macros.
         - possibly made it compile on so-called C compilers by microsoft.
 
 1.21 Wed May  9 18:40:32 CEST 2007
-	- character offset reported for trailing garbage is random.
+	- character offset reported for trailing garbage was random.
 
 1.2  Wed May  9 18:35:01 CEST 2007
         - decode did not work with magical scalars (doh!).

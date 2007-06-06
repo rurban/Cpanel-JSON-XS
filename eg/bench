@@ -2,6 +2,18 @@
 
 # Usage: bench json-file
 
+# which modules to test (JSON usually excluded because its so slow)
+my %tst = (
+   "JSON"         => ['objToJson $perl'       , 'jsonToObj $json'],
+   "JSON::DWIW"   => ['$dwiw->to_json ($perl)', '$dwiw->from_json ($json)'],
+   "JSON::PC"     => ['$pc->convert ($perl)'  , '$pc->parse ($json)'],
+   "JSON::Syck"   => ['JSON::Syck::Dump $perl', 'JSON::Syck::Load $json'],
+   "JSON::XS"     => ['to_json $perl'         , 'from_json $json'],
+   "JSON::XS/2"   => ['$xs2->encode ($perl)'  , '$xs2->decode ($json)'],
+   "JSON::XS/3"   => ['$xs3->encode ($perl)'  , '$xs3->decode ($json)'],
+   "Storable"     => ['Storable::nfreeze $perl', 'Storable::thaw $pst'],
+);
+
 use JSON;
 use JSON::DWIW;
 use JSON::PC;
@@ -39,45 +51,27 @@ $json = JSON::XS->new->ascii(1)->encode (JSON::Syck::Load $json);
 #   warn length $json;
 #}
 
-my %tst = (
-#   "JSON"         => ['objToJson $perl'       , 'jsonToObj $json'],
-   "JSON::DWIW"   => ['$dwiw->to_json ($perl)', '$dwiw->from_json ($json)'],
-   "JSON::PC"     => ['$pc->convert ($perl)'  , '$pc->parse ($json)'],
-   "JSON::Syck"   => ['JSON::Syck::Dump $perl', 'JSON::Syck::Load $json'],
-   "JSON::XS"     => ['to_json $perl'         , 'from_json $json'],
-   "JSON::XS/2"   => ['$xs2->encode ($perl)'  , '$xs2->decode ($json)'],
-   "JSON::XS/3"   => ['$xs3->encode ($perl)'  , '$xs3->decode ($json)'],
-   "Storable"     => ['Storable::nfreeze $perl', 'Storable::thaw $pst'],
-);
-
 sub bench($) {
    my ($code) = @_;
 
    my $perl = jsonToObj $json;
    my $pst  = Storable::nfreeze $perl;
 
-   my $count = 2;
-   my $times = 25;
+   my $count = 5;
+   my $times = 200;
 
-   my $cent = eval "sub { " . (join ";", ($code) x $count) . "}";
+   my $cent = eval "sub { my \$t = Time::HiRes::time; " . (join ";", ($code) x $count) . "; Time::HiRes::time - \$t }";
    $cent->();
 
-   my @meas;
+   my $min = 1e99;
 
-   while () {
-      push @meas, Time::HiRes::time;
-      $cent->();
-      $meas[-1] = Time::HiRes::time - $meas[-1];
+   for (1..$times) {
+      my $t = $cent->();
 
-      my $mean = (List::Util::sum @meas) / @meas;
-      if (@meas >= $times) {
-         @meas = grep $_ > $mean * 0.9 && $_ < $mean * 1.1, @meas;
-         my @meas = grep $_ > $mean * 0.9999 && $_ < $mean * 1.1111, @meas;
-         if (@meas >= $times) {
-            return $count / $mean;
-         }
-      }
+      $min = $t if $t < $min;
    }
+
+   return $count / $min;
 }
 
 printf "%-10s | %10s | %10s |\n", "module", "encode", "decode";
