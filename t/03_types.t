@@ -1,4 +1,4 @@
-BEGIN { $| = 1; print "1..19\n"; }
+BEGIN { $| = 1; print "1..67\n"; }
 
 use utf8;
 use JSON::XS;
@@ -30,3 +30,16 @@ ok ('[false]' eq to_json [JSON::XS::false]);
 ok ('[true]' eq to_json [\1]);
 ok ('[false]' eq to_json [\0]);
 ok ('[null]' eq to_json [undef]);
+
+for $v (1, 2, 3, 5, -1, -2, -3, -4, 100, 1000, 10000, -999, -88, -7, 7, 88, 999, -1e5, 1e6, 1e7, 1e8) {
+   ok ($v == ((from_json "[$v]")->[0]));
+   ok ($v == ((from_json to_json [$v])->[0]));
+}
+
+ok (30123 == ((from_json to_json [30123])->[0]));
+ok (32123 == ((from_json to_json [32123])->[0]));
+ok (32456 == ((from_json to_json [32456])->[0]));
+ok (32789 == ((from_json to_json [32789])->[0]));
+ok (32767 == ((from_json to_json [32767])->[0]));
+ok (32768 == ((from_json to_json [32768])->[0]));
+

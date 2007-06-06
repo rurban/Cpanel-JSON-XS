@@ -39,6 +39,17 @@
 #define SB do {
 #define SE } while (0)
 
+#if __GNUC__ >= 3
+# define expect(expr,value)         __builtin_expect ((expr),(value))
+# define inline                     inline
+#else
+# define expect(expr,value)         (expr)
+# define inline                     static
+#endif
+
+#define expect_false(expr) expect ((expr) != 0, 0)
+#define expect_true(expr)  expect ((expr) != 0, 1)
+
 static HV *json_stash; // JSON::XS::
 
 /////////////////////////////////////////////////////////////////////////////
@@ -72,10 +83,10 @@ shrink (SV *sv)
 // we special-case "safe" characters from U+80 .. U+7FF,
 // but use the very good perl function to parse anything else.
 // note that we never call this function for a ascii codepoints
-static UV
+inline UV
 decode_utf8 (unsigned char *s, STRLEN len, STRLEN *clen)
 {
-  if (s[0] > 0xdf || s[0] < 0xc2)
+  if (expect_false (s[0] > 0xdf || s[0] < 0xc2))
     return utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
   else if (len > 1 && s[1] >= 0x80 && s[1] <= 0xbf)
     {
@@ -103,10 +114,10 @@ typedef struct
   U32 maxdepth; // max. indentation/recursion level
 } enc_t;
 
-static void
+inline void
 need (enc_t *enc, STRLEN len)
 {
-  if (enc->cur + len >= enc->end)
+  if (expect_false (enc->cur + len >= enc->end))
     {
       STRLEN cur = enc->cur - SvPVX (enc->sv);
       SvGROW (enc->sv, cur + len + 1);
@@ -115,7 +126,7 @@ need (enc_t *enc, STRLEN len)
     }
 }
 
-static void
+inline void
 encode_ch (enc_t *enc, char ch)
 {
   need (enc, 1);
@@ -133,15 +144,15 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
     {
       unsigned char ch = *(unsigned char *)str;
 
-      if (ch >= 0x20 && ch < 0x80) // most common case
+      if (expect_true (ch >= 0x20 && ch < 0x80)) // most common case
         {
-          if (ch == '"') // but with slow exceptions
+          if (expect_false (ch == '"')) // but with slow exceptions
             {
               need (enc, len += 1);
               *enc->cur++ = '\\';
               *enc->cur++ = '"';
             }
-          else if (ch == '\\')
+          else if (expect_false (ch == '\\'))
             {
               need (enc, len += 1);
               *enc->cur++ = '\\';
@@ -235,7 +246,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
     }
 }
 
-static void
+inline void
 encode_indent (enc_t *enc)
 {
   if (enc->flags & F_INDENT)
@@ -248,14 +259,14 @@ encode_indent (enc_t *enc)
     }
 }
 
-static void
+inline void
 encode_space (enc_t *enc)
 {
   need (enc, 1);
   encode_ch (enc, ' ');
 }
 
-static void
+inline void
 encode_nl (enc_t *enc)
 {
   if (enc->flags & F_INDENT)
@@ -265,7 +276,7 @@ encode_nl (enc_t *enc)
     }
 }
 
-static void
+inline void
 encode_comma (enc_t *enc)
 {
   encode_ch (enc, ',');
@@ -494,11 +505,38 @@ encode_sv (enc_t *enc, SV *sv)
     }
   else if (SvIOKp (sv))
     {
-      need (enc, 64);
-      enc->cur += 
-         SvIsUV(sv)
-            ? snprintf (enc->cur, 64, "%"UVuf, (UV)SvUVX (sv))
-            : snprintf (enc->cur, 64, "%"IVdf, (IV)SvIVX (sv));
+      // we assume we can always read an IV as a UV
+      if (SvUV (sv) & ~(UV)0x7fff)
+        {
+          need (enc, sizeof (UV) * 3);
+          enc->cur += 
+             SvIsUV(sv)
+                ? snprintf (enc->cur, sizeof (UV) * 3, "%"UVuf, (UV)SvUVX (sv))
+                : snprintf (enc->cur, sizeof (UV) * 3, "%"IVdf, (IV)SvIVX (sv));
+        }
+      else
+        {
+          // optimise the "small number case"
+          // code will likely be branchless and use only a single multiplication
+          I32 i = SvIV (sv);
+          U32 u;
+
+          need (enc, 6);
+
+          *enc->cur = '-'; enc->cur += i < 0 ? 1 : 0;
+          u = i < 0 ? -i : i;
+
+          // convert to 4.28 fixed-point representation
+          u = u * ((0xfffffff + 10000) / 10000); // 10**5, 5 fractional digits
+
+          char digit, nz = 0;
+
+          digit = u >> 28; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0xfffffff) * 5;
+          digit = u >> 27; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x7ffffff) * 5;
+          digit = u >> 26; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x3ffffff) * 5;
+          digit = u >> 25; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x1ffffff) * 5;
+          digit = u >> 24; *enc->cur = digit + '0'; enc->cur += 1;
+        }
     }
   else if (SvROK (sv))
     encode_rv (enc, SvRV (sv));
@@ -553,7 +591,7 @@ typedef struct
   U32 maxdepth; // recursion depth limit
 } dec_t;
 
-static void
+inline void
 decode_ws (dec_t *dec)
 {
   for (;;)
@@ -589,10 +627,10 @@ decode_4hex (dec_t *dec)
   signed char d1, d2, d3, d4;
   unsigned char *cur = (unsigned char *)dec->cur;
 
-  d1 = decode_hexdigit [cur [0]]; if (d1 < 0) ERR ("four hexadecimal digits expected");
-  d2 = decode_hexdigit [cur [1]]; if (d2 < 0) ERR ("four hexadecimal digits expected");
-  d3 = decode_hexdigit [cur [2]]; if (d3 < 0) ERR ("four hexadecimal digits expected");
-  d4 = decode_hexdigit [cur [3]]; if (d4 < 0) ERR ("four hexadecimal digits expected");
+  d1 = decode_hexdigit [cur [0]]; if (expect_false (d1 < 0)) ERR ("four hexadecimal digits expected");
+  d2 = decode_hexdigit [cur [1]]; if (expect_false (d2 < 0)) ERR ("four hexadecimal digits expected");
+  d3 = decode_hexdigit [cur [2]]; if (expect_false (d3 < 0)) ERR ("four hexadecimal digits expected");
+  d4 = decode_hexdigit [cur [3]]; if (expect_false (d4 < 0)) ERR ("four hexadecimal digits expected");
 
   dec->cur += 4;
 
@@ -620,12 +658,12 @@ decode_str (dec_t *dec)
         {
           unsigned char ch = *(unsigned char *)dec->cur++;
 
-          if (ch == '"')
+          if (expect_false (ch == '"'))
             {
               --dec->cur;
               break;
             }
-          else if (ch == '\\')
+          else if (expect_false (ch == '\\'))
             {
               switch (*dec->cur)
                 {
@@ -685,7 +723,7 @@ decode_str (dec_t *dec)
                     ERR ("illegal backslash escape sequence in string");
                 }
             }
-          else if (ch >= 0x20 && ch <= 0x7f)
+          else if (expect_true (ch >= 0x20 && ch <= 0x7f))
             *cur++ = ch;
           else if (ch >= 0x80)
             {
@@ -814,16 +852,36 @@ decode_num (dec_t *dec)
 
   if (!is_nv)
     {
-      UV uv;
-      int numtype = grok_number (start, dec->cur - start, &uv);
-      if (numtype & IS_NUMBER_IN_UV)
-        if (numtype & IS_NUMBER_NEG)
+      // special case the rather common 1..4-digit-int case, assumes 32 bit ints or so
+      if (*start == '-')
+        switch (dec->cur - start)
           {
-            if (uv < (UV)IV_MIN)
-              return newSViv (-(IV)uv);
+            case 2: return newSViv (-(                                                      start [1] - '0'       ));
+            case 3: return newSViv (-(                                     start [1] * 10 + start [2] - '0' *   11));
+            case 4: return newSViv (-(                   start [1] * 100 + start [2] * 10 + start [3] - '0' *  111));
+            case 5: return newSViv (-(start [1] * 1000 + start [2] * 100 + start [3] * 10 + start [4] - '0' * 1111));
           }
-        else
-          return newSVuv (uv);
+      else
+        switch (dec->cur - start)
+          {
+            case 1: return newSViv (                                                        start [0] - '0'       );
+            case 2: return newSViv (                                       start [0] * 10 + start [1] - '0' *   11);
+            case 3: return newSViv (                     start [0] * 100 + start [1] * 10 + start [2] - '0' *  111);
+            case 4: return newSViv (  start [0] * 1000 + start [1] * 100 + start [2] * 10 + start [3] - '0' * 1111);
+          }
+
+      {
+        UV uv;
+        int numtype = grok_number (start, dec->cur - start, &uv);
+        if (numtype & IS_NUMBER_IN_UV)
+          if (numtype & IS_NUMBER_NEG)
+            {
+              if (uv < (UV)IV_MIN)
+                return newSViv (-(IV)uv);
+            }
+          else
+            return newSVuv (uv);
+      }
     }
 
   return newSVnv (Atof (start));
