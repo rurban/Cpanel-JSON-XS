@@ -34,7 +34,7 @@
 #define INIT_SIZE   32 // initial scalar size to be allocated
 #define INDENT_STEP 3  // spaces per indentation level
 
-#define SHORT_STRING_LEN 512 // special-case strings of up to this size
+#define SHORT_STRING_LEN 16384 // special-case strings of up to this size
 
 #define SB do {
 #define SE } while (0)
@@ -499,6 +499,7 @@ encode_sv (enc_t *enc, SV *sv)
     }
   else if (SvNOKp (sv))
     {
+      // trust that perl will do the right thing w.r.t. JSON syntax.
       need (enc, NV_DIG + 32);
       Gconvert (SvNVX (sv), NV_DIG, 0, enc->cur);
       enc->cur += strlen (enc->cur);
@@ -508,6 +509,7 @@ encode_sv (enc_t *enc, SV *sv)
       // we assume we can always read an IV as a UV
       if (SvUV (sv) & ~(UV)0x7fff)
         {
+          // large integer, use the (rather slow) snprintf way.
           need (enc, sizeof (UV) * 3);
           enc->cur += 
              SvIsUV(sv)
@@ -520,6 +522,7 @@ encode_sv (enc_t *enc, SV *sv)
           // code will likely be branchless and use only a single multiplication
           I32 i = SvIV (sv);
           U32 u;
+          char digit, nz = 0;
 
           need (enc, 6);
 
@@ -529,13 +532,16 @@ encode_sv (enc_t *enc, SV *sv)
           // convert to 4.28 fixed-point representation
           u = u * ((0xfffffff + 10000) / 10000); // 10**5, 5 fractional digits
 
-          char digit, nz = 0;
-
+          // now output digit by digit, each time masking out the integer part
+          // and multiplying by 5 while moving the decimal point one to the right,
+          // resulting in a net multiplication by 10.
+          // we always write the digit to memory but conditionally increment
+          // the pointer, to ease the usage of conditional move instructions.
           digit = u >> 28; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0xfffffff) * 5;
           digit = u >> 27; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x7ffffff) * 5;
           digit = u >> 26; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x3ffffff) * 5;
           digit = u >> 25; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x1ffffff) * 5;
-          digit = u >> 24; *enc->cur = digit + '0'; enc->cur += 1;
+          digit = u >> 24; *enc->cur = digit + '0'; enc->cur += 1; // correctly generate '0'
         }
     }
   else if (SvROK (sv))
@@ -648,6 +654,7 @@ decode_str (dec_t *dec)
 {
   SV *sv = 0;
   int utf8 = 0;
+  char *dec_cur = dec->cur;
 
   do
     {
@@ -656,33 +663,35 @@ decode_str (dec_t *dec)
 
       do
         {
-          unsigned char ch = *(unsigned char *)dec->cur++;
+          unsigned char ch = *(unsigned char *)dec_cur++;
 
           if (expect_false (ch == '"'))
             {
-              --dec->cur;
+              --dec_cur;
               break;
             }
           else if (expect_false (ch == '\\'))
             {
-              switch (*dec->cur)
+              switch (*dec_cur)
                 {
                   case '\\':
                   case '/':
-                  case '"': *cur++ = *dec->cur++; break;
+                  case '"': *cur++ = *dec_cur++; break;
 
-                  case 'b': ++dec->cur; *cur++ = '\010'; break;
-                  case 't': ++dec->cur; *cur++ = '\011'; break;
-                  case 'n': ++dec->cur; *cur++ = '\012'; break;
-                  case 'f': ++dec->cur; *cur++ = '\014'; break;
-                  case 'r': ++dec->cur; *cur++ = '\015'; break;
+                  case 'b': ++dec_cur; *cur++ = '\010'; break;
+                  case 't': ++dec_cur; *cur++ = '\011'; break;
+                  case 'n': ++dec_cur; *cur++ = '\012'; break;
+                  case 'f': ++dec_cur; *cur++ = '\014'; break;
+                  case 'r': ++dec_cur; *cur++ = '\015'; break;
 
                   case 'u':
                     {
                       UV lo, hi;
-                      ++dec->cur;
+                      ++dec_cur;
 
+                      dec->cur = dec_cur;
                       hi = decode_4hex (dec);
+                      dec_cur = dec->cur;
                       if (hi == (UV)-1)
                         goto fail;
 
@@ -690,12 +699,14 @@ decode_str (dec_t *dec)
                       if (hi >= 0xd800)
                         if (hi < 0xdc00)
                           {
-                            if (dec->cur [0] != '\\' || dec->cur [1] != 'u')
+                            if (dec_cur [0] != '\\' || dec_cur [1] != 'u')
                               ERR ("missing low surrogate character in surrogate pair");
 
-                            dec->cur += 2;
+                            dec_cur += 2;
 
+                            dec->cur = dec_cur;
                             lo = decode_4hex (dec);
+                            dec_cur = dec->cur;
                             if (lo == (UV)-1)
                               goto fail;
 
@@ -719,7 +730,7 @@ decode_str (dec_t *dec)
                     break;
 
                   default:
-                    --dec->cur;
+                    --dec_cur;
                     ERR ("illegal backslash escape sequence in string");
                 }
             }
@@ -730,21 +741,21 @@ decode_str (dec_t *dec)
               STRLEN clen;
               UV uch;
 
-              --dec->cur;
+              --dec_cur;
 
-              uch = decode_utf8 (dec->cur, dec->end - dec->cur, &clen);
+              uch = decode_utf8 (dec_cur, dec->end - dec_cur, &clen);
               if (clen == (STRLEN)-1)
                 ERR ("malformed UTF-8 character in JSON string");
 
               do
-                *cur++ = *dec->cur++;
+                *cur++ = *dec_cur++;
               while (--clen);
 
               utf8 = 1;
             }
           else
             {
-              --dec->cur;
+              --dec_cur;
 
               if (!ch)
                 ERR ("unexpected end of string while parsing JSON string");
@@ -767,9 +778,9 @@ decode_str (dec_t *dec)
           sv = newSVpvn (buf, len);
       }
     }
-  while (*dec->cur != '"');
+  while (*dec_cur != '"');
 
-  ++dec->cur;
+  ++dec_cur;
 
   if (sv)
     {
@@ -782,9 +793,11 @@ decode_str (dec_t *dec)
   else
     sv = newSVpvn ("", 0);
 
+  dec->cur = dec_cur;
   return sv;
 
 fail:
+  dec->cur = dec_cur;
   return 0;
 }
 
