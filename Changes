@@ -3,6 +3,15 @@ Revision history for Perl extension JSON::XS
 TODO: maybe use some overload magic to decode true and false into something
       not 0 or 1 in perl. or use attached magic?
 
+1.24 Mon Jun 11 05:40:49 CEST 2007
+	- added informative section on JSON-as-YAML.
+        - get rid of some c99-isms again.
+        - localise dec->cur in decode_str, speeding up
+          string decoding considerably (>15% on my amd64 + gcc).
+        - increased SHORT_STRING_LEN to 16kb: stack space is
+          usually plenty, and this actually saves memory
+          when !shrinking as short strings will fit perfectly.
+
 1.23 Wed Jun  6 20:13:06 CEST 2007
 	- greatly improved small integer encoding and decoding speed.
 	- implement a number of µ-optimisations.
