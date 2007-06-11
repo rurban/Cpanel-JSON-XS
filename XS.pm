@@ -88,7 +88,7 @@ package JSON::XS;
 use strict;
 
 BEGIN {
-   our $VERSION = '1.23';
+   our $VERSION = '1.24';
    our @ISA = qw(Exporter);
 
    our @EXPORT = qw(to_json from_json objToJson jsonToObj);
@@ -404,6 +404,7 @@ For the more enlightened: note that in the following descriptions,
 lowercase I<perl> refers to the Perl interpreter, while uppcercase I<Perl>
 refers to the abstract Perl language itself.
 
+
 =head2 JSON -> PERL
 
 =over 4
@@ -443,6 +444,7 @@ Perl.
 A JSON null atom becomes C<undef> in Perl.
 
 =back
+
 
 =head2 PERL -> JSON
 
@@ -607,6 +609,30 @@ Does not check input for validity.
 
 =back
 
+
+=head2 JSON and YAML
+
+You often hear that JSON is a subset (or a close subset) of YAML. This is,
+however, a mass hysteria and very far from the truth. In general, there is
+no way to configure JSON::XS to output a data structure as valid YAML.
+
+If you really must use JSON::XS to generate YAML, you should use this
+algorithm (subject to change in future versions):
+
+   my $to_yaml = JSON::XS->new->utf8->space_after (1);
+   my $yaml = $to_yaml->encode ($ref) . "\n";
+
+This will usually generate JSON texts that also parse as valid
+YAML. Please note that YAML has hardcoded limits on (simple) object key
+lengths that JSON doesn't have, so you should make sure that your hash
+keys are noticably shorter than the 1024 characters YAML allows.
+
+There might be other incompatibilities that I am not aware of. In general
+you should not try to generate YAML with a JSON generator or vice versa,
+or try to parse JSON with a YAML parser or vice versa: chances are high
+that you will run into severe interoperability problems.
+
+
 =head2 SPEED
 
 It seems that JSON::XS is surprisingly fast, as shown in the following
@@ -620,20 +646,21 @@ single-line JSON string:
    {"method": "handleMessage", "params": ["user1", "we were just talking"], \
    "id": null, "array":[1,11,234,-5,1e5,1e7, true,  false]}
 
-It shows the number of encodes/decodes per second (JSON::XS uses the
-functional interface, while JSON::XS/2 uses the OO interface with
-pretty-printing and hashkey sorting enabled). Higher is better:
+It shows the number of encodes/decodes per second (JSON::XS uses
+the functional interface, while JSON::XS/2 uses the OO interface
+with pretty-printing and hashkey sorting enabled, JSON::XS/3 enables
+shrink). Higher is better:
 
    module     |     encode |     decode |
    -----------|------------|------------|
    JSON       |   7645.468 |   4208.613 |
-   JSON::DWIW |  68534.379 |  79437.576 |
+   JSON::DWIW |  40721.398 |  77101.176 |
    JSON::PC   |  65948.176 |  78251.940 |
-   JSON::Syck |  23379.621 |  28416.694 |
+   JSON::Syck |  22844.793 |  26479.192 |
    JSON::XS   | 388361.481 | 199728.762 |
    JSON::XS/2 | 218453.333 | 192399.266 |
    JSON::XS/3 | 338250.323 | 192399.266 |
-   Storable   |  15732.573 |  28571.553 |
+   Storable   |  15779.925 |  14169.946 |
    -----------+------------+------------+
 
 That is, JSON::XS is about five times faster than JSON::DWIW on encoding,
@@ -647,16 +674,17 @@ search API (http://nanoref.com/yahooapis/mgPdGg):
    module     |     encode |     decode |
    -----------|------------|------------|
    JSON       |    254.685 |     37.665 |
-   JSON::DWIW |   1014.244 |   1087.678 |
+   JSON::DWIW |    843.343 |   1049.731 |
    JSON::PC   |   3602.116 |   2307.352 |
-   JSON::Syck |    558.035 |    776.263 |
-   JSON::XS   |   5747.196 |   3543.684 |
-   JSON::XS/2 |   3968.121 |   3589.170 |
-   JSON::XS/3 |   6105.246 |   3561.134 |
-   Storable   |   4456.337 |   5320.020 |
+   JSON::Syck |    505.107 |    787.899 |
+   JSON::XS   |   5747.196 |   3690.220 |
+   JSON::XS/2 |   3968.121 |   3676.634 |
+   JSON::XS/3 |   6105.246 |   3662.508 |
+   Storable   |   4417.337 |   5285.161 |
    -----------+------------+------------+
 
-Again, JSON::XS leads by far.
+Again, JSON::XS leads by far (except for Storable which non-surprisingly
+decodes faster).
 
 On large strings containing lots of high unicode characters, some modules
 (such as JSON::PC) seem to decode faster than JSON::XS, but the result
