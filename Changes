@@ -1,7 +1,16 @@
 Revision history for Perl extension JSON::XS
 
-TODO: maybe use some overload magic to decode true and false into something
-      not 0 or 1 in perl. or use attached magic?
+1.3
+        - make JSON::XS::true and false special overloaded objects
+          and return those instead of 1 and 0 for those json atoms
+          (JSON::PP compatibility is NOT achieved yet).
+        - add JSON::XS::is_bool predicate to test for those special
+          values.
+	- add a reference to
+          http://jpsykes.com/47/practical-csrf-and-json-security.
+        - removed require 5.8.8 again, it just not very expert-friendly,
+          and try to be more compatible with slightly older versions,
+          which are not recommended (because they are buggy).
 
 1.24 Mon Jun 11 05:40:49 CEST 2007
 	- added informative section on JSON-as-YAML.

@@ -94,6 +94,15 @@ FUNCTIONAL INTERFACE
 
         except being faster.
 
+    $is_boolean = JSON::XS::is_bool $scalar
+        Returns true if the passed scalar represents either JSON::XS::true
+        or JSON::XS::false, two constants that act like 1 and 0,
+        respectively and are used to represent JSON "true" and "false"
+        values in Perl.
+
+        See MAPPING, below, for more information on how JSON values are
+        mapped to Perl.
+
 OBJECT-ORIENTED INTERFACE
     The object oriented interface lets you configure your own encoding or
     decoding style, within the limits of supported formats.
@@ -381,10 +390,10 @@ MAPPING
         numbers.
 
     true, false
-        These JSON atoms become 0, 1, respectively. Information is lost in
-        this process. Future versions might represent those values
-        differently, but they will be guarenteed to act like these integers
-        would normally in Perl.
+        These JSON atoms become "JSON::XS::true" and "JSON::XS::false",
+        respectively. They are overloaded to act almost exactly like the
+        numbers 1 and 0. You can check wether a scalar is a JSON boolean by
+        using the "JSON::XS::is_bool" function.
 
     null
         A JSON null atom becomes "undef" in Perl.
@@ -417,6 +426,10 @@ MAPPING
         readability.
 
            to_json [\0,JSON::XS::true]      # yields [false,true]
+
+    JSON::XS::true, JSON::XS::false
+        These special values become JSON true and JSON false values,
+        respectively. You cna alos use "\1" and "\0" directly if you want.
 
     blessed objects
         Blessed objects are not allowed. JSON::XS currently tries to encode
@@ -645,6 +658,14 @@ SECURITY CONSIDERATIONS
     And last but least, something else could bomb you that I forgot to think
     of. In that case, you get to keep the pieces. I am always open for
     hints, though...
+
+    If you are using JSON::XS to return packets to consumption by javascript
+    scripts in a browser you should have a look at
+    <http://jpsykes.com/47/practical-csrf-and-json-security> to see wether
+    you are vulnerable to some common attack vectors (which really are
+    browser design bugs, but it is still you who will have to deal with it,
+    as major browser developers care only for features, not about doing
+    security right).
 
 BUGS
     While the goal of this module is to be correct, that unfortunately does
