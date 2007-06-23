@@ -1,7 +1,5 @@
 use ExtUtils::MakeMaker;
 
-use 5.008008;
-
 WriteMakefile(
     dist	=> {
 	            PREOP	=> 'pod2text XS.pm | tee README >$(DISTVNAME)/README; chmod -R u=rwX,go=rX . ;',

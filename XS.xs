@@ -11,6 +11,12 @@
 # define snprintf _snprintf // C compilers have this in stdio.h
 #endif
 
+// some old perls do not have this, try to make it work, no
+// guarentees, though. if it breaks, you get to keep the pieces.
+#ifndef UTF8_MAXBYTES
+# define UTF8_MAXBYTES 13
+#endif
+
 #define F_ASCII        0x00000001UL
 #define F_LATIN1       0x00000002UL
 #define F_UTF8         0x00000004UL
@@ -51,6 +57,7 @@
 #define expect_true(expr)  expect ((expr) != 0, 1)
 
 static HV *json_stash; // JSON::XS::
+static SV *json_true, *json_false;
 
 /////////////////////////////////////////////////////////////////////////////
 // utility functions
@@ -180,7 +187,6 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
 
                   if (is_utf8)
                     {
-                      //uch = utf8n_to_uvuni (str, end - str, &clen, UTF8_CHECK_ONLY);
                       uch = decode_utf8 (str, end - str, &clen);
                       if (clen == (STRLEN)-1)
                         croak ("malformed or illegal unicode character in string [%.11s], cannot convert to JSON", str);
@@ -633,10 +639,10 @@ decode_4hex (dec_t *dec)
   signed char d1, d2, d3, d4;
   unsigned char *cur = (unsigned char *)dec->cur;
 
-  d1 = decode_hexdigit [cur [0]]; if (expect_false (d1 < 0)) ERR ("four hexadecimal digits expected");
-  d2 = decode_hexdigit [cur [1]]; if (expect_false (d2 < 0)) ERR ("four hexadecimal digits expected");
-  d3 = decode_hexdigit [cur [2]]; if (expect_false (d3 < 0)) ERR ("four hexadecimal digits expected");
-  d4 = decode_hexdigit [cur [3]]; if (expect_false (d4 < 0)) ERR ("four hexadecimal digits expected");
+  d1 = decode_hexdigit [cur [0]]; if (expect_false (d1 < 0)) ERR ("exactly four hexadecimal digits expected");
+  d2 = decode_hexdigit [cur [1]]; if (expect_false (d2 < 0)) ERR ("exactly four hexadecimal digits expected");
+  d3 = decode_hexdigit [cur [2]]; if (expect_false (d3 < 0)) ERR ("exactly four hexadecimal digits expected");
+  d4 = decode_hexdigit [cur [3]]; if (expect_false (d4 < 0)) ERR ("exactly four hexadecimal digits expected");
 
   dec->cur += 4;
 
@@ -869,7 +875,7 @@ decode_num (dec_t *dec)
       if (*start == '-')
         switch (dec->cur - start)
           {
-            case 2: return newSViv (-(                                                      start [1] - '0'       ));
+            case 2: return newSViv (-(                                                      start [1] - '0' *    1));
             case 3: return newSViv (-(                                     start [1] * 10 + start [2] - '0' *   11));
             case 4: return newSViv (-(                   start [1] * 100 + start [2] * 10 + start [3] - '0' *  111));
             case 5: return newSViv (-(start [1] * 1000 + start [2] * 100 + start [3] * 10 + start [4] - '0' * 1111));
@@ -877,7 +883,7 @@ decode_num (dec_t *dec)
       else
         switch (dec->cur - start)
           {
-            case 1: return newSViv (                                                        start [0] - '0'       );
+            case 1: return newSViv (                                                        start [0] - '0' *    1);
             case 2: return newSViv (                                       start [0] * 10 + start [1] - '0' *   11);
             case 3: return newSViv (                     start [0] * 100 + start [1] * 10 + start [2] - '0' *  111);
             case 4: return newSViv (  start [0] * 1000 + start [1] * 100 + start [2] * 10 + start [3] - '0' * 1111);
@@ -894,9 +900,12 @@ decode_num (dec_t *dec)
             }
           else
             return newSVuv (uv);
+
+        // here would likely be the place for bigint support
       }
     }
 
+  // if we ever support bigint or bigfloat, this is the place for bigfloat
   return newSVnv (Atof (start));
 
 fail:
@@ -1007,6 +1016,9 @@ static SV *
 decode_sv (dec_t *dec)
 {
   decode_ws (dec);
+
+  // the beauty of JSON: you need exactly one character lookahead
+  // to parse anything.
   switch (*dec->cur)
     {
       case '"': ++dec->cur; return decode_str (dec); 
@@ -1022,7 +1034,7 @@ decode_sv (dec_t *dec)
         if (dec->end - dec->cur >= 4 && !memcmp (dec->cur, "true", 4))
           {
             dec->cur += 4;
-            return newSViv (1);
+            return SvREFCNT_inc (json_true);
           }
         else
           ERR ("'true' expected");
@@ -1033,7 +1045,7 @@ decode_sv (dec_t *dec)
         if (dec->end - dec->cur >= 5 && !memcmp (dec->cur, "false", 5))
           {
             dec->cur += 5;
-            return newSViv (0);
+            return SvREFCNT_inc (json_false);
           }
         else
           ERR ("'false' expected");
@@ -1146,8 +1158,6 @@ BOOT:
 {
 	int i;
 
-        memset (decode_hexdigit, 0xff, 256);
-
         for (i = 0; i < 256; ++i)
           decode_hexdigit [i] =
             i >= '0' && i <= '9' ? i - '0'
@@ -1156,6 +1166,9 @@ BOOT:
             : -1;
 
 	json_stash = gv_stashpv ("JSON::XS", 1);
+
+        json_true  = get_sv ("JSON::XS::true" , 1); SvREADONLY_on (json_true );
+        json_false = get_sv ("JSON::XS::false", 1); SvREADONLY_on (json_false);
 }
 
 PROTOTYPES: DISABLE
