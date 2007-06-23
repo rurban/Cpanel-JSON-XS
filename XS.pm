@@ -87,16 +87,13 @@ package JSON::XS;
 
 use strict;
 
-BEGIN {
-   our $VERSION = '1.24';
-   our @ISA = qw(Exporter);
+our $VERSION = '1.3';
+our @ISA = qw(Exporter);
 
-   our @EXPORT = qw(to_json from_json objToJson jsonToObj);
-   require Exporter;
+our @EXPORT = qw(to_json from_json objToJson jsonToObj);
 
-   require XSLoader;
-   XSLoader::load JSON::XS::, $VERSION;
-}
+use Exporter;
+use XSLoader;
 
 =head1 FUNCTIONAL INTERFACE
 
@@ -128,6 +125,15 @@ This function call is functionally identical to:
    $perl_scalar = JSON::XS->new->utf8->decode ($json_text)
 
 except being faster.
+
+=item $is_boolean = JSON::XS::is_bool $scalar
+
+Returns true if the passed scalar represents either JSON::XS::true or
+JSON::XS::false, two constants that act like C<1> and C<0>, respectively
+and are used to represent JSON C<true> and C<false> values in Perl.
+
+See MAPPING, below, for more information on how JSON values are mapped to
+Perl.
 
 =back
 
@@ -434,10 +440,10 @@ represent more values exactly than (floating point) numbers.
 
 =item true, false
 
-These JSON atoms become C<0>, C<1>, respectively. Information is lost in
-this process. Future versions might represent those values differently,
-but they will be guarenteed to act like these integers would normally in
-Perl.
+These JSON atoms become C<JSON::XS::true> and C<JSON::XS::false>,
+respectively. They are overloaded to act almost exactly like the numbers
+C<1> and C<0>. You can check wether a scalar is a JSON boolean by using
+the C<JSON::XS::is_bool> function.
 
 =item null
 
@@ -478,6 +484,11 @@ C<1>, which get turned into C<false> and C<true> atoms in JSON. You can
 also use C<JSON::XS::false> and C<JSON::XS::true> to improve readability.
 
    to_json [\0,JSON::XS::true]      # yields [false,true]
+
+=item JSON::XS::true, JSON::XS::false
+
+These special values become JSON true and JSON false values,
+respectively. You cna alos use C<\1> and C<\0> directly if you want.
 
 =item blessed objects
 
@@ -722,6 +733,14 @@ And last but least, something else could bomb you that I forgot to think
 of. In that case, you get to keep the pieces. I am always open for hints,
 though...
 
+If you are using JSON::XS to return packets to consumption
+by javascript scripts in a browser you should have a look at
+L<http://jpsykes.com/47/practical-csrf-and-json-security> to see wether
+you are vulnerable to some common attack vectors (which really are browser
+design bugs, but it is still you who will have to deal with it, as major
+browser developers care only for features, not about doing security
+right).
+
 
 =head1 BUGS
 
@@ -732,8 +751,26 @@ will be fixed swiftly, though.
 
 =cut
 
-sub true()  { \1 }
-sub false() { \0 }
+our $true  = do { bless \(my $dummy = 1), "JSON::XS::Boolean" };
+our $false = do { bless \(my $dummy = 0), "JSON::XS::Boolean" };
+
+sub true()  { $true  }
+sub false() { $false }
+
+sub is_bool($) {
+   UNIVERSAL::isa $_[0], "JSON::XS::Boolean"
+      or UNIVERSAL::isa $_[0], "JSON::Literal"
+}
+
+XSLoader::load "JSON::XS", $VERSION;
+
+package JSON::XS::Boolean;
+
+use overload
+   "0+"     => sub { ${$_[0]} },
+   "++"     => sub { $_[0] = ${$_[0]} + 1 },
+   "--"     => sub { $_[0] = ${$_[0]} - 1 },
+   fallback => 1;
 
 1;
 

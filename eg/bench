@@ -4,19 +4,21 @@
 
 # which modules to test (JSON usually excluded because its so slow)
 my %tst = (
-   "JSON"         => ['objToJson $perl'       , 'jsonToObj $json'],
-   "JSON::DWIW"   => ['$dwiw->to_json ($perl)', '$dwiw->from_json ($json)'],
-   "JSON::PC"     => ['$pc->convert ($perl)'  , '$pc->parse ($json)'],
-   "JSON::Syck"   => ['JSON::Syck::Dump $perl', 'JSON::Syck::Load $json'],
-   "JSON::XS"     => ['to_json $perl'         , 'from_json $json'],
-   "JSON::XS/2"   => ['$xs2->encode ($perl)'  , '$xs2->decode ($json)'],
-   "JSON::XS/3"   => ['$xs3->encode ($perl)'  , '$xs3->decode ($json)'],
-   "Storable"     => ['Storable::nfreeze $perl', 'Storable::thaw $pst'],
+   "JSON"         => ['JSON::objToJson $perl'    , 'JSON::jsonToObj $json'],
+   "JSON::PP"     => ['$pp->encode ($perl)'      , '$pp->decode ($json)'],
+   "JSON::DWIW"   => ['$dwiw->to_json ($perl)'   , '$dwiw->from_json ($json)'],
+   "JSON::PC"     => ['$pc->convert ($perl)'     , '$pc->parse ($json)'],
+   "JSON::Syck"   => ['JSON::Syck::Dump $perl'   , 'JSON::Syck::Load $json'],
+   "JSON::XS"     => ['to_json $perl'            , 'from_json $json'],
+   "JSON::XS/2"   => ['$xs2->encode ($perl)'     , '$xs2->decode ($json)'],
+   "JSON::XS/3"   => ['$xs3->encode ($perl)'     , '$xs3->decode ($json)'],
+   "Storable"     => ['Storable::nfreeze $perl'  , 'Storable::thaw $pst'],
 );
 
-use JSON;
+use JSON ();
 use JSON::DWIW;
 use JSON::PC;
+use JSON::PP ();
 use JSON::XS qw(to_json from_json);
 use JSON::Syck;
 use Storable ();
@@ -28,6 +30,7 @@ use utf8;
 
 my $dwiw = new JSON::DWIW;
 my $pc   = new JSON::PC;
+my $pp   = JSON::PP->new->max_depth (512);
 my $xs2  = JSON::XS->new->utf8->pretty->canonical;
 my $xs3  = JSON::XS->new->utf8->shrink;
 
@@ -54,7 +57,7 @@ $json = JSON::XS->new->ascii(1)->encode (JSON::Syck::Load $json);
 sub bench($) {
    my ($code) = @_;
 
-   my $perl = jsonToObj $json;
+   my $perl = JSON::XS::jsonToObj $json;
    my $pst  = Storable::nfreeze $perl;
 
    my $count = 5;
