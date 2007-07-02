@@ -17,22 +17,25 @@
 # define UTF8_MAXBYTES 13
 #endif
 
-#define F_ASCII        0x00000001UL
-#define F_LATIN1       0x00000002UL
-#define F_UTF8         0x00000004UL
-#define F_INDENT       0x00000008UL
-#define F_CANONICAL    0x00000010UL
-#define F_SPACE_BEFORE 0x00000020UL
-#define F_SPACE_AFTER  0x00000040UL
-#define F_ALLOW_NONREF 0x00000100UL
-#define F_SHRINK       0x00000200UL
-#define F_MAXDEPTH     0xf8000000UL
-#define S_MAXDEPTH     27
+#define F_ASCII          0x00000001UL
+#define F_LATIN1         0x00000002UL
+#define F_UTF8           0x00000004UL
+#define F_INDENT         0x00000008UL
+#define F_CANONICAL      0x00000010UL
+#define F_SPACE_BEFORE   0x00000020UL
+#define F_SPACE_AFTER    0x00000040UL
+#define F_ALLOW_NONREF   0x00000100UL
+#define F_SHRINK         0x00000200UL
+#define F_ALLOW_BLESSED  0x00000400UL
+#define F_CONV_BLESSED   0x00000800UL
+#define F_MAXDEPTH       0xf8000000UL
+#define S_MAXDEPTH       27
+#define F_MAXSIZE        0x01f00000UL
+#define S_MAXSIZE        20
+#define F_HOOK           0x00080000UL // some hooks exist, so slow-path processing
 
 #define DEC_DEPTH(flags) (1UL << ((flags & F_MAXDEPTH) >> S_MAXDEPTH))
-
-// F_SELFCONVERT? <=> to_json/toJson
-// F_BLESSED?     <=> { $__class__$ => }
+#define DEC_SIZE(flags)  (1UL << ((flags & F_MAXSIZE ) >> S_MAXSIZE ))
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
 #define F_DEFAULT   (9UL << S_MAXDEPTH)
@@ -56,22 +59,19 @@
 #define expect_false(expr) expect ((expr) != 0, 0)
 #define expect_true(expr)  expect ((expr) != 0, 1)
 
-static HV *json_stash; // JSON::XS::
+static HV *json_stash, *json_boolean_stash; // JSON::XS::
 static SV *json_true, *json_false;
+
+typedef struct {
+  U32 flags;
+  SV *cb_object;
+  HV *cb_sk_object;
+} JSON;
 
 /////////////////////////////////////////////////////////////////////////////
 // utility functions
 
-static UV *
-SvJSON (SV *sv)
-{
-  if (!(SvROK (sv) && SvOBJECT (SvRV (sv)) && SvSTASH (SvRV (sv)) == json_stash))
-    croak ("object is not of type JSON::XS");
-
-  return &SvUVX (SvRV (sv));
-}
-
-static void
+inline void
 shrink (SV *sv)
 {
   sv_utf8_downgrade (sv, 1);
@@ -116,7 +116,7 @@ typedef struct
   char *cur;  // SvPVX (sv) + current output position
   char *end;  // SvEND (sv)
   SV *sv;     // result scalar
-  U32 flags;   // F_*
+  JSON json;
   U32 indent; // indentation level
   U32 maxdepth; // max. indentation/recursion level
 } enc_t;
@@ -200,7 +200,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                   if (uch > 0x10FFFFUL)
                     croak ("out of range codepoint (0x%lx) encountered, unrepresentable in JSON", (unsigned long)uch);
 
-                  if (uch < 0x80 || enc->flags & F_ASCII || (enc->flags & F_LATIN1 && uch > 0xFF))
+                  if (uch < 0x80 || enc->json.flags & F_ASCII || (enc->json.flags & F_LATIN1 && uch > 0xFF))
                     {
                       if (uch > 0xFFFFUL)
                         {
@@ -224,7 +224,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
 
                       str += clen;
                     }
-                  else if (enc->flags & F_LATIN1)
+                  else if (enc->json.flags & F_LATIN1)
                     {
                       *enc->cur++ = uch;
                       str += clen;
@@ -255,7 +255,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
 inline void
 encode_indent (enc_t *enc)
 {
-  if (enc->flags & F_INDENT)
+  if (enc->json.flags & F_INDENT)
     {
       int spaces = enc->indent * INDENT_STEP;
 
@@ -275,7 +275,7 @@ encode_space (enc_t *enc)
 inline void
 encode_nl (enc_t *enc)
 {
-  if (enc->flags & F_INDENT)
+  if (enc->json.flags & F_INDENT)
     {
       need (enc, 1);
       encode_ch (enc, '\n');
@@ -287,9 +287,9 @@ encode_comma (enc_t *enc)
 {
   encode_ch (enc, ',');
 
-  if (enc->flags & F_INDENT)
+  if (enc->json.flags & F_INDENT)
     encode_nl (enc);
-  else if (enc->flags & F_SPACE_AFTER)
+  else if (enc->json.flags & F_SPACE_AFTER)
     encode_space (enc);
 }
 
@@ -342,9 +342,9 @@ encode_he (enc_t *enc, HE *he)
 
   encode_ch (enc, '"');
 
-  if (enc->flags & F_SPACE_BEFORE) encode_space (enc);
+  if (enc->json.flags & F_SPACE_BEFORE) encode_space (enc);
   encode_ch (enc, ':');
-  if (enc->flags & F_SPACE_AFTER ) encode_space (enc);
+  if (enc->json.flags & F_SPACE_AFTER ) encode_space (enc);
   encode_sv (enc, HeVAL (he));
 }
 
@@ -389,7 +389,7 @@ encode_hv (enc_t *enc, HV *hv)
       // actually, this is mostly due to the stupid so-called
       // security workaround added somewhere in 5.8.x.
       // that randomises hash orderings
-      if (enc->flags & F_CANONICAL)
+      if (enc->json.flags & F_CANONICAL)
         {
           int fast = 1;
           HE *he;
@@ -471,16 +471,69 @@ encode_rv (enc_t *enc, SV *sv)
   SvGETMAGIC (sv);
   svt = SvTYPE (sv);
 
-  if (svt == SVt_PVHV)
+  if (expect_false (SvOBJECT (sv)))
+    {
+      if (SvSTASH (sv) == json_boolean_stash)
+        {
+          if (SvIV (sv))
+            encode_str (enc, "true", 4, 0);
+          else
+            encode_str (enc, "false", 5, 0);
+        }
+      else
+        {
+#if 0
+          if (0 && sv_derived_from (rv, "JSON::Literal"))
+            {
+              // not yet
+            }
+#endif
+          if (enc->json.flags & F_CONV_BLESSED)
+            {
+              // we re-bless the reference to get overload and other niceties right
+              GV *to_json = gv_fetchmethod_autoload (SvSTASH (sv), "TO_JSON", 1);
+
+              if (to_json)
+                {
+                  dSP; ENTER; SAVETMPS; PUSHMARK (SP);
+                  XPUSHs (sv_bless (sv_2mortal (newRV_inc (sv)), SvSTASH (sv)));
+
+                  // calling with G_SCALAR ensures that we always get a 1 reutrn value
+                  // check anyways.
+                  PUTBACK;
+                  assert (1 == call_sv ((SV *)GvCV (to_json), G_SCALAR));
+                  SPAGAIN;
+
+                  encode_sv (enc, POPs);
+
+                  FREETMPS; LEAVE;
+                }
+              else if (enc->json.flags & F_ALLOW_BLESSED)
+                encode_str (enc, "null", 4, 0);
+              else
+                croak ("encountered object '%s', but neither allow_blessed enabled nor TO_JSON method available on it",
+                       SvPV_nolen (sv_2mortal (newRV_inc (sv))));
+            }
+          else if (enc->json.flags & F_ALLOW_BLESSED)
+            encode_str (enc, "null", 4, 0);
+          else
+            croak ("encountered object '%s', but neither allow_blessed nor convert_blessed settings are enabled",
+                   SvPV_nolen (sv_2mortal (newRV_inc (sv))));
+        }
+    }
+  else if (svt == SVt_PVHV)
     encode_hv (enc, (HV *)sv);
   else if (svt == SVt_PVAV)
     encode_av (enc, (AV *)sv);
   else if (svt < SVt_PVAV)
     {
-      if (SvNIOK (sv) && SvIV (sv) == 0)
-        encode_str (enc, "false", 5, 0);
-      else if (SvNIOK (sv) && SvIV (sv) == 1)
+      STRLEN len = 0;
+      char *pv = svt ? SvPV (sv, len) : 0;
+
+      if (len == 1 && *pv == '1')
         encode_str (enc, "true", 4, 0);
+      else if (len == 1 && *pv == '0')
+        encode_str (enc, "false", 5, 0);
       else
         croak ("cannot encode reference to scalar '%s' unless the scalar is 0 or 1",
                SvPV_nolen (sv_2mortal (newRV_inc (sv))));
@@ -560,19 +613,19 @@ encode_sv (enc_t *enc, SV *sv)
 }
 
 static SV *
-encode_json (SV *scalar, U32 flags)
+encode_json (SV *scalar, JSON *json)
 {
   enc_t enc;
 
-  if (!(flags & F_ALLOW_NONREF) && !SvROK (scalar))
+  if (!(json->flags & F_ALLOW_NONREF) && !SvROK (scalar))
     croak ("hash- or arrayref expected (not a simple scalar, use allow_nonref to allow this)");
 
-  enc.flags     = flags;
+  enc.json      = *json;
   enc.sv        = sv_2mortal (NEWSV (0, INIT_SIZE));
   enc.cur       = SvPVX (enc.sv);
   enc.end       = SvEND (enc.sv);
   enc.indent    = 0;
-  enc.maxdepth  = DEC_DEPTH (flags);
+  enc.maxdepth  = DEC_DEPTH (enc.json.flags);
 
   SvPOK_only (enc.sv);
   encode_sv (&enc, scalar);
@@ -580,10 +633,10 @@ encode_json (SV *scalar, U32 flags)
   SvCUR_set (enc.sv, enc.cur - SvPVX (enc.sv));
   *SvEND (enc.sv) = 0; // many xs functions expect a trailing 0 for text strings
 
-  if (!(flags & (F_ASCII | F_LATIN1 | F_UTF8)))
+  if (!(enc.json.flags & (F_ASCII | F_LATIN1 | F_UTF8)))
     SvUTF8_on (enc.sv);
 
-  if (enc.flags & F_SHRINK)
+  if (enc.json.flags & F_SHRINK)
     shrink (enc.sv);
 
   return enc.sv;
@@ -598,7 +651,7 @@ typedef struct
   char *cur; // current parser pointer
   char *end; // end of input string
   const char *err; // parse error, if != 0
-  U32 flags;  // F_*
+  JSON json;
   U32 depth; // recursion depth
   U32 maxdepth; // recursion depth limit
 } dec_t;
@@ -959,6 +1012,7 @@ fail:
 static SV *
 decode_hv (dec_t *dec)
 {
+  SV *sv;
   HV *hv = newHV ();
 
   DEC_INC_DEPTH;
@@ -969,25 +1023,63 @@ decode_hv (dec_t *dec)
   else
     for (;;)
       {
-        SV *key, *value;
-
         decode_ws (dec); EXPECT_CH ('"');
 
-        key = decode_str (dec);
-        if (!key)
-          goto fail;
+        // heuristic: assume that
+        // a) decode_str + hv_store_ent are abysmally slow.
+        // b) most hash keys are short, simple ascii text.
+        // => try to "fast-match" such strings to avoid
+        // the overhead of decode_str + hv_store_ent.
+        {
+          SV *value;
+          char *p = dec->cur;
+          char *e = p + 24; // only try up to 24 bytes
 
-        decode_ws (dec); EXPECT_CH (':');
+          for (;;)
+            {
+              // the >= 0x80 is true on most architectures
+              if (p == e || *p < 0x20 || *p >= 0x80 || *p == '\\')
+                {
+                  // slow path, back up and use decode_str
+                  SV *key = decode_str (dec);
+                  if (!key)
+                    goto fail;
 
-        value = decode_sv (dec);
-        if (!value)
-          {
-            SvREFCNT_dec (key);
-            goto fail;
-          }
+                  decode_ws (dec); EXPECT_CH (':');
 
-        hv_store_ent (hv, key, value, 0);
-        SvREFCNT_dec (key);
+                  value = decode_sv (dec);
+                  if (!value)
+                    {
+                      SvREFCNT_dec (key);
+                      goto fail;
+                    }
+
+                  hv_store_ent (hv, key, value, 0);
+                  SvREFCNT_dec (key);
+
+                  break;
+                }
+              else if (*p == '"')
+                {
+                  // fast path, got a simple key
+                  char *key = dec->cur;
+                  int len = p - key;
+                  dec->cur = p + 1;
+
+                  decode_ws (dec); EXPECT_CH (':');
+
+                  value = decode_sv (dec);
+                  if (!value)
+                    goto fail;
+
+                  hv_store (hv, key, len, value, 0);
+
+                  break;
+                }
+
+              ++p;
+            }
+        }
 
         decode_ws (dec);
 
@@ -1004,7 +1096,67 @@ decode_hv (dec_t *dec)
       }
 
   DEC_DEC_DEPTH;
-  return newRV_noinc ((SV *)hv);
+  sv = newRV_noinc ((SV *)hv);
+
+  // check filter callbacks
+  if (dec->json.flags & F_HOOK)
+    {
+      if (dec->json.cb_sk_object && HvKEYS (hv) == 1)
+        {
+          HE *cb, *he;
+
+          hv_iterinit (hv);
+          he = hv_iternext (hv);
+          hv_iterinit (hv);
+
+          // the next line creates a mortal sv each time its called.
+          // might want to optimise this for common cases.
+          cb = hv_fetch_ent (dec->json.cb_sk_object, hv_iterkeysv (he), 0, 0);
+
+          if (cb)
+            {
+              int count;
+              ENTER; SAVETMPS;
+
+              dSP; PUSHMARK (SP);
+              XPUSHs (HeVAL (he));
+
+              PUTBACK; count = call_sv (HeVAL (cb), G_ARRAY); SPAGAIN;
+
+              if (count == 1)
+                {
+                  sv = newSVsv (POPs);
+                  FREETMPS; LEAVE;
+                  return sv;
+                }
+
+              FREETMPS; LEAVE;
+            }
+        }
+
+      if (dec->json.cb_object)
+        {
+          int count;
+          ENTER; SAVETMPS;
+
+          dSP; ENTER; SAVETMPS; PUSHMARK (SP);
+          XPUSHs (sv_2mortal (sv));
+
+          PUTBACK; count = call_sv (dec->json.cb_object, G_ARRAY); SPAGAIN;
+
+          if (count == 1)
+            {
+              sv = newSVsv (POPs);
+              FREETMPS; LEAVE;
+              return sv;
+            }
+
+          SvREFCNT_inc (sv);
+          FREETMPS; LEAVE;
+        }
+    }
+
+  return sv;
 
 fail:
   SvREFCNT_dec (hv);
@@ -1073,7 +1225,7 @@ fail:
 }
 
 static SV *
-decode_json (SV *string, U32 flags, UV *offset_return)
+decode_json (SV *string, JSON *json, UV *offset_return)
 {
   dec_t dec;
   UV offset;
@@ -1082,19 +1234,26 @@ decode_json (SV *string, U32 flags, UV *offset_return)
   SvGETMAGIC (string);
   SvUPGRADE (string, SVt_PV);
 
-  if (flags & F_UTF8)
+  if (json->flags & F_MAXSIZE && SvCUR (string) > DEC_SIZE (json->flags))
+    croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
+           (unsigned long)SvCUR (string), (unsigned long)DEC_SIZE (json->flags));
+
+  if (json->flags & F_UTF8)
     sv_utf8_downgrade (string, 0);
   else
     sv_utf8_upgrade (string);
 
   SvGROW (string, SvCUR (string) + 1); // should basically be a NOP
 
-  dec.flags    = flags;
+  dec.json     = *json;
   dec.cur      = SvPVX (string);
   dec.end      = SvEND (string);
   dec.err      = 0;
   dec.depth    = 0;
-  dec.maxdepth = DEC_DEPTH (dec.flags);
+  dec.maxdepth = DEC_DEPTH (dec.json.flags);
+
+  if (dec.json.cb_object || dec.json.cb_sk_object)
+    dec.json.flags |= F_HOOK;
 
   *dec.end = 0; // this should basically be a nop, too, but make sure it's there
   sv = decode_sv (&dec);
@@ -1114,7 +1273,7 @@ decode_json (SV *string, U32 flags, UV *offset_return)
 
   if (offset_return || !sv)
     {
-      offset = dec.flags & F_UTF8
+      offset = dec.json.flags & F_UTF8
                ? dec.cur - SvPVX (string)
                : utf8_distance (dec.cur, SvPVX (string));
 
@@ -1143,7 +1302,7 @@ decode_json (SV *string, U32 flags, UV *offset_return)
 
   sv = sv_2mortal (sv);
 
-  if (!(dec.flags & F_ALLOW_NONREF) && !SvROK (sv))
+  if (!(dec.json.flags & F_ALLOW_NONREF) && !SvROK (sv))
     croak ("JSON text must be an object or array (but found number, string, true, false or null, use allow_nonref to allow this)");
 
   return sv;
@@ -1165,7 +1324,8 @@ BOOT:
             : i >= 'A' && i <= 'F' ? i - 'A' + 10
             : -1;
 
-	json_stash = gv_stashpv ("JSON::XS", 1);
+	json_stash         = gv_stashpv ("JSON::XS"         , 1);
+	json_boolean_stash = gv_stashpv ("JSON::XS::Boolean", 1);
 
         json_true  = get_sv ("JSON::XS::true" , 1); SvREADONLY_on (json_true );
         json_false = get_sv ("JSON::XS::false", 1); SvREADONLY_on (json_false);
@@ -1173,41 +1333,43 @@ BOOT:
 
 PROTOTYPES: DISABLE
 
-SV *new (char *dummy)
-	CODE:
-        RETVAL = sv_bless (newRV_noinc (newSVuv (F_DEFAULT)), json_stash);
-	OUTPUT:
-        RETVAL
-
-SV *ascii (SV *self, int enable = 1)
-	ALIAS:
-        ascii        = F_ASCII
-        latin1       = F_LATIN1
-        utf8         = F_UTF8
-        indent       = F_INDENT
-        canonical    = F_CANONICAL
-        space_before = F_SPACE_BEFORE
-        space_after  = F_SPACE_AFTER
-        pretty       = F_PRETTY
-        allow_nonref = F_ALLOW_NONREF
-        shrink       = F_SHRINK
-	CODE:
+void new (char *klass)
+	PPCODE:
 {
-  	UV *uv = SvJSON (self);
-        if (enable)
-          *uv |=  ix;
-        else
-          *uv &= ~ix;
-
-        RETVAL = newSVsv (self);
+  	SV *pv = NEWSV (0, sizeof (JSON));
+        SvPOK_only (pv);
+        Zero (SvPVX (pv), 1, JSON);
+        ((JSON *)SvPVX (pv))->flags = F_DEFAULT;
+        XPUSHs (sv_2mortal (sv_bless (newRV_noinc (pv), json_stash)));
 }
-	OUTPUT:
-        RETVAL
 
-SV *max_depth (SV *self, UV max_depth = 0x80000000UL)
-	CODE:
+void ascii (JSON *self, int enable = 1)
+	ALIAS:
+        ascii           = F_ASCII
+        latin1          = F_LATIN1
+        utf8            = F_UTF8
+        indent          = F_INDENT
+        canonical       = F_CANONICAL
+        space_before    = F_SPACE_BEFORE
+        space_after     = F_SPACE_AFTER
+        pretty          = F_PRETTY
+        allow_nonref    = F_ALLOW_NONREF
+        shrink          = F_SHRINK
+        allow_blessed   = F_ALLOW_BLESSED
+        convert_blessed = F_CONV_BLESSED
+	PPCODE:
 {
-  	UV *uv = SvJSON (self);
+        if (enable)
+          self->flags |=  ix;
+        else
+          self->flags &= ~ix;
+
+        XPUSHs (ST (0));
+}
+
+void max_depth (JSON *self, UV max_depth = 0x80000000UL)
+	PPCODE:
+{
         UV log2 = 0;
 
         if (max_depth > 0x80000000UL) max_depth = 0x80000000UL;
@@ -1215,41 +1377,93 @@ SV *max_depth (SV *self, UV max_depth = 0x80000000UL)
         while ((1UL << log2) < max_depth)
           ++log2;
 
-        *uv = *uv & ~F_MAXDEPTH | (log2 << S_MAXDEPTH);
+        self->flags = self->flags & ~F_MAXDEPTH | (log2 << S_MAXDEPTH);
 
-        RETVAL = newSVsv (self);
+        XPUSHs (ST (0));
 }
-	OUTPUT:
-        RETVAL
 
-void encode (SV *self, SV *scalar)
+void max_size (JSON *self, UV max_size = 0)
 	PPCODE:
-        XPUSHs (encode_json (scalar, *SvJSON (self)));
+{
+        UV log2 = 0;
 
-void decode (SV *self, SV *jsonstr)
+        if (max_size > 0x80000000UL) max_size = 0x80000000UL;
+        if (max_size == 1)           max_size = 2;
+
+        while ((1UL << log2) < max_size)
+          ++log2;
+
+        self->flags = self->flags & ~F_MAXSIZE | (log2 << S_MAXSIZE);
+
+        XPUSHs (ST (0));
+}
+
+void filter_json_object (JSON *self, SV *cb = &PL_sv_undef)
 	PPCODE:
-        XPUSHs (decode_json (jsonstr, *SvJSON (self), 0));
+{
+        SvREFCNT_dec (self->cb_object);
+        self->cb_object = SvOK (cb) ? newSVsv (cb) : 0;
 
-void decode_prefix (SV *self, SV *jsonstr)
+        XPUSHs (ST (0));
+}
+
+void filter_json_single_key_object (JSON *self, SV *key, SV *cb = &PL_sv_undef)
+	PPCODE:
+{
+  	if (!self->cb_sk_object)
+          self->cb_sk_object = newHV ();
+
+        if (SvOK (cb))
+          hv_store_ent (self->cb_sk_object, key, newSVsv (cb), 0);
+        else
+          {
+            hv_delete_ent (self->cb_sk_object, key, G_DISCARD, 0);
+
+            if (!HvKEYS (self->cb_sk_object))
+              {
+                SvREFCNT_dec (self->cb_sk_object);
+                self->cb_sk_object = 0;
+              }
+          }
+
+        XPUSHs (ST (0));
+}
+
+void encode (JSON *self, SV *scalar)
+	PPCODE:
+        XPUSHs (encode_json (scalar, self));
+
+void decode (JSON *self, SV *jsonstr)
+	PPCODE:
+        XPUSHs (decode_json (jsonstr, self, 0));
+
+void decode_prefix (JSON *self, SV *jsonstr)
 	PPCODE:
 {
   	UV offset;
         EXTEND (SP, 2);
-        PUSHs (decode_json (jsonstr, *SvJSON (self), &offset));
+        PUSHs (decode_json (jsonstr, self, &offset));
         PUSHs (sv_2mortal (newSVuv (offset)));
 }
+
+void DESTROY (JSON *self)
+	CODE:
+        SvREFCNT_dec (self->cb_sk_object);
+        SvREFCNT_dec (self->cb_object);
 
 PROTOTYPES: ENABLE
 
 void to_json (SV *scalar)
-	ALIAS:
-        objToJson = 0
 	PPCODE:
-        XPUSHs (encode_json (scalar, F_DEFAULT | F_UTF8));
+{
+        JSON json = { F_DEFAULT | F_UTF8 };
+        XPUSHs (encode_json (scalar, &json));
+}
 
 void from_json (SV *jsonstr)
-	ALIAS:
-        jsonToObj = 0
 	PPCODE:
-        XPUSHs (decode_json (jsonstr, F_DEFAULT | F_UTF8, 0));
+{
+        JSON json = { F_DEFAULT | F_UTF8 };
+        XPUSHs (decode_json (jsonstr, &json, 0));
+}
 

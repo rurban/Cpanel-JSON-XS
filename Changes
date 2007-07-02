@@ -1,6 +1,29 @@
 Revision history for Perl extension JSON::XS
 
-1.3
+1.4  Mon Jul  2 10:06:30 CEST 2007
+	- add convert_blessed setting.
+        - encode did not catch all blessed objects, encoding their
+          contents in most cases. This has been fixed by introducing
+          the allow_blessed setting.
+        - added filter_json_object and filter_json_single_key_object
+          settings that specify a callback to be called when
+          all/specific json objects are encountered.
+        - assume that most object keys are simple ascii words and
+          optimise this case, penalising the general case. This can
+          speed up decoding by 30% in typical cases and gives
+          a smaller and faster perl hash.
+        - implemented simpleminded, optional resource size checking
+          in decode_json.
+        - remove objToJson/jsonToObj aliases, as the next version
+          of JSON will not have them either.
+        - bit the bullet and converted the very simple json object
+          into a more complex one.
+        - work around a bug where perl wrongly claims an integer
+          is not an integer.
+        - unbundle JSON::XS::Boolean into own pm file so Storable
+          and similar modules can resolve the overloading when thawing.
+
+1.3  Sun Jun 24 01:55:02 CEST 2007
         - make JSON::XS::true and false special overloaded objects
           and return those instead of 1 and 0 for those json atoms
           (JSON::PP compatibility is NOT achieved yet).
@@ -8,8 +31,8 @@ Revision history for Perl extension JSON::XS
           values.
 	- add a reference to
           http://jpsykes.com/47/practical-csrf-and-json-security.
-        - removed require 5.8.8 again, it just not very expert-friendly,
-          and try to be more compatible with slightly older versions,
+        - removed require 5.8.8 again, it is just not very expert-friendly.
+          Also try to be more compatible with slightly older versions,
           which are not recommended (because they are buggy).
 
 1.24 Mon Jun 11 05:40:49 CEST 2007
