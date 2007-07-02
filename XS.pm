@@ -12,10 +12,6 @@ JSON::XS - JSON serialising/deserialising, done correctly and fast
  $utf8_encoded_json_text = to_json $perl_hash_or_arrayref;
  $perl_hash_or_arrayref  = from_json $utf8_encoded_json_text;
 
- # objToJson and jsonToObj aliases to to_json and from_json
- # are exported for compatibility to the JSON module,
- # but should not be used in new code.
-
  # OO-interface
 
  $coder = JSON::XS->new->ascii->pretty->allow_nonref;
@@ -87,10 +83,10 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '1.3';
+our $VERSION = '1.4';
 our @ISA = qw(Exporter);
 
-our @EXPORT = qw(to_json from_json objToJson jsonToObj);
+our @EXPORT = qw(to_json from_json);
 
 use Exporter;
 use XSLoader;
@@ -318,6 +314,118 @@ resulting in an invalid JSON text:
    JSON::XS->new->allow_nonref->encode ("Hello, World!")
    => "Hello, World!"
 
+=item $json = $json->allow_blessed ([$enable])
+
+If C<$enable> is true (or missing), then the C<encode> method will not
+barf when it encounters a blessed reference. Instead, the value of the
+B<convert_blessed> option will decide wether C<null> (C<convert_blessed>
+disabled or no C<to_json> method found) or a representation of the
+object (C<convert_blessed> enabled and C<to_json> method found) is being
+encoded. Has no effect on C<decode>.
+
+If C<$enable> is false (the default), then C<encode> will throw an
+exception when it encounters a blessed object.
+
+=item $json = $json->convert_blessed ([$enable])
+
+If C<$enable> is true (or missing), then C<encode>, upon encountering a
+blessed object, will check for the availability of the C<TO_JSON> method
+on the object's class. If found, it will be called in scalar context
+and the resulting scalar will be encoded instead of the object. If no
+C<TO_JSON> method is found, the value of C<allow_blessed> will decide what
+to do.
+
+The C<TO_JSON> method may safely call die if it wants. If C<TO_JSON>
+returns other blessed objects, those will be handled in the same
+way. C<TO_JSON> must take care of not causing an endless recursion cycle
+(== crash) in this case. The name of C<TO_JSON> was chosen because other
+methods called by the Perl core (== not by the user of the object) are
+usually in upper case letters and to avoid collisions with the C<to_json>
+function.
+
+This setting does not yet influence C<decode> in any way, but in the
+future, global hooks might get installed that influence C<decode> and are
+enabled by this setting.
+
+If C<$enable> is false, then the C<allow_blessed> setting will decide what
+to do when a blessed object is found.
+
+=item $json = $json->filter_json_object ([$coderef->($hashref)])
+
+When C<$coderef> is specified, it will be called from C<decode> each
+time it decodes a JSON object. The only argument is a reference to the
+newly-created hash. If the code references returns a single scalar (which
+need not be a reference), this value (i.e. a copy of that scalar to avoid
+aliasing) is inserted into the deserialised data structure. If it returns
+an empty list (NOTE: I<not> C<undef>, which is a valid scalar), the
+original deserialised hash will be inserted. This setting can slow down
+decoding considerably.
+
+When C<$coderef> is omitted or undefined, any existing callback will
+be removed and C<decode> will not change the deserialised hash in any
+way.
+
+Example, convert all JSON objects into the integer 5:
+
+   my $js = JSON::XS->new->filter_json_object (sub { 5 });
+   # returns [5]
+   $js->decode ('[{}]')
+   # throw an exception because allow_nonref is not enabled
+   # so a lone 5 is not allowed.
+   $js->decode ('{"a":1, "b":2}');
+
+=item $json = $json->filter_json_single_key_object ($key [=> $coderef->($value)])
+
+Works remotely similar to C<filter_json_object>, but is only called for
+JSON objects having a single key named C<$key>.
+
+This C<$coderef> is called before the one specified via
+C<filter_json_object>, if any. It gets passed the single value in the JSON
+object. If it returns a single value, it will be inserted into the data
+structure. If it returns nothing (not even C<undef> but the empty list),
+the callback from C<filter_json_object> will be called next, as if no
+single-key callback were specified.
+
+If C<$coderef> is omitted or undefined, the corresponding callback will be
+disabled. There can only ever be one callback for a given key.
+
+As this callback gets called less often then the C<filter_json_object>
+one, decoding speed will not usually suffer as much. Therefore, single-key
+objects make excellent targets to serialise Perl objects into, especially
+as single-key JSON objects are as close to the type-tagged value concept
+as JSON gets (its basically an ID/VALUE tuple). Of course, JSON does not
+support this in any way, so you need to make sure your data never looks
+like a serialised Perl hash.
+
+Typical names for the single object key are C<__class_whatever__>, or
+C<$__dollars_are_rarely_used__$> or C<}ugly_brace_placement>, or even
+things like C<__class_md5sum(classname)__>, to reduce the risk of clashing
+with real hashes.
+
+Example, decode JSON objects of the form C<< { "__widget__" => <id> } >>
+into the corresponding C<< $WIDGET{<id>} >> object:
+
+   # return whatever is in $WIDGET{5}:
+   JSON::XS
+      ->new
+      ->filter_json_single_key_object (__widget__ => sub {
+            $WIDGET{ $_[0] }
+         })
+      ->decode ('{"__widget__": 5')
+
+   # this can be used with a TO_JSON method in some "widget" class
+   # for serialisation to json:
+   sub WidgetBase::TO_JSON {
+      my ($self) = @_;
+
+      unless ($self->{id}) {
+         $self->{id} = ..get..some..id..;
+         $WIDGET{$self->{id}} = $self;
+      }
+
+      { __widget__ => $self->{id} }
+   }
+
 =item $json = $json->shrink ([$enable])
 
 Perl usually over-allocates memory a bit when allocating space for
@@ -359,8 +467,23 @@ given character in a string.
 Setting the maximum depth to one disallows any nesting, so that ensures
 that the object is only a single hash/object or array.
 
-The argument to C<max_depth> will be rounded up to the next nearest power
-of two.
+The argument to C<max_depth> will be rounded up to the next highest power
+of two. If no argument is given, the highest possible setting will be
+used, which is rarely useful.
+
+See SECURITY CONSIDERATIONS, below, for more info on why this is useful.
+
+=item $json = $json->max_size ([$maximum_string_size])
+
+Set the maximum length a JSON text may have (in bytes) where decoding is
+being attempted. The default is C<0>, meaning no limit. When C<decode>
+is called on a string longer then this number of characters it will not
+attempt to decode the string but throw an exception. This setting has no
+effect on C<encode> (yet).
+
+The argument to C<max_size> will be rounded up to the next B<highest>
+power of two (so may be more than requested). If no argument is given, the
+limit check will be deactivated (same as when C<0> is specified).
 
 See SECURITY CONSIDERATIONS, below, for more info on why this is useful.
 
@@ -662,16 +785,19 @@ the functional interface, while JSON::XS/2 uses the OO interface
 with pretty-printing and hashkey sorting enabled, JSON::XS/3 enables
 shrink). Higher is better:
 
+   Storable   |  15779.925 |  14169.946 |
+   -----------+------------+------------+
    module     |     encode |     decode |
    -----------|------------|------------|
-   JSON       |   7645.468 |   4208.613 |
-   JSON::DWIW |  40721.398 |  77101.176 |
-   JSON::PC   |  65948.176 |  78251.940 |
-   JSON::Syck |  22844.793 |  26479.192 |
-   JSON::XS   | 388361.481 | 199728.762 |
-   JSON::XS/2 | 218453.333 | 192399.266 |
-   JSON::XS/3 | 338250.323 | 192399.266 |
-   Storable   |  15779.925 |  14169.946 |
+   JSON       |   4990.842 |   4088.813 |
+   JSON::DWIW |  51653.990 |  71575.154 |
+   JSON::PC   |  65948.176 |  74631.744 |
+   JSON::PP   |   8931.652 |   3817.168 |
+   JSON::Syck |  24877.248 |  27776.848 |
+   JSON::XS   | 388361.481 | 227951.304 |
+   JSON::XS/2 | 227951.304 | 218453.333 |
+   JSON::XS/3 | 338250.323 | 218453.333 |
+   Storable   |  16500.016 | 135300.129 |
    -----------+------------+------------+
 
 That is, JSON::XS is about five times faster than JSON::DWIW on encoding,
@@ -684,14 +810,15 @@ search API (http://nanoref.com/yahooapis/mgPdGg):
 
    module     |     encode |     decode |
    -----------|------------|------------|
-   JSON       |    254.685 |     37.665 |
-   JSON::DWIW |    843.343 |   1049.731 |
-   JSON::PC   |   3602.116 |   2307.352 |
-   JSON::Syck |    505.107 |    787.899 |
-   JSON::XS   |   5747.196 |   3690.220 |
-   JSON::XS/2 |   3968.121 |   3676.634 |
-   JSON::XS/3 |   6105.246 |   3662.508 |
-   Storable   |   4417.337 |   5285.161 |
+   JSON       |     55.260 |     34.971 |
+   JSON::DWIW |    825.228 |   1082.513 |
+   JSON::PC   |   3571.444 |   2394.829 |
+   JSON::PP   |    210.987 |     32.574 |
+   JSON::Syck |    552.551 |    787.544 |
+   JSON::XS   |   5780.463 |   4854.519 |
+   JSON::XS/2 |   3869.998 |   4798.975 |
+   JSON::XS/3 |   5862.880 |   4798.975 |
+   Storable   |   4445.002 |   5235.027 |
    -----------+------------+------------+
 
 Again, JSON::XS leads by far (except for Storable which non-surprisingly
@@ -718,7 +845,9 @@ limit the size of JSON texts you accept, or make sure then when your
 resources run out, thats just fine (e.g. by using a separate process that
 can crash safely). The size of a JSON text in octets or characters is
 usually a good indication of the size of the resources required to decode
-it into a Perl structure.
+it into a Perl structure. While JSON::XS can check the size of the JSON
+text, it might be too late when you already have it in memory, so you
+might want to check the size before you accept the string.
 
 Third, JSON::XS recurses using the C stack when decoding objects and
 arrays. The C stack is a limited resource: for instance, on my amd64
@@ -759,7 +888,7 @@ sub false() { $false }
 
 sub is_bool($) {
    UNIVERSAL::isa $_[0], "JSON::XS::Boolean"
-      or UNIVERSAL::isa $_[0], "JSON::Literal"
+#      or UNIVERSAL::isa $_[0], "JSON::Literal"
 }
 
 XSLoader::load "JSON::XS", $VERSION;

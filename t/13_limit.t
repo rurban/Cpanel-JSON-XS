@@ -1,4 +1,4 @@
-BEGIN { $| = 1; print "1..9\n"; }
+BEGIN { $| = 1; print "1..11\n"; }
 
 use JSON::XS;
 
@@ -23,4 +23,7 @@ ok (!eval { $js->encode ([[]]), 1 });
 
 ok ($js->max_depth(2)->encode ([{}]));
 ok (!eval { $js->encode ([[{}]]), 1 });
+
+ok (eval { ref $js->max_size (7)->decode ("[      ]") });
+eval { $js->max_size (7)->decode ("[       ]") }; ok ($@ =~ /max_size/);
 
