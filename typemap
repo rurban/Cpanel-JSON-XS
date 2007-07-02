@@ -1,0 +1,10 @@
+JSON *		T_JSON
+
+INPUT
+
+T_JSON
+	if (!(SvROK ($arg) && SvOBJECT (SvRV ($arg)) && SvSTASH (SvRV ($arg)) == json_stash))
+          croak (\"object is not of type JSON::XS\");
+        $var = (JSON *)SvPVX (SvRV ($arg));
+
+

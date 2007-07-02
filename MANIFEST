@@ -5,6 +5,7 @@ COPYING
 Makefile.PL
 XS.pm
 XS.xs
+XS/Boolean.pm
 eg/bench
 t/00_load.t
 t/01_utf8.t
@@ -18,8 +19,10 @@ t/08_pc_base.t
 t/09_pc_extra_number.t
 t/10_pc_keysort.t
 t/11_pc_expo.t
-t/12_binary.t
+t/12_blessed.t
 t/13_limit.t
 t/14_latin1.t
 t/15_prefix.t
+t/99_binary.t
+typemap
 META.yml                                 Module meta-data (added by MakeMaker)
