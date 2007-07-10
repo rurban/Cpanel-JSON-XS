@@ -491,20 +491,29 @@ encode_rv (enc_t *enc, SV *sv)
           if (enc->json.flags & F_CONV_BLESSED)
             {
               // we re-bless the reference to get overload and other niceties right
-              GV *to_json = gv_fetchmethod_autoload (SvSTASH (sv), "TO_JSON", 1);
+              GV *to_json = gv_fetchmethod_autoload (SvSTASH (sv), "TO_JSON", 0);
 
               if (to_json)
                 {
-                  dSP; ENTER; SAVETMPS; PUSHMARK (SP);
+                  int count;
+                  dSP;
+
+                  ENTER; SAVETMPS; PUSHMARK (SP);
                   XPUSHs (sv_bless (sv_2mortal (newRV_inc (sv)), SvSTASH (sv)));
 
-                  // calling with G_SCALAR ensures that we always get a 1 reutrn value
-                  // check anyways.
+                  // calling with G_SCALAR ensures that we always get a 1 return value
                   PUTBACK;
-                  assert (1 == call_sv ((SV *)GvCV (to_json), G_SCALAR));
+                  call_sv ((SV *)GvCV (to_json), G_SCALAR);
                   SPAGAIN;
 
-                  encode_sv (enc, POPs);
+                  // catch this surprisingly common error
+                  if (SvROK (TOPs) && SvRV (TOPs) == sv)
+                    croak ("%s::TO_JSON method returned same object as was passed instead of a new one", HvNAME (SvSTASH (sv)));
+
+                  sv = POPs;
+                  PUTBACK;
+
+                  encode_sv (enc, sv);
 
                   FREETMPS; LEAVE;
                 }
@@ -1115,10 +1124,10 @@ decode_hv (dec_t *dec)
 
           if (cb)
             {
+              dSP;
               int count;
-              ENTER; SAVETMPS;
 
-              dSP; PUSHMARK (SP);
+              ENTER; SAVETMPS; PUSHMARK (SP);
               XPUSHs (HeVAL (he));
 
               PUTBACK; count = call_sv (HeVAL (cb), G_ARRAY); SPAGAIN;
@@ -1136,10 +1145,10 @@ decode_hv (dec_t *dec)
 
       if (dec->json.cb_object)
         {
+          dSP;
           int count;
-          ENTER; SAVETMPS;
 
-          dSP; ENTER; SAVETMPS; PUSHMARK (SP);
+          ENTER; SAVETMPS; PUSHMARK (SP);
           XPUSHs (sv_2mortal (sv));
 
           PUTBACK; count = call_sv (dec->json.cb_object, G_ARRAY); SPAGAIN;

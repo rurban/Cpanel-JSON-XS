@@ -1,5 +1,14 @@
 Revision history for Perl extension JSON::XS
 
+1.41 Tue Jul 10 18:21:44 CEST 2007
+	- fix compilation with NDEBUG (assert side-effect),
+          affects convert_blessed only.
+	- fix a bug in decode filters calling ENTER; SAVETMPS;
+          one time too often.
+        - catch a typical error in TO_JSON methods.
+	- antique-ised XS.xs again to work with outdated
+          C compilers (windows...).
+
 1.4  Mon Jul  2 10:06:30 CEST 2007
 	- add convert_blessed setting.
         - encode did not catch all blessed objects, encoding their

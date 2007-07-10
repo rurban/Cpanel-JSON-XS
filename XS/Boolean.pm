@@ -1,6 +1,6 @@
 =head1 NAME
 
-JSON::Xs::Boolean - dummy module providing JSON::XS::Boolean
+JSON::XS::Boolean - dummy module providing JSON::XS::Boolean
 
 =head1 SYNOPSIS
 
