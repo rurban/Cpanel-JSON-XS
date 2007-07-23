@@ -1,4 +1,4 @@
-BEGIN { $| = 1; print "1..75\n"; }
+BEGIN { $| = 1; print "1..76\n"; }
 
 use utf8;
 use JSON::XS;
@@ -53,4 +53,7 @@ ok (32456 == ((from_json to_json [32456])->[0]));
 ok (32789 == ((from_json to_json [32789])->[0]));
 ok (32767 == ((from_json to_json [32767])->[0]));
 ok (32768 == ((from_json to_json [32768])->[0]));
+
+my @sparse; @sparse[0,3] = (1, 4);
+ok ("[1,null,null,4]" eq to_json \@sparse);
 

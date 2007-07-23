@@ -308,8 +308,14 @@ encode_av (enc_t *enc, AV *av)
 
   for (i = 0; i <= len; ++i)
     {
+      SV **svp = av_fetch (av, i, 0);
+
       encode_indent (enc);
-      encode_sv (enc, *av_fetch (av, i, 0));
+
+      if (svp)
+        encode_sv (enc, *svp);
+      else
+        encode_str (enc, "null", 4, 0);
 
       if (i < len)
         encode_comma (enc);
