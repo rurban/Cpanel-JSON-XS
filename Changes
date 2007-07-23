@@ -1,5 +1,9 @@
 Revision history for Perl extension JSON::XS
 
+1.42 Tue Jul 24 00:51:18 CEST 2007
+	- fix a crash caused by not handling missing array elements
+          (report and testcase by Jay Kuri).
+
 1.41 Tue Jul 10 18:21:44 CEST 2007
 	- fix compilation with NDEBUG (assert side-effect),
           affects convert_blessed only.
