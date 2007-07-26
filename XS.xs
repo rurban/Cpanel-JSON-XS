@@ -2,10 +2,11 @@
 #include "perl.h"
 #include "XSUB.h"
 
-#include "assert.h"
-#include "string.h"
-#include "stdlib.h"
-#include "stdio.h"
+#include <assert.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <float.h>
 
 #if defined(__BORLANDC__) || defined(_MSC_VER)
 # define snprintf _snprintf // C compilers have this in stdio.h
@@ -939,9 +940,11 @@ decode_num (dec_t *dec)
 
   if (!is_nv)
     {
+      int len = dec->cur - start;
+
       // special case the rather common 1..4-digit-int case, assumes 32 bit ints or so
       if (*start == '-')
-        switch (dec->cur - start)
+        switch (len)
           {
             case 2: return newSViv (-(                                                      start [1] - '0' *    1));
             case 3: return newSViv (-(                                     start [1] * 10 + start [2] - '0' *   11));
@@ -949,7 +952,7 @@ decode_num (dec_t *dec)
             case 5: return newSViv (-(start [1] * 1000 + start [2] * 100 + start [3] * 10 + start [4] - '0' * 1111));
           }
       else
-        switch (dec->cur - start)
+        switch (len)
           {
             case 1: return newSViv (                                                        start [0] - '0' *    1);
             case 2: return newSViv (                                       start [0] * 10 + start [1] - '0' *   11);
@@ -959,7 +962,7 @@ decode_num (dec_t *dec)
 
       {
         UV uv;
-        int numtype = grok_number (start, dec->cur - start, &uv);
+        int numtype = grok_number (start, len, &uv);
         if (numtype & IS_NUMBER_IN_UV)
           if (numtype & IS_NUMBER_NEG)
             {
@@ -968,12 +971,24 @@ decode_num (dec_t *dec)
             }
           else
             return newSVuv (uv);
-
-        // here would likely be the place for bigint support
       }
+
+      len -= *start == '-' ? 1 : 0;
+
+      // does not fit into IV or UV, try NV
+      if ((sizeof (NV) == sizeof (double) && DBL_DIG >= len)
+          #if defined (LDBL_DIG)
+          || (sizeof (NV) == sizeof (long double) && LDBL_DIG >= len)
+          #endif
+         )
+        // fits into NV without loss of precision
+        return newSVnv (Atof (start));
+
+      // everything else fails, convert it to a string
+      return newSVpvn (start, dec->cur - start);
     }
 
-  // if we ever support bigint or bigfloat, this is the place for bigfloat
+  // loss of precision here
   return newSVnv (Atof (start));
 
 fail:
