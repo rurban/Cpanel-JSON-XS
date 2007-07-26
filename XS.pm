@@ -83,7 +83,7 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '1.42';
+our $VERSION = '1.43';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(to_json from_json);
@@ -555,11 +555,23 @@ decoding is necessary.
 
 =item number
 
-A JSON number becomes either an integer or numeric (floating point)
-scalar in perl, depending on its range and any fractional parts. On the
-Perl level, there is no difference between those as Perl handles all the
-conversion details, but an integer may take slightly less memory and might
-represent more values exactly than (floating point) numbers.
+A JSON number becomes either an integer, numeric (floating point) or
+string scalar in perl, depending on its range and any fractional parts. On
+the Perl level, there is no difference between those as Perl handles all
+the conversion details, but an integer may take slightly less memory and
+might represent more values exactly than (floating point) numbers.
+
+If the number consists of digits only, JSON::XS will try to represent
+it as an integer value. If that fails, it will try to represent it as
+a numeric (floating point) value if that is possible without loss of
+precision. Otherwise it will preserve the number as a string value.
+
+Numbers containing a fractional or exponential part will always be
+represented as numeric (floating point) values, possibly at a loss of
+precision.
+
+This might create round-tripping problems as numbers might become strings,
+but as Perl is typeless there is no other way to do it.
 
 =item true, false
 
