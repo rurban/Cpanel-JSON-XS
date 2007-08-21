@@ -60,6 +60,14 @@
 #define expect_false(expr) expect ((expr) != 0, 0)
 #define expect_true(expr)  expect ((expr) != 0, 1)
 
+#ifdef USE_ITHREADS
+# define JSON_SLOW 1
+# define JSON_STASH (json_stash ? json_stash : gv_stashpv ("JSON::XS", 1))
+#else
+# define JSON_SLOW 0
+# define JSON_STASH json_stash
+#endif
+
 static HV *json_stash, *json_boolean_stash; // JSON::XS::
 static SV *json_true, *json_false;
 
@@ -480,7 +488,11 @@ encode_rv (enc_t *enc, SV *sv)
 
   if (expect_false (SvOBJECT (sv)))
     {
-      if (SvSTASH (sv) == json_boolean_stash)
+      HV *stash = !JSON_SLOW || json_boolean_stash
+                  ? json_boolean_stash
+                  : gv_stashpv ("JSON::XS::Boolean", 1);
+
+      if (SvSTASH (sv) == stash)
         {
           if (SvIV (sv))
             encode_str (enc, "true", 4, 0);
@@ -502,7 +514,6 @@ encode_rv (enc_t *enc, SV *sv)
 
               if (to_json)
                 {
-                  int count;
                   dSP;
 
                   ENTER; SAVETMPS; PUSHMARK (SP);
@@ -1216,6 +1227,9 @@ decode_sv (dec_t *dec)
         if (dec->end - dec->cur >= 4 && !memcmp (dec->cur, "true", 4))
           {
             dec->cur += 4;
+#if JSON_SLOW
+            json_true = get_sv ("JSON::XS::true", 1); SvREADONLY_on (json_true);
+#endif
             return SvREFCNT_inc (json_true);
           }
         else
@@ -1227,6 +1241,9 @@ decode_sv (dec_t *dec)
         if (dec->end - dec->cur >= 5 && !memcmp (dec->cur, "false", 5))
           {
             dec->cur += 5;
+#if JSON_SLOW
+            json_false = get_sv ("JSON::XS::false", 1); SvREADONLY_on (json_false);
+#endif
             return SvREFCNT_inc (json_false);
           }
         else
@@ -1363,6 +1380,11 @@ BOOT:
 
 PROTOTYPES: DISABLE
 
+void CLONE (...)
+	CODE:
+        json_stash         = 0;
+        json_boolean_stash = 0;
+
 void new (char *klass)
 	PPCODE:
 {
@@ -1370,7 +1392,7 @@ void new (char *klass)
         SvPOK_only (pv);
         Zero (SvPVX (pv), 1, JSON);
         ((JSON *)SvPVX (pv))->flags = F_DEFAULT;
-        XPUSHs (sv_2mortal (sv_bless (newRV_noinc (pv), json_stash)));
+        XPUSHs (sv_2mortal (sv_bless (newRV_noinc (pv), JSON_STASH)));
 }
 
 void ascii (JSON *self, int enable = 1)
