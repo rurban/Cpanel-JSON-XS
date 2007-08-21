@@ -83,7 +83,7 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '1.43';
+our $VERSION = '1.44';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(to_json from_json);

@@ -1,5 +1,9 @@
 Revision history for Perl extension JSON::XS
 
+1.44 Wed Aug 22 01:02:44 CEST 2007
+	- very experimental process-emulation support, slowing everything down.
+          the horribly broken perl threads are still not supported - YMMV.
+
 1.43 Thu Jul 26 13:26:37 CEST 2007
 	- convert big json numbers exclusively consisting of digits to NV
           only when there is no loss of precision, otherwise to string.
