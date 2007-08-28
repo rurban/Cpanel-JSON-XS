@@ -83,7 +83,7 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '1.44';
+our $VERSION = '1.5';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(to_json from_json);
@@ -279,6 +279,51 @@ This setting has no effect when decoding JSON texts.
 Example, space_before and indent disabled, space_after enabled:
 
    {"key": "value"}
+
+=item $json = $json->relaxed ([$enable])
+
+If C<$enable> is true (or missing), then C<decode> will accept some
+extensions to normal JSON syntax (see below). C<encode> will not be
+affected in anyway. I<Be aware that this option makes you accept invalid
+JSON texts as if they were valid!>. I suggest only to use this option to
+parse application-specific files written by humans (configuration files,
+resource files etc.)
+
+If C<$enable> is false (the default), then C<decode> will only accept
+valid JSON texts.
+
+Currently accepted extensions are:
+
+=over 4
+
+=item * list items can have an end-comma
+
+JSON I<separates> array elements and key-value pairs with commas. This
+can be annoying if you write JSON texts manually and want to be able to
+quickly append elements, so this extension accepts comma at the end of
+such items not just between them:
+
+   [
+      1,
+      2, <- this comma not normally allowed
+   ]
+   {
+      "k1": "v1",
+      "k2": "v2", <- this comma not normally allowed
+   }
+
+=item * shell-style '#'-comments
+
+Whenever JSON allows whitespace, shell-style comments are additionally
+allowed. They are terminated by the first carriage-return or line-feed
+character, after which more white-space and comments are allowed.
+
+  [
+     1, # this comment not allowed in JSON
+        # neither this one...
+  ]
+
+=back
 
 =item $json = $json->canonical ([$enable])
 
