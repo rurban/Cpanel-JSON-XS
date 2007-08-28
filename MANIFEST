@@ -23,6 +23,8 @@ t/12_blessed.t
 t/13_limit.t
 t/14_latin1.t
 t/15_prefix.t
+t/16_tied.t
+t/17_relaxed.t
 t/99_binary.t
 typemap
 META.yml                                 Module meta-data (added by MakeMaker)

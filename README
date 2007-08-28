@@ -242,6 +242,45 @@ OBJECT-ORIENTED INTERFACE
 
            {"key": "value"}
 
+    $json = $json->relaxed ([$enable])
+        If $enable is true (or missing), then "decode" will accept some
+        extensions to normal JSON syntax (see below). "encode" will not be
+        affected in anyway. *Be aware that this option makes you accept
+        invalid JSON texts as if they were valid!*. I suggest only to use
+        this option to parse application-specific files written by humans
+        (configuration files, resource files etc.)
+
+        If $enable is false (the default), then "decode" will only accept
+        valid JSON texts.
+
+        Currently accepted extensions are:
+
+        * list items can have an end-comma
+            JSON *separates* array elements and key-value pairs with commas.
+            This can be annoying if you write JSON texts manually and want
+            to be able to quickly append elements, so this extension accepts
+            comma at the end of such items not just between them:
+
+               [
+                  1,
+                  2, <- this comma not normally allowed
+               ]
+               {
+                  "k1": "v1",
+                  "k2": "v2", <- this comma not normally allowed
+               }
+
+        * shell-style '#'-comments
+            Whenever JSON allows whitespace, shell-style comments are
+            additionally allowed. They are terminated by the first
+            carriage-return or line-feed character, after which more
+            white-space and comments are allowed.
+
+              [
+                 1, # this comment not allowed in JSON
+                    # neither this one...
+              ]
+
     $json = $json->canonical ([$enable])
         If $enable is true (or missing), then the "encode" method will
         output JSON objects by sorting their keys. This is adding a
