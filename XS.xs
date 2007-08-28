@@ -29,6 +29,8 @@
 #define F_SHRINK         0x00000200UL
 #define F_ALLOW_BLESSED  0x00000400UL
 #define F_CONV_BLESSED   0x00000800UL
+#define F_RELAXED        0x00001000UL
+
 #define F_MAXDEPTH       0xf8000000UL
 #define S_MAXDEPTH       27
 #define F_MAXSIZE        0x01f00000UL
@@ -337,7 +339,7 @@ encode_av (enc_t *enc, AV *av)
 }
 
 static void
-encode_he (enc_t *enc, HE *he)
+encode_hk (enc_t *enc, HE *he)
 {
   encode_ch (enc, '"');
 
@@ -360,7 +362,6 @@ encode_he (enc_t *enc, HE *he)
   if (enc->json.flags & F_SPACE_BEFORE) encode_space (enc);
   encode_ch (enc, ':');
   if (enc->json.flags & F_SPACE_AFTER ) encode_space (enc);
-  encode_sv (enc, HeVAL (he));
 }
 
 // compare hash entries, used when all keys are bytestrings
@@ -375,8 +376,8 @@ he_cmp_fast (const void *a_, const void *b_)
   STRLEN la = HeKLEN (a);
   STRLEN lb = HeKLEN (b);
 
-  if (!(cmp = memcmp (HeKEY (a), HeKEY (b), la < lb ? la : lb)))
-    cmp = la - lb;
+  if (!(cmp = memcmp (HeKEY (b), HeKEY (a), lb < la ? lb : la)))
+    cmp = lb - la;
 
   return cmp;
 }
@@ -385,29 +386,45 @@ he_cmp_fast (const void *a_, const void *b_)
 static int
 he_cmp_slow (const void *a, const void *b)
 {
-  return sv_cmp (HeSVKEY_force (*(HE **)a), HeSVKEY_force (*(HE **)b));
+  return sv_cmp (HeSVKEY_force (*(HE **)b), HeSVKEY_force (*(HE **)a));
 }
 
 static void
 encode_hv (enc_t *enc, HV *hv)
 {
-  int count, i;
+  HE *he;
+  int count;
 
   if (enc->indent >= enc->maxdepth)
     croak ("data structure too deep (hit recursion limit)");
 
   encode_ch (enc, '{'); encode_nl (enc); ++enc->indent;
 
-  if ((count = hv_iterinit (hv)))
+  // for canonical output we have to sort by keys first
+  // actually, this is mostly due to the stupid so-called
+  // security workaround added somewhere in 5.8.x.
+  // that randomises hash orderings
+  if (enc->json.flags & F_CANONICAL)
     {
-      // for canonical output we have to sort by keys first
-      // actually, this is mostly due to the stupid so-called
-      // security workaround added somewhere in 5.8.x.
-      // that randomises hash orderings
-      if (enc->json.flags & F_CANONICAL)
+      int count = hv_iterinit (hv);
+
+      if (SvMAGICAL (hv))
         {
-          int fast = 1;
-          HE *he;
+          // need to count by iterating. could improve by dynamically building the vector below
+          // but I don't care for the speed of this special case.
+          // note also that we will run into undefined behaviour when the two iterations
+          // do not result in the same count, something I might care for in some later release.
+
+          count = 0;
+          while (hv_iternext (hv))
+            ++count;
+
+          hv_iterinit (hv);
+        }
+
+      if (count)
+        {
+          int i, fast = 1;
 #if defined(__BORLANDC__) || defined(_MSC_VER)
           HE **hes = _alloca (count * sizeof (HE));
 #else
@@ -444,35 +461,36 @@ encode_hv (enc_t *enc, HV *hv)
               LEAVE;
             }
 
-          for (i = 0; i < count; ++i)
+          while (count--)
             {
               encode_indent (enc);
-              encode_he (enc, hes [i]);
+              he = hes [count];
+              encode_hk (enc, he);
+              encode_sv (enc, expect_false (SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
 
-              if (i < count - 1)
+              if (count)
                 encode_comma (enc);
             }
-
-          encode_nl (enc);
         }
-      else
-        {
-          HE *he = hv_iternext (hv);
-
+    }
+  else
+    {
+      if (hv_iterinit (hv) || SvMAGICAL (hv))
+        if ((he = hv_iternext (hv)))
           for (;;)
             {
               encode_indent (enc);
-              encode_he (enc, he);
+              encode_hk (enc, he);
+              encode_sv (enc, expect_false (SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
 
               if (!(he = hv_iternext (hv)))
                 break;
 
               encode_comma (enc);
             }
-
-          encode_nl (enc);
-        }
     }
+
+  encode_nl (enc);
 
   --enc->indent; encode_indent (enc); encode_ch (enc, '}');
 }
@@ -684,15 +702,35 @@ typedef struct
 } dec_t;
 
 inline void
+decode_comment (dec_t *dec)
+{
+  // only '#'-style comments allowed a.t.m.
+
+  while (*dec->cur && *dec->cur != 0x0a && *dec->cur != 0x0d)
+    ++dec->cur;
+}
+
+inline void
 decode_ws (dec_t *dec)
 {
   for (;;)
     {
       char ch = *dec->cur;
 
-      if (ch > 0x20
-          || (ch != 0x20 && ch != 0x0a && ch != 0x0d && ch != 0x09)) 
-        break;
+      if (ch > 0x20)
+        {
+          if (expect_false (ch == '#'))
+            {
+              if (dec->json.flags & F_RELAXED)
+                decode_comment (dec);
+              else
+                break;
+            }
+          else
+            break;
+        }
+      else if (ch != 0x20 && ch != 0x0a && ch != 0x0d && ch != 0x09)
+        break; // parse error, but let higher level handle it, gives better error messages
 
       ++dec->cur;
     }
@@ -1039,6 +1077,14 @@ decode_av (dec_t *dec)
           ERR (", or ] expected while parsing array");
 
         ++dec->cur;
+
+        decode_ws (dec);
+
+        if (*dec->cur == ']' && dec->json.flags & F_RELAXED)
+          {
+            ++dec->cur;
+            break;
+          }
       }
 
   DEC_DEC_DEPTH;
@@ -1064,7 +1110,7 @@ decode_hv (dec_t *dec)
   else
     for (;;)
       {
-        decode_ws (dec); EXPECT_CH ('"');
+        EXPECT_CH ('"');
 
         // heuristic: assume that
         // a) decode_str + hv_store_ent are abysmally slow.
@@ -1088,6 +1134,7 @@ decode_hv (dec_t *dec)
 
                   decode_ws (dec); EXPECT_CH (':');
 
+                  decode_ws (dec);
                   value = decode_sv (dec);
                   if (!value)
                     {
@@ -1109,6 +1156,7 @@ decode_hv (dec_t *dec)
 
                   decode_ws (dec); EXPECT_CH (':');
 
+                  decode_ws (dec);
                   value = decode_sv (dec);
                   if (!value)
                     goto fail;
@@ -1134,6 +1182,14 @@ decode_hv (dec_t *dec)
           ERR (", or } expected while parsing object/hash");
 
         ++dec->cur;
+
+        decode_ws (dec);
+
+        if (*dec->cur == '}' && dec->json.flags & F_RELAXED)
+          {
+            ++dec->cur;
+            break;
+          }
       }
 
   DEC_DEC_DEPTH;
@@ -1208,8 +1264,6 @@ fail:
 static SV *
 decode_sv (dec_t *dec)
 {
-  decode_ws (dec);
-
   // the beauty of JSON: you need exactly one character lookahead
   // to parse anything.
   switch (*dec->cur)
@@ -1303,6 +1357,8 @@ decode_json (SV *string, JSON *json, UV *offset_return)
     dec.json.flags |= F_HOOK;
 
   *dec.end = 0; // this should basically be a nop, too, but make sure it's there
+
+  decode_ws (&dec);
   sv = decode_sv (&dec);
 
   if (!(offset_return || !sv))
@@ -1409,6 +1465,7 @@ void ascii (JSON *self, int enable = 1)
         shrink          = F_SHRINK
         allow_blessed   = F_ALLOW_BLESSED
         convert_blessed = F_CONV_BLESSED
+        relaxed         = F_RELAXED
 	PPCODE:
 {
         if (enable)

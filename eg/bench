@@ -6,9 +6,9 @@
 my %tst = (
 #   "JSON"         => ['JSON::objToJson $perl'    , 'JSON::jsonToObj $json'],
 #   "JSON::PP"     => ['$pp->encode ($perl)'      , '$pp->decode ($json)'],
-#   "JSON::DWIW"   => ['$dwiw->to_json ($perl)'   , '$dwiw->from_json ($json)'],
+   "JSON::DWIW"   => ['$dwiw->to_json ($perl)'   , '$dwiw->from_json ($json)'],
 #   "JSON::PC"     => ['$pc->convert ($perl)'     , '$pc->parse ($json)'],
-#   "JSON::Syck"   => ['JSON::Syck::Dump $perl'   , 'JSON::Syck::Load $json'],
+   "JSON::Syck"   => ['JSON::Syck::Dump $perl'   , 'JSON::Syck::Load $json'],
    "JSON::XS"     => ['to_json $perl'            , 'from_json $json'],
    "JSON::XS/2"   => ['$xs2->encode ($perl)'     , '$xs2->decode ($json)'],
    "JSON::XS/3"   => ['$xs3->encode ($perl)'     , '$xs3->decode ($json)'],

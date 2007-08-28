@@ -1,5 +1,11 @@
 Revision history for Perl extension JSON::XS
 
+1.5  Tue Aug 28 04:05:38 CEST 2007
+	- add support for tied hashes, based on ideas and testcase by
+          Marcus Holland-Moritz.
+        - implemented relaxed parsing mode where some extensions are being
+          accepted. generation is still JSON-only.
+
 1.44 Wed Aug 22 01:02:44 CEST 2007
 	- very experimental process-emulation support, slowing everything down.
           the horribly broken perl threads are still not supported - YMMV.
