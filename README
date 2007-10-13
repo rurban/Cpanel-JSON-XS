@@ -1,6 +1,10 @@
 NAME
     JSON::XS - JSON serialising/deserialising, done correctly and fast
 
+    JSON::XS - 正しくて高速な JSON
+    シリアライザ/デシリアライザ
+    (http://fleur.hio.jp/perldoc/mix/lib/JSON/XS.html)
+
 SYNOPSIS
      use JSON::XS;
 
@@ -69,9 +73,8 @@ FUNCTIONAL INTERFACE
     exported by default:
 
     $json_text = to_json $perl_scalar
-        Converts the given Perl data structure (a simple scalar or a
-        reference to a hash or array) to a UTF-8 encoded, binary string
-        (that is, the string contains octets only). Croaks on error.
+        Converts the given Perl data structure to a UTF-8 encoded, binary
+        string (that is, the string contains octets only). Croaks on error.
 
         This function call is functionally identical to:
 
@@ -82,7 +85,7 @@ FUNCTIONAL INTERFACE
     $perl_scalar = from_json $json_text
         The opposite of "to_json": expects an UTF-8 (binary) string and
         tries to parse that as an UTF-8 encoded JSON text, returning the
-        resulting simple scalar or reference. Croaks on error.
+        resulting reference. Croaks on error.
 
         This function call is functionally identical to:
 
@@ -98,6 +101,45 @@ FUNCTIONAL INTERFACE
 
         See MAPPING, below, for more information on how JSON values are
         mapped to Perl.
+
+A FEW NOTES ON UNICODE AND PERL
+    Since this often leads to confusion, here are a few very clear words on
+    how Unicode works in Perl, modulo bugs.
+
+    1. Perl strings can store characters with ordinal values > 255.
+        This enables you to store unicode characters as single characters in
+        a Perl string - very natural.
+
+    2. Perl does *not* associate an encoding with your strings.
+        Unless you force it to, e.g. when matching it against a regex, or
+        printing the scalar to a file, in which case Perl either interprets
+        your string as locale-encoded text, octets/binary, or as Unicode,
+        depending on various settings. In no case is an encoding stored
+        together with your data, it is *use* that decides encoding, not any
+        magical metadata.
+
+    3. The internal utf-8 flag has no meaning with regards to the encoding
+    of your string.
+        Just ignore that flag unless you debug a Perl bug, a module written
+        in XS or want to dive into the internals of perl. Otherwise it will
+        only confuse you, as, despite the name, it says nothing about how
+        your string is encoded. You can have unicode strings with that flag
+        set, with that flag clear, and you can have binary data with that
+        flag set and that flag clear. Other possibilities exist, too.
+
+        If you didn't know about that flag, just the better, pretend it
+        doesn't exist.
+
+    4. A "Unicode String" is simply a string where each character can be
+    validly interpreted as a Unicode codepoint.
+        If you have UTF-8 encoded data, it is no longer a Unicode string,
+        but a Unicode string encoded in UTF-8, giving you a binary string.
+
+    5. A string containing "high" (> 255) character values is *not* a UTF-8
+    string.
+        Its a fact. Learn to live with it.
+
+    I hope this helps :)
 
 OBJECT-ORIENTED INTERFACE
     The object oriented interface lets you configure your own encoding or
@@ -603,7 +645,7 @@ MAPPING
 
     JSON::XS::true, JSON::XS::false
         These special values become JSON true and JSON false values,
-        respectively. You cna alos use "\1" and "\0" directly if you want.
+        respectively. You can also use "\1" and "\0" directly if you want.
 
     blessed objects
         Blessed objects are not allowed. JSON::XS currently tries to encode
@@ -848,11 +890,22 @@ SECURITY CONSIDERATIONS
     as major browser developers care only for features, not about doing
     security right).
 
+THREADS
+    This module is *not* guarenteed to be thread safe and there are no plans
+    to change this until Perl gets thread support (as opposed to the
+    horribly slow so-called "threads" which are simply slow and bloated
+    process simulations - use fork, its *much* faster, cheaper, better).
+
+    (It might actually work, but you ahve ben warned).
+
 BUGS
     While the goal of this module is to be correct, that unfortunately does
     not mean its bug-free, only that I think its design is bug-free. It is
     still relatively early in its development. If you keep reporting bugs
     they will be fixed swiftly, though.
+
+    Please refrain from using rt.cpan.org or any other bug reporting
+    service. I put the contact address into my modules for a reason.
 
 AUTHOR
      Marc Lehmann <schmorp@schmorp.de>

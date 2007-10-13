@@ -314,28 +314,31 @@ encode_av (enc_t *enc, AV *av)
   if (enc->indent >= enc->maxdepth)
     croak ("data structure too deep (hit recursion limit)");
 
-  encode_ch (enc, '['); encode_nl (enc);
-  ++enc->indent;
-
-  for (i = 0; i <= len; ++i)
+  encode_ch (enc, '[');
+  
+  if (len >= 0)
     {
-      SV **svp = av_fetch (av, i, 0);
+      encode_nl (enc); ++enc->indent;
 
-      encode_indent (enc);
+      for (i = 0; i <= len; ++i)
+        {
+          SV **svp = av_fetch (av, i, 0);
 
-      if (svp)
-        encode_sv (enc, *svp);
-      else
-        encode_str (enc, "null", 4, 0);
+          encode_indent (enc);
 
-      if (i < len)
-        encode_comma (enc);
+          if (svp)
+            encode_sv (enc, *svp);
+          else
+            encode_str (enc, "null", 4, 0);
+
+          if (i < len)
+            encode_comma (enc);
+        }
+
+      encode_nl (enc); --enc->indent; encode_indent (enc);
     }
-
-  encode_nl (enc);
-
-  --enc->indent;
-  encode_indent (enc); encode_ch (enc, ']');
+  
+  encode_ch (enc, ']');
 }
 
 static void
@@ -398,7 +401,7 @@ encode_hv (enc_t *enc, HV *hv)
   if (enc->indent >= enc->maxdepth)
     croak ("data structure too deep (hit recursion limit)");
 
-  encode_ch (enc, '{'); encode_nl (enc); ++enc->indent;
+  encode_ch (enc, '{');
 
   // for canonical output we have to sort by keys first
   // actually, this is mostly due to the stupid so-called
@@ -461,6 +464,8 @@ encode_hv (enc_t *enc, HV *hv)
               LEAVE;
             }
 
+          encode_nl (enc); ++enc->indent;
+
           while (count--)
             {
               encode_indent (enc);
@@ -471,28 +476,34 @@ encode_hv (enc_t *enc, HV *hv)
               if (count)
                 encode_comma (enc);
             }
+
+          encode_nl (enc); --enc->indent; encode_indent (enc);
         }
     }
   else
     {
       if (hv_iterinit (hv) || SvMAGICAL (hv))
         if ((he = hv_iternext (hv)))
-          for (;;)
-            {
-              encode_indent (enc);
-              encode_hk (enc, he);
-              encode_sv (enc, expect_false (SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
+          {
+            encode_nl (enc); ++enc->indent;
 
-              if (!(he = hv_iternext (hv)))
-                break;
+            for (;;)
+              {
+                encode_indent (enc);
+                encode_hk (enc, he);
+                encode_sv (enc, expect_false (SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
 
-              encode_comma (enc);
-            }
+                if (!(he = hv_iternext (hv)))
+                  break;
+
+                encode_comma (enc);
+              }
+
+            encode_nl (enc); --enc->indent; encode_indent (enc);
+          }
     }
 
-  encode_nl (enc);
-
-  --enc->indent; encode_indent (enc); encode_ch (enc, '}');
+  encode_ch (enc, '}');
 }
 
 // encode objects, arrays and special \0=false and \1=true values.

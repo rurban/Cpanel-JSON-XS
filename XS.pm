@@ -1,6 +1,11 @@
+=encoding utf-8
+
 =head1 NAME
 
 JSON::XS - JSON serialising/deserialising, done correctly and fast
+
+JSON::XS - 正しくて高速な JSON シリアライザ/デシリアライザ
+           (http://fleur.hio.jp/perldoc/mix/lib/JSON/XS.html)
 
 =head1 SYNOPSIS
 
@@ -83,7 +88,7 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '1.5';
+our $VERSION = '1.51';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(to_json from_json);
@@ -100,9 +105,8 @@ exported by default:
 
 =item $json_text = to_json $perl_scalar
 
-Converts the given Perl data structure (a simple scalar or a reference to
-a hash or array) to a UTF-8 encoded, binary string (that is, the string contains
-octets only). Croaks on error.
+Converts the given Perl data structure to a UTF-8 encoded, binary string
+(that is, the string contains octets only). Croaks on error.
 
 This function call is functionally identical to:
 
@@ -112,9 +116,9 @@ except being faster.
 
 =item $perl_scalar = from_json $json_text
 
-The opposite of C<to_json>: expects an UTF-8 (binary) string and tries to
-parse that as an UTF-8 encoded JSON text, returning the resulting simple
-scalar or reference. Croaks on error.
+The opposite of C<to_json>: expects an UTF-8 (binary) string and tries
+to parse that as an UTF-8 encoded JSON text, returning the resulting
+reference. Croaks on error.
 
 This function call is functionally identical to:
 
@@ -132,6 +136,54 @@ See MAPPING, below, for more information on how JSON values are mapped to
 Perl.
 
 =back
+
+
+=head1 A FEW NOTES ON UNICODE AND PERL
+
+Since this often leads to confusion, here are a few very clear words on
+how Unicode works in Perl, modulo bugs.
+
+=over 4
+
+=item 1. Perl strings can store characters with ordinal values > 255.
+
+This enables you to store unicode characters as single characters in a
+Perl string - very natural.
+
+=item 2. Perl does I<not> associate an encoding with your strings.
+
+Unless you force it to, e.g. when matching it against a regex, or printing
+the scalar to a file, in which case Perl either interprets your string as
+locale-encoded text, octets/binary, or as Unicode, depending on various
+settings. In no case is an encoding stored together with your data, it is
+I<use> that decides encoding, not any magical metadata.
+
+=item 3. The internal utf-8 flag has no meaning with regards to the
+encoding of your string.
+
+Just ignore that flag unless you debug a Perl bug, a module written in
+XS or want to dive into the internals of perl. Otherwise it will only
+confuse you, as, despite the name, it says nothing about how your string
+is encoded. You can have unicode strings with that flag set, with that
+flag clear, and you can have binary data with that flag set and that flag
+clear. Other possibilities exist, too.
+
+If you didn't know about that flag, just the better, pretend it doesn't
+exist.
+
+=item 4. A "Unicode String" is simply a string where each character can be
+validly interpreted as a Unicode codepoint.
+
+If you have UTF-8 encoded data, it is no longer a Unicode string, but a
+Unicode string encoded in UTF-8, giving you a binary string.
+
+=item 5. A string containing "high" (> 255) character values is I<not> a UTF-8 string.
+
+Its a fact. Learn to live with it.
+
+=back
+
+I hope this helps :)
 
 
 =head1 OBJECT-ORIENTED INTERFACE
@@ -668,7 +720,7 @@ also use C<JSON::XS::false> and C<JSON::XS::true> to improve readability.
 =item JSON::XS::true, JSON::XS::false
 
 These special values become JSON true and JSON false values,
-respectively. You cna alos use C<\1> and C<\0> directly if you want.
+respectively. You can also use C<\1> and C<\0> directly if you want.
 
 =item blessed objects
 
@@ -928,12 +980,25 @@ browser developers care only for features, not about doing security
 right).
 
 
+=head1 THREADS
+
+This module is I<not> guarenteed to be thread safe and there are no
+plans to change this until Perl gets thread support (as opposed to the
+horribly slow so-called "threads" which are simply slow and bloated
+process simulations - use fork, its I<much> faster, cheaper, better).
+
+(It might actually work, but you ahve ben warned).
+
+
 =head1 BUGS
 
 While the goal of this module is to be correct, that unfortunately does
 not mean its bug-free, only that I think its design is bug-free. It is
 still relatively early in its development. If you keep reporting bugs they
 will be fixed swiftly, though.
+
+Please refrain from using rt.cpan.org or any other bug reporting
+service. I put the contact address into my modules for a reason.
 
 =cut
 
