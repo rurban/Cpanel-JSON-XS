@@ -1,5 +1,13 @@
 Revision history for Perl extension JSON::XS
 
+1.51
+	- encode empty arrays/hashes in a compact way when pretty is enabled.
+	- apperently JSON::XS was used to find some bugs in the
+          JSON_checker testsuite, so add (the corrected) JSON_checker tests to
+          the testsuite.
+        - quite a bit of doc updates/extension.
+        - require 5.8.2, as this seems to be the first unicode-stable version.
+
 1.5  Tue Aug 28 04:05:38 CEST 2007
 	- add support for tied hashes, based on ideas and testcase by
           Marcus Holland-Moritz.
