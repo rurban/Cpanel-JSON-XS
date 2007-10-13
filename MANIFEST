@@ -25,6 +25,7 @@ t/14_latin1.t
 t/15_prefix.t
 t/16_tied.t
 t/17_relaxed.t
+t/18_json_checker.t
 t/99_binary.t
 typemap
 META.yml                                 Module meta-data (added by MakeMaker)
