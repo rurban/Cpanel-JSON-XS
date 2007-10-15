@@ -1,5 +1,3 @@
-=encoding utf-8
-
 =head1 NAME
 
 JSON::XS - JSON serialising/deserialising, done correctly and fast
@@ -88,7 +86,7 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '1.51';
+our $VERSION = '1.52';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(to_json from_json);
