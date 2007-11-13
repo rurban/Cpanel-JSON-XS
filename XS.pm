@@ -42,7 +42,7 @@ vice versa.
 
 =over 4
 
-=item * correct unicode handling
+=item * correct Unicode handling
 
 This module knows how to handle Unicode, and even documents how and when
 it does so.
@@ -72,10 +72,10 @@ interface.
 
 =item * reasonably versatile output formats
 
-You can choose between the most compact guarenteed single-line format
+You can choose between the most compact guaranteed single-line format
 possible (nice for simple line-based protocols), a pure-ascii format
 (for when your transport is not 8-bit clean, still supports the whole
-unicode range), or a pretty-printed format (for when you want to read that
+Unicode range), or a pretty-printed format (for when you want to read that
 stuff). Or you can combine those features in whatever way you like.
 
 =back
@@ -86,7 +86,7 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '1.52';
+our $VERSION = '1.53';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(to_json from_json);
@@ -96,7 +96,7 @@ use XSLoader;
 
 =head1 FUNCTIONAL INTERFACE
 
-The following convinience methods are provided by this module. They are
+The following convenience methods are provided by this module. They are
 exported by default:
 
 =over 4
@@ -145,7 +145,7 @@ how Unicode works in Perl, modulo bugs.
 
 =item 1. Perl strings can store characters with ordinal values > 255.
 
-This enables you to store unicode characters as single characters in a
+This enables you to store Unicode characters as single characters in a
 Perl string - very natural.
 
 =item 2. Perl does I<not> associate an encoding with your strings.
@@ -162,7 +162,7 @@ encoding of your string.
 Just ignore that flag unless you debug a Perl bug, a module written in
 XS or want to dive into the internals of perl. Otherwise it will only
 confuse you, as, despite the name, it says nothing about how your string
-is encoded. You can have unicode strings with that flag set, with that
+is encoded. You can have Unicode strings with that flag set, with that
 flag clear, and you can have binary data with that flag set and that flag
 clear. Other possibilities exist, too.
 
@@ -177,7 +177,7 @@ Unicode string encoded in UTF-8, giving you a binary string.
 
 =item 5. A string containing "high" (> 255) character values is I<not> a UTF-8 string.
 
-Its a fact. Learn to live with it.
+It's a fact. Learn to live with it.
 
 =back
 
@@ -206,10 +206,10 @@ be chained:
 
 If C<$enable> is true (or missing), then the C<encode> method will not
 generate characters outside the code range C<0..127> (which is ASCII). Any
-unicode characters outside that range will be escaped using either a
+Unicode characters outside that range will be escaped using either a
 single \uXXXX (BMP characters) or a double \uHHHH\uLLLLL escape sequence,
 as per RFC4627. The resulting encoded JSON text can be treated as a native
-unicode string, an ascii-encoded, latin1-encoded or UTF-8 encoded string,
+Unicode string, an ascii-encoded, latin1-encoded or UTF-8 encoded string,
 or any other superset of ASCII.
 
 If C<$enable> is false, then the C<encode> method will not escape Unicode
@@ -228,9 +228,9 @@ contain any 8 bit characters.
 If C<$enable> is true (or missing), then the C<encode> method will encode
 the resulting JSON text as latin1 (or iso-8859-1), escaping any characters
 outside the code range C<0..255>. The resulting string can be treated as a
-latin1-encoded JSON text or a native unicode string. The C<decode> method
+latin1-encoded JSON text or a native Unicode string. The C<decode> method
 will not be affected in any way by this flag, as C<decode> by default
-expects unicode, which is a strict superset of latin1.
+expects Unicode, which is a strict superset of latin1.
 
 If C<$enable> is false, then the C<encode> method will not escape Unicode
 characters unless required by the JSON syntax or other flags.
@@ -239,7 +239,7 @@ The main use for this flag is efficiently encoding binary data as JSON
 text, as most octets will not be escaped, resulting in a smaller encoded
 size. The disadvantage is that the resulting JSON text is encoded
 in latin1 (and must correctly be treated as such when storing and
-transfering), a rare encoding for JSON. It is therefore most useful when
+transferring), a rare encoding for JSON. It is therefore most useful when
 you want to store data structures known to contain binary data efficiently
 in files or databases, not when talking to other JSON encoders/decoders.
 
@@ -257,8 +257,8 @@ versions, enabling this option might enable autodetection of the UTF-16
 and UTF-32 encoding families, as described in RFC4627.
 
 If C<$enable> is false, then the C<encode> method will return the JSON
-string as a (non-encoded) unicode string, while C<decode> expects thus a
-unicode string.  Any decoding or encoding (e.g. to UTF-8 or UTF-16) needs
+string as a (non-encoded) Unicode string, while C<decode> expects thus a
+Unicode string.  Any decoding or encoding (e.g. to UTF-8 or UTF-16) needs
 to be done yourself, e.g. using the Encode module.
 
 Example, output UTF-16BE-encoded JSON:
@@ -292,10 +292,10 @@ Example, pretty-print some simple structure:
 
 If C<$enable> is true (or missing), then the C<encode> method will use a multiline
 format as output, putting every array member or object/hash key-value pair
-into its own line, identing them properly.
+into its own line, indenting them properly.
 
 If C<$enable> is false, no newlines or indenting will be produced, and the
-resulting JSON text is guarenteed not to contain any C<newlines>.
+resulting JSON text is guaranteed not to contain any C<newlines>.
 
 This setting has no effect when decoding JSON texts.
 
@@ -386,7 +386,7 @@ of the same script).
 
 This option is useful if you want the same data structure to be encoded as
 the same JSON text (given the same overall settings). If it is disabled,
-the same hash migh be encoded differently even if contains the same data,
+the same hash might be encoded differently even if contains the same data,
 as key-value pairs have no inherent ordering in Perl.
 
 This setting has no effect when decoding JSON texts.
@@ -413,7 +413,7 @@ resulting in an invalid JSON text:
 
 If C<$enable> is true (or missing), then the C<encode> method will not
 barf when it encounters a blessed reference. Instead, the value of the
-B<convert_blessed> option will decide wether C<null> (C<convert_blessed>
+B<convert_blessed> option will decide whether C<null> (C<convert_blessed>
 disabled or no C<to_json> method found) or a representation of the
 object (C<convert_blessed> enabled and C<to_json> method found) is being
 encoded. Has no effect on C<decode>.
@@ -488,7 +488,7 @@ As this callback gets called less often then the C<filter_json_object>
 one, decoding speed will not usually suffer as much. Therefore, single-key
 objects make excellent targets to serialise Perl objects into, especially
 as single-key JSON objects are as close to the type-tagged value concept
-as JSON gets (its basically an ID/VALUE tuple). Of course, JSON does not
+as JSON gets (it's basically an ID/VALUE tuple). Of course, JSON does not
 support this in any way, so you need to make sure your data never looks
 like a serialised Perl hash.
 
@@ -625,7 +625,7 @@ circumstances automatically, preserving round-tripping characteristics
 (what you put in comes out as something equivalent).
 
 For the more enlightened: note that in the following descriptions,
-lowercase I<perl> refers to the Perl interpreter, while uppcercase I<Perl>
+lowercase I<perl> refers to the Perl interpreter, while uppercase I<Perl>
 refers to the abstract Perl language itself.
 
 
@@ -636,7 +636,7 @@ refers to the abstract Perl language itself.
 =item object
 
 A JSON object becomes a reference to a hash in Perl. No ordering of object
-keys is preserved (JSON does not preserver object key ordering itself).
+keys is preserved (JSON does not preserve object key ordering itself).
 
 =item array
 
@@ -672,7 +672,7 @@ but as Perl is typeless there is no other way to do it.
 
 These JSON atoms become C<JSON::XS::true> and C<JSON::XS::false>,
 respectively. They are overloaded to act almost exactly like the numbers
-C<1> and C<0>. You can check wether a scalar is a JSON boolean by using
+C<1> and C<0>. You can check whether a scalar is a JSON boolean by using
 the C<JSON::XS::is_bool> function.
 
 =item null
@@ -745,21 +745,21 @@ before encoding as JSON strings and anything else as number value:
    # undef becomes null
    to_json [undef]                  # yields [null]
 
-You can force the type to be a string by stringifying it:
+You can force the type to be a JSON string by stringifying it:
 
    my $x = 3.1; # some variable containing a number
    "$x";        # stringified
    $x .= "";    # another, more awkward way to stringify
    print $x;    # perl does it for you, too, quite often
 
-You can force the type to be a number by numifying it:
+You can force the type to be a JSON number by numifying it:
 
    my $x = "3"; # some variable containing a string
    $x += 0;     # numify it, ensuring it will be dumped as a number
-   $x *= 1;     # same thing, the choise is yours.
+   $x *= 1;     # same thing, the choice is yours.
 
-You can not currently output JSON booleans or force the type in other,
-less obscure, ways. Tell me if you need this capability.
+You can not currently force the type in other, less obscure, ways. Tell me
+if you need this capability.
 
 =back
 
@@ -778,11 +778,11 @@ from any of these problems or limitations.
 
 Slow (but very portable, as it is written in pure Perl).
 
-Undocumented/buggy Unicode handling (how JSON handles unicode values is
-undocumented. One can get far by feeding it unicode strings and doing
-en-/decoding oneself, but unicode escapes are not working properly).
+Undocumented/buggy Unicode handling (how JSON handles Unicode values is
+undocumented. One can get far by feeding it Unicode strings and doing
+en-/decoding oneself, but Unicode escapes are not working properly).
 
-No roundtripping (strings get clobbered if they look like numbers, e.g.
+No round-tripping (strings get clobbered if they look like numbers, e.g.
 the string C<2.0> will encode to C<2.0> instead of C<"2.0">, and that will
 decode into the number 2.
 
@@ -792,7 +792,7 @@ Very fast.
 
 Undocumented/buggy Unicode handling.
 
-No roundtripping.
+No round-tripping.
 
 Has problems handling many Perl values (e.g. regex results and other magic
 values will make it croak).
@@ -812,11 +812,11 @@ undocumented. I need at least a format for easy reading by humans and a
 single-line compact format for use in a protocol, and preferably a way to
 generate ASCII-only JSON texts).
 
-Completely broken (and confusingly documented) Unicode handling (unicode
+Completely broken (and confusingly documented) Unicode handling (Unicode
 escapes are not working properly, you need to set ImplicitUnicode to
 I<different> values on en- and decoding to get symmetric behaviour).
 
-No roundtripping (simple cases work, but this depends on wether the scalar
+No round-tripping (simple cases work, but this depends on whether the scalar
 value was used in a numeric context or not).
 
 Dumping hashes may skip hash values depending on iterator state.
@@ -826,7 +826,7 @@ getting fixed).
 
 Does not check input for validity (i.e. will accept non-JSON input and
 return "something" instead of raising an exception. This is a security
-issue: imagine two banks transfering money between each other using
+issue: imagine two banks transferring money between each other using
 JSON. One bank might parse a given non-JSON request and deduct money,
 while the other might reject the transaction with a syntax error. While a
 good protocol will at least recover, that is extra unnecessary work and
@@ -836,12 +836,12 @@ the transaction will still not succeed).
 
 Very fast. Very natural. Very nice.
 
-Undocumented unicode handling (but the best of the pack. Unicode escapes
+Undocumented Unicode handling (but the best of the pack. Unicode escapes
 still don't get parsed properly).
 
 Very inflexible.
 
-No roundtripping.
+No round-tripping.
 
 Does not generate valid JSON texts (key strings are often unquoted, empty keys
 result in nothing being output)
@@ -866,7 +866,7 @@ algorithm (subject to change in future versions):
 This will usually generate JSON texts that also parse as valid
 YAML. Please note that YAML has hardcoded limits on (simple) object key
 lengths that JSON doesn't have, so you should make sure that your hash
-keys are noticably shorter than the 1024 characters YAML allows.
+keys are noticeably shorter than the 1024 characters YAML allows.
 
 There might be other incompatibilities that I am not aware of. In general
 you should not try to generate YAML with a JSON generator or vice versa,
@@ -908,7 +908,7 @@ shrink). Higher is better:
    -----------+------------+------------+
 
 That is, JSON::XS is about five times faster than JSON::DWIW on encoding,
-about three times faster on decoding, and over fourty times faster
+about three times faster on decoding, and over forty times faster
 than JSON, even with pretty-printing and key sorting. It also compares
 favourably to Storable for small amounts of data.
 
@@ -931,9 +931,9 @@ search API (http://nanoref.com/yahooapis/mgPdGg):
 Again, JSON::XS leads by far (except for Storable which non-surprisingly
 decodes faster).
 
-On large strings containing lots of high unicode characters, some modules
+On large strings containing lots of high Unicode characters, some modules
 (such as JSON::PC) seem to decode faster than JSON::XS, but the result
-will be broken due to missing (or wrong) unicode handling. Others refuse
+will be broken due to missing (or wrong) Unicode handling. Others refuse
 to decode or encode properly, so it was impossible to prepare a fair
 comparison table for that case.
 
@@ -949,7 +949,7 @@ trying hard on making that true, but you never know.
 
 Second, you need to avoid resource-starving attacks. That means you should
 limit the size of JSON texts you accept, or make sure then when your
-resources run out, thats just fine (e.g. by using a separate process that
+resources run out, that's just fine (e.g. by using a separate process that
 can crash safely). The size of a JSON text in octets or characters is
 usually a good indication of the size of the resources required to decode
 it into a Perl structure. While JSON::XS can check the size of the JSON
@@ -970,8 +970,8 @@ of. In that case, you get to keep the pieces. I am always open for hints,
 though...
 
 If you are using JSON::XS to return packets to consumption
-by javascript scripts in a browser you should have a look at
-L<http://jpsykes.com/47/practical-csrf-and-json-security> to see wether
+by JavaScript scripts in a browser you should have a look at
+L<http://jpsykes.com/47/practical-csrf-and-json-security> to see whether
 you are vulnerable to some common attack vectors (which really are browser
 design bugs, but it is still you who will have to deal with it, as major
 browser developers care only for features, not about doing security
@@ -980,12 +980,12 @@ right).
 
 =head1 THREADS
 
-This module is I<not> guarenteed to be thread safe and there are no
+This module is I<not> guaranteed to be thread safe and there are no
 plans to change this until Perl gets thread support (as opposed to the
 horribly slow so-called "threads" which are simply slow and bloated
 process simulations - use fork, its I<much> faster, cheaper, better).
 
-(It might actually work, but you ahve ben warned).
+(It might actually work, but you have been warned).
 
 
 =head1 BUGS
