@@ -1,5 +1,9 @@
 Revision history for Perl extension JSON::XS
 
+1.53 Tue Nov 13 23:58:33 CET 2007
+	- minor doc clarifications.
+        - fixed many doc typos (patch by Thomas L. Shinnick).
+
 1.52 Mon Oct 15 03:22:06 CEST 2007
 	- remove =encoding pod directive again, it confuses too many pod
           parsers :/.
