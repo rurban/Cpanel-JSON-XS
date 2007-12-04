@@ -1,5 +1,14 @@
 Revision history for Perl extension JSON::XS
 
+2.0  Tue Dec  4 11:30:46 CET 2007
+	- this is supposed to be the first version of JSON::XS
+          compatible with version 2.0+ of the JSON module.
+          Using the JSON module as frontend to JSON::XS should be
+          as fast as using JSON::XS directly, so consider using it
+          instead.
+	- added get_* methods for all "simple" options.
+        - make JSON::XS subclassable.
+
 1.53 Tue Nov 13 23:58:33 CET 2007
 	- minor doc clarifications.
         - fixed many doc typos (patch by Thomas L. Shinnick).
@@ -10,7 +19,7 @@ Revision history for Perl extension JSON::XS
 
 1.51 Sat Oct 13 03:55:56 CEST 2007
 	- encode empty arrays/hashes in a compact way when pretty is enabled.
-	- apperently JSON::XS was used to find some bugs in the
+	- apparently JSON::XS was used to find some bugs in the
           JSON_checker testsuite, so add (the corrected) JSON_checker tests to
           the testsuite.
         - quite a bit of doc updates/extension.

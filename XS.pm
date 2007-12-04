@@ -21,11 +21,27 @@ JSON::XS - 正しくて高速な JSON シリアライザ/デシリアライザ
  $pretty_printed_unencoded = $coder->encode ($perl_scalar);
  $perl_scalar = $coder->decode ($unicode_json_text);
 
+ # Note that JSON version 2.0 and above will automatically use JSON::XS
+ # if available, at virtually no speed overhead either, so you should
+ # be able to just:
+ 
+ use JSON;
+
+ # and do the same things, except that you have a pure-perl fallback now.
+
 =head1 DESCRIPTION
 
 This module converts Perl data structures to JSON and vice versa. Its
 primary goal is to be I<correct> and its secondary goal is to be
 I<fast>. To reach the latter goal it was written in C.
+
+Beginning with version 2.0 of the JSON module, when both JSON and
+JSON::XS are installed, then JSON will fall back on JSON::XS (this can be
+overriden) with no overhead due to emulation (by inheritign constructor
+and methods). If JSON::XS is not available, it will fall back to the
+compatible JSON::PP module as backend, so using JSON instead of JSON::XS
+gives you a portable JSON API that can be fast when you need and doesn't
+require a C compiler when that is a problem.
 
 As this is the n-th-something JSON module on CPAN, what was the reason
 to write yet another JSON module? While it seems there are many JSON
@@ -86,7 +102,7 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '1.53';
+our $VERSION = '2.0';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(to_json from_json);
@@ -204,6 +220,8 @@ be chained:
 
 =item $json = $json->ascii ([$enable])
 
+=item $enabled = $json->get_ascii
+
 If C<$enable> is true (or missing), then the C<encode> method will not
 generate characters outside the code range C<0..127> (which is ASCII). Any
 Unicode characters outside that range will be escaped using either a
@@ -224,6 +242,8 @@ contain any 8 bit characters.
   => ["\ud801\udc01"]
 
 =item $json = $json->latin1 ([$enable])
+
+=item $enabled = $json->get_latin1
 
 If C<$enable> is true (or missing), then the C<encode> method will encode
 the resulting JSON text as latin1 (or iso-8859-1), escaping any characters
@@ -247,6 +267,8 @@ in files or databases, not when talking to other JSON encoders/decoders.
   => ["\x{89}\\u0abc"]    # (perl syntax, U+abc escaped, U+89 not)
 
 =item $json = $json->utf8 ([$enable])
+
+=item $enabled = $json->get_utf8
 
 If C<$enable> is true (or missing), then the C<encode> method will encode
 the JSON result into UTF-8, as required by many protocols, while the
@@ -290,6 +312,8 @@ Example, pretty-print some simple structure:
 
 =item $json = $json->indent ([$enable])
 
+=item $enabled = $json->get_indent
+
 If C<$enable> is true (or missing), then the C<encode> method will use a multiline
 format as output, putting every array member or object/hash key-value pair
 into its own line, indenting them properly.
@@ -300,6 +324,8 @@ resulting JSON text is guaranteed not to contain any C<newlines>.
 This setting has no effect when decoding JSON texts.
 
 =item $json = $json->space_before ([$enable])
+
+=item $enabled = $json->get_space_before
 
 If C<$enable> is true (or missing), then the C<encode> method will add an extra
 optional space before the C<:> separating keys from values in JSON objects.
@@ -316,6 +342,8 @@ Example, space_before enabled, space_after and indent disabled:
 
 =item $json = $json->space_after ([$enable])
 
+=item $enabled = $json->get_space_after
+
 If C<$enable> is true (or missing), then the C<encode> method will add an extra
 optional space after the C<:> separating keys from values in JSON objects
 and extra whitespace after the C<,> separating key-value pairs and array
@@ -331,6 +359,8 @@ Example, space_before and indent disabled, space_after enabled:
    {"key": "value"}
 
 =item $json = $json->relaxed ([$enable])
+
+=item $enabled = $json->get_relaxed
 
 If C<$enable> is true (or missing), then C<decode> will accept some
 extensions to normal JSON syntax (see below). C<encode> will not be
@@ -377,6 +407,8 @@ character, after which more white-space and comments are allowed.
 
 =item $json = $json->canonical ([$enable])
 
+=item $enabled = $json->get_canonical
+
 If C<$enable> is true (or missing), then the C<encode> method will output JSON objects
 by sorting their keys. This is adding a comparatively high overhead.
 
@@ -392,6 +424,8 @@ as key-value pairs have no inherent ordering in Perl.
 This setting has no effect when decoding JSON texts.
 
 =item $json = $json->allow_nonref ([$enable])
+
+=item $enabled = $json->get_allow_nonref
 
 If C<$enable> is true (or missing), then the C<encode> method can convert a
 non-reference into its corresponding string, number or null JSON value,
@@ -411,17 +445,21 @@ resulting in an invalid JSON text:
 
 =item $json = $json->allow_blessed ([$enable])
 
+=item $enabled = $json->get_allow_blessed
+
 If C<$enable> is true (or missing), then the C<encode> method will not
 barf when it encounters a blessed reference. Instead, the value of the
 B<convert_blessed> option will decide whether C<null> (C<convert_blessed>
-disabled or no C<to_json> method found) or a representation of the
-object (C<convert_blessed> enabled and C<to_json> method found) is being
+disabled or no C<TO_JSON> method found) or a representation of the
+object (C<convert_blessed> enabled and C<TO_JSON> method found) is being
 encoded. Has no effect on C<decode>.
 
 If C<$enable> is false (the default), then C<encode> will throw an
 exception when it encounters a blessed object.
 
 =item $json = $json->convert_blessed ([$enable])
+
+=item $enabled = $json->get_convert_blessed
 
 If C<$enable> is true (or missing), then C<encode>, upon encountering a
 blessed object, will check for the availability of the C<TO_JSON> method
@@ -523,6 +561,8 @@ into the corresponding C<< $WIDGET{<id>} >> object:
 
 =item $json = $json->shrink ([$enable])
 
+=item $enabled = $json->get_shrink
+
 Perl usually over-allocates memory a bit when allocating space for
 strings. This flag optionally resizes strings generated by either
 C<encode> or C<decode> to their minimum size possible. This can save
@@ -549,6 +589,8 @@ internally (there is no difference on the Perl level), saving space.
 
 =item $json = $json->max_depth ([$maximum_nesting_depth])
 
+=item $max_depth = $json->get_max_depth
+
 Sets the maximum nesting level (default C<512>) accepted while encoding
 or decoding. If the JSON text or Perl data structure has an equal or
 higher nesting level then this limit, then the encoder and decoder will
@@ -569,6 +611,8 @@ used, which is rarely useful.
 See SECURITY CONSIDERATIONS, below, for more info on why this is useful.
 
 =item $json = $json->max_size ([$maximum_string_size])
+
+=item $max_size = $json->get_max_size
 
 Set the maximum length a JSON text may have (in bytes) where decoding is
 being attempted. The default is C<0>, meaning no limit. When C<decode>
@@ -892,11 +936,9 @@ the functional interface, while JSON::XS/2 uses the OO interface
 with pretty-printing and hashkey sorting enabled, JSON::XS/3 enables
 shrink). Higher is better:
 
-   Storable   |  15779.925 |  14169.946 |
-   -----------+------------+------------+
    module     |     encode |     decode |
    -----------|------------|------------|
-   JSON       |   4990.842 |   4088.813 |
+   JSON 1.x   |   4990.842 |   4088.813 |
    JSON::DWIW |  51653.990 |  71575.154 |
    JSON::PC   |  65948.176 |  74631.744 |
    JSON::PP   |   8931.652 |   3817.168 |
@@ -917,7 +959,7 @@ search API (http://nanoref.com/yahooapis/mgPdGg):
 
    module     |     encode |     decode |
    -----------|------------|------------|
-   JSON       |     55.260 |     34.971 |
+   JSON 1.x   |     55.260 |     34.971 |
    JSON::DWIW |    825.228 |   1082.513 |
    JSON::PC   |   3571.444 |   2394.829 |
    JSON::PP   |    210.987 |     32.574 |
