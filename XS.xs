@@ -1459,7 +1459,10 @@ void new (char *klass)
         SvPOK_only (pv);
         Zero (SvPVX (pv), 1, JSON);
         ((JSON *)SvPVX (pv))->flags = F_DEFAULT;
-        XPUSHs (sv_2mortal (sv_bless (newRV_noinc (pv), JSON_STASH)));
+        XPUSHs (sv_2mortal (sv_bless (
+           newRV_noinc (pv),
+           strEQ (klass, "JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1)
+        )));
 }
 
 void ascii (JSON *self, int enable = 1)
@@ -1487,6 +1490,23 @@ void ascii (JSON *self, int enable = 1)
         XPUSHs (ST (0));
 }
 
+void get_ascii (JSON *self)
+	ALIAS:
+        get_ascii           = F_ASCII
+        get_latin1          = F_LATIN1
+        get_utf8            = F_UTF8
+        get_indent          = F_INDENT
+        get_canonical       = F_CANONICAL
+        get_space_before    = F_SPACE_BEFORE
+        get_space_after     = F_SPACE_AFTER
+        get_allow_nonref    = F_ALLOW_NONREF
+        get_shrink          = F_SHRINK
+        get_allow_blessed   = F_ALLOW_BLESSED
+        get_convert_blessed = F_CONV_BLESSED
+        get_relaxed         = F_RELAXED
+	PPCODE:
+        XPUSHs (boolSV (self->flags & ix));
+
 void max_depth (JSON *self, UV max_depth = 0x80000000UL)
 	PPCODE:
 {
@@ -1501,6 +1521,12 @@ void max_depth (JSON *self, UV max_depth = 0x80000000UL)
 
         XPUSHs (ST (0));
 }
+
+U32 get_max_depth (JSON *self)
+	CODE:
+        RETVAL = DEC_DEPTH (self->flags);
+	OUTPUT:
+        RETVAL
 
 void max_size (JSON *self, UV max_size = 0)
 	PPCODE:
@@ -1517,6 +1543,12 @@ void max_size (JSON *self, UV max_size = 0)
 
         XPUSHs (ST (0));
 }
+
+int get_max_size (JSON *self)
+	CODE:
+        RETVAL = DEC_SIZE (self->flags);
+	OUTPUT:
+        RETVAL
 
 void filter_json_object (JSON *self, SV *cb = &PL_sv_undef)
 	PPCODE:

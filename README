@@ -20,10 +20,26 @@ SYNOPSIS
      $pretty_printed_unencoded = $coder->encode ($perl_scalar);
      $perl_scalar = $coder->decode ($unicode_json_text);
 
+     # Note that JSON version 2.0 and above will automatically use JSON::XS
+     # if available, at virtually no speed overhead either, so you should
+     # be able to just:
+ 
+     use JSON;
+
+     # and do the same things, except that you have a pure-perl fallback now.
+
 DESCRIPTION
     This module converts Perl data structures to JSON and vice versa. Its
     primary goal is to be *correct* and its secondary goal is to be *fast*.
     To reach the latter goal it was written in C.
+
+    Beginning with version 2.0 of the JSON module, when both JSON and
+    JSON::XS are installed, then JSON will fall back on JSON::XS (this can
+    be overriden) with no overhead due to emulation (by inheritign
+    constructor and methods). If JSON::XS is not available, it will fall
+    back to the compatible JSON::PP module as backend, so using JSON instead
+    of JSON::XS gives you a portable JSON API that can be fast when you need
+    and doesn't require a C compiler when that is a problem.
 
     As this is the n-th-something JSON module on CPAN, what was the reason
     to write yet another JSON module? While it seems there are many JSON
@@ -157,6 +173,7 @@ OBJECT-ORIENTED INTERFACE
            => {"a": [1, 2]}
 
     $json = $json->ascii ([$enable])
+    $enabled = $json->get_ascii
         If $enable is true (or missing), then the "encode" method will not
         generate characters outside the code range 0..127 (which is ASCII).
         Any Unicode characters outside that range will be escaped using
@@ -178,6 +195,7 @@ OBJECT-ORIENTED INTERFACE
           => ["\ud801\udc01"]
 
     $json = $json->latin1 ([$enable])
+    $enabled = $json->get_latin1
         If $enable is true (or missing), then the "encode" method will
         encode the resulting JSON text as latin1 (or iso-8859-1), escaping
         any characters outside the code range 0..255. The resulting string
@@ -203,6 +221,7 @@ OBJECT-ORIENTED INTERFACE
           => ["\x{89}\\u0abc"]    # (perl syntax, U+abc escaped, U+89 not)
 
     $json = $json->utf8 ([$enable])
+    $enabled = $json->get_utf8
         If $enable is true (or missing), then the "encode" method will
         encode the JSON result into UTF-8, as required by many protocols,
         while the "decode" method expects to be handled an UTF-8-encoded
@@ -244,6 +263,7 @@ OBJECT-ORIENTED INTERFACE
            }
 
     $json = $json->indent ([$enable])
+    $enabled = $json->get_indent
         If $enable is true (or missing), then the "encode" method will use a
         multiline format as output, putting every array member or
         object/hash key-value pair into its own line, indenting them
@@ -255,6 +275,7 @@ OBJECT-ORIENTED INTERFACE
         This setting has no effect when decoding JSON texts.
 
     $json = $json->space_before ([$enable])
+    $enabled = $json->get_space_before
         If $enable is true (or missing), then the "encode" method will add
         an extra optional space before the ":" separating keys from values
         in JSON objects.
@@ -270,6 +291,7 @@ OBJECT-ORIENTED INTERFACE
            {"key" :"value"}
 
     $json = $json->space_after ([$enable])
+    $enabled = $json->get_space_after
         If $enable is true (or missing), then the "encode" method will add
         an extra optional space after the ":" separating keys from values in
         JSON objects and extra whitespace after the "," separating key-value
@@ -285,6 +307,7 @@ OBJECT-ORIENTED INTERFACE
            {"key": "value"}
 
     $json = $json->relaxed ([$enable])
+    $enabled = $json->get_relaxed
         If $enable is true (or missing), then "decode" will accept some
         extensions to normal JSON syntax (see below). "encode" will not be
         affected in anyway. *Be aware that this option makes you accept
@@ -324,6 +347,7 @@ OBJECT-ORIENTED INTERFACE
               ]
 
     $json = $json->canonical ([$enable])
+    $enabled = $json->get_canonical
         If $enable is true (or missing), then the "encode" method will
         output JSON objects by sorting their keys. This is adding a
         comparatively high overhead.
@@ -341,6 +365,7 @@ OBJECT-ORIENTED INTERFACE
         This setting has no effect when decoding JSON texts.
 
     $json = $json->allow_nonref ([$enable])
+    $enabled = $json->get_allow_nonref
         If $enable is true (or missing), then the "encode" method can
         convert a non-reference into its corresponding string, number or
         null JSON value, which is an extension to RFC4627. Likewise,
@@ -358,17 +383,19 @@ OBJECT-ORIENTED INTERFACE
            => "Hello, World!"
 
     $json = $json->allow_blessed ([$enable])
+    $enabled = $json->get_allow_blessed
         If $enable is true (or missing), then the "encode" method will not
         barf when it encounters a blessed reference. Instead, the value of
         the convert_blessed option will decide whether "null"
-        ("convert_blessed" disabled or no "to_json" method found) or a
+        ("convert_blessed" disabled or no "TO_JSON" method found) or a
         representation of the object ("convert_blessed" enabled and
-        "to_json" method found) is being encoded. Has no effect on "decode".
+        "TO_JSON" method found) is being encoded. Has no effect on "decode".
 
         If $enable is false (the default), then "encode" will throw an
         exception when it encounters a blessed object.
 
     $json = $json->convert_blessed ([$enable])
+    $enabled = $json->get_convert_blessed
         If $enable is true (or missing), then "encode", upon encountering a
         blessed object, will check for the availability of the "TO_JSON"
         method on the object's class. If found, it will be called in scalar
@@ -468,6 +495,7 @@ OBJECT-ORIENTED INTERFACE
            }
 
     $json = $json->shrink ([$enable])
+    $enabled = $json->get_shrink
         Perl usually over-allocates memory a bit when allocating space for
         strings. This flag optionally resizes strings generated by either
         "encode" or "decode" to their minimum size possible. This can save
@@ -495,6 +523,7 @@ OBJECT-ORIENTED INTERFACE
         saving space.
 
     $json = $json->max_depth ([$maximum_nesting_depth])
+    $max_depth = $json->get_max_depth
         Sets the maximum nesting level (default 512) accepted while encoding
         or decoding. If the JSON text or Perl data structure has an equal or
         higher nesting level then this limit, then the encoder and decoder
@@ -516,6 +545,7 @@ OBJECT-ORIENTED INTERFACE
         useful.
 
     $json = $json->max_size ([$maximum_string_size])
+    $max_size = $json->get_max_size
         Set the maximum length a JSON text may have (in bytes) where
         decoding is being attempted. The default is 0, meaning no limit.
         When "decode" is called on a string longer then this number of
@@ -806,11 +836,9 @@ COMPARISON
     pretty-printing and hashkey sorting enabled, JSON::XS/3 enables shrink).
     Higher is better:
 
-       Storable   |  15779.925 |  14169.946 |
-       -----------+------------+------------+
        module     |     encode |     decode |
        -----------|------------|------------|
-       JSON       |   4990.842 |   4088.813 |
+       JSON 1.x   |   4990.842 |   4088.813 |
        JSON::DWIW |  51653.990 |  71575.154 |
        JSON::PC   |  65948.176 |  74631.744 |
        JSON::PP   |   8931.652 |   3817.168 |
@@ -831,7 +859,7 @@ COMPARISON
 
        module     |     encode |     decode |
        -----------|------------|------------|
-       JSON       |     55.260 |     34.971 |
+       JSON 1.x   |     55.260 |     34.971 |
        JSON::DWIW |    825.228 |   1082.513 |
        JSON::PC   |   3571.444 |   2394.829 |
        JSON::PP   |    210.987 |     32.574 |
