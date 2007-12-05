@@ -12,8 +12,8 @@ JSON::XS - 正しくて高速な JSON シリアライザ/デシリアライザ
  # exported functions, they croak on error
  # and expect/generate UTF-8
 
- $utf8_encoded_json_text = to_json $perl_hash_or_arrayref;
- $perl_hash_or_arrayref  = from_json $utf8_encoded_json_text;
+ $utf8_encoded_json_text = encode_json $perl_hash_or_arrayref;
+ $perl_hash_or_arrayref  = decode_json $utf8_encoded_json_text;
 
  # OO-interface
 
@@ -102,10 +102,20 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '2.0';
+our $VERSION = '2.01';
 our @ISA = qw(Exporter);
 
-our @EXPORT = qw(to_json from_json);
+our @EXPORT = qw(encode_json decode_json to_json from_json);
+
+sub to_json($) {
+   require Carp;
+   Carp::croak ("JSON::XS::to_json has been renamed to encode_json, either downgrade to pre-2.0 versions of JSON::XS or rename the call");
+}
+
+sub from_json($) {
+   require Carp;
+   Carp::croak ("JSON::XS::from_json has been renamed to decode_json, either downgrade to pre-2.0 versions of JSON::XS or rename the call");
+}
 
 use Exporter;
 use XSLoader;
@@ -117,7 +127,7 @@ exported by default:
 
 =over 4
 
-=item $json_text = to_json $perl_scalar
+=item $json_text = encode_json $perl_scalar
 
 Converts the given Perl data structure to a UTF-8 encoded, binary string
 (that is, the string contains octets only). Croaks on error.
@@ -128,9 +138,9 @@ This function call is functionally identical to:
 
 except being faster.
 
-=item $perl_scalar = from_json $json_text
+=item $perl_scalar = decode_json $json_text
 
-The opposite of C<to_json>: expects an UTF-8 (binary) string and tries
+The opposite of C<encode_json>: expects an UTF-8 (binary) string and tries
 to parse that as an UTF-8 encoded JSON text, returning the resulting
 reference. Croaks on error.
 
@@ -473,8 +483,8 @@ returns other blessed objects, those will be handled in the same
 way. C<TO_JSON> must take care of not causing an endless recursion cycle
 (== crash) in this case. The name of C<TO_JSON> was chosen because other
 methods called by the Perl core (== not by the user of the object) are
-usually in upper case letters and to avoid collisions with the C<to_json>
-function.
+usually in upper case letters and to avoid collisions with any C<to_json>
+function or method.
 
 This setting does not yet influence C<decode> in any way, but in the
 future, global hooks might get installed that influence C<decode> and are
@@ -757,7 +767,7 @@ exception to be thrown, except for references to the integers C<0> and
 C<1>, which get turned into C<false> and C<true> atoms in JSON. You can
 also use C<JSON::XS::false> and C<JSON::XS::true> to improve readability.
 
-   to_json [\0,JSON::XS::true]      # yields [false,true]
+   encode_json [\0,JSON::XS::true]      # yields [false,true]
 
 =item JSON::XS::true, JSON::XS::false
 
@@ -778,16 +788,16 @@ JSON null value, scalars that have last been used in a string context
 before encoding as JSON strings and anything else as number value:
 
    # dump as number
-   to_json [2]                      # yields [2]
-   to_json [-3.0e17]                # yields [-3e+17]
-   my $value = 5; to_json [$value]  # yields [5]
+   encode_json [2]                      # yields [2]
+   encode_json [-3.0e17]                # yields [-3e+17]
+   my $value = 5; encode_json [$value]  # yields [5]
 
    # used as string, so dump as string
    print $value;
-   to_json [$value]                 # yields ["5"]
+   encode_json [$value]                 # yields ["5"]
 
    # undef becomes null
-   to_json [undef]                  # yields [null]
+   encode_json [undef]                  # yields [null]
 
 You can force the type to be a JSON string by stringifying it:
 

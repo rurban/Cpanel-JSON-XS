@@ -11,8 +11,8 @@ SYNOPSIS
      # exported functions, they croak on error
      # and expect/generate UTF-8
 
-     $utf8_encoded_json_text = to_json $perl_hash_or_arrayref;
-     $perl_hash_or_arrayref  = from_json $utf8_encoded_json_text;
+     $utf8_encoded_json_text = encode_json $perl_hash_or_arrayref;
+     $perl_hash_or_arrayref  = decode_json $utf8_encoded_json_text;
 
      # OO-interface
 
@@ -88,7 +88,7 @@ FUNCTIONAL INTERFACE
     The following convenience methods are provided by this module. They are
     exported by default:
 
-    $json_text = to_json $perl_scalar
+    $json_text = encode_json $perl_scalar
         Converts the given Perl data structure to a UTF-8 encoded, binary
         string (that is, the string contains octets only). Croaks on error.
 
@@ -98,8 +98,8 @@ FUNCTIONAL INTERFACE
 
         except being faster.
 
-    $perl_scalar = from_json $json_text
-        The opposite of "to_json": expects an UTF-8 (binary) string and
+    $perl_scalar = decode_json $json_text
+        The opposite of "encode_json": expects an UTF-8 (binary) string and
         tries to parse that as an UTF-8 encoded JSON text, returning the
         resulting reference. Croaks on error.
 
@@ -409,7 +409,7 @@ OBJECT-ORIENTED INTERFACE
         cycle (== crash) in this case. The name of "TO_JSON" was chosen
         because other methods called by the Perl core (== not by the user of
         the object) are usually in upper case letters and to avoid
-        collisions with the "to_json" function.
+        collisions with any "to_json" function or method.
 
         This setting does not yet influence "decode" in any way, but in the
         future, global hooks might get installed that influence "decode" and
@@ -671,7 +671,7 @@ MAPPING
         can also use "JSON::XS::false" and "JSON::XS::true" to improve
         readability.
 
-           to_json [\0,JSON::XS::true]      # yields [false,true]
+           encode_json [\0,JSON::XS::true]      # yields [false,true]
 
     JSON::XS::true, JSON::XS::false
         These special values become JSON true and JSON false values,
@@ -690,16 +690,16 @@ MAPPING
         number value:
 
            # dump as number
-           to_json [2]                      # yields [2]
-           to_json [-3.0e17]                # yields [-3e+17]
-           my $value = 5; to_json [$value]  # yields [5]
+           encode_json [2]                      # yields [2]
+           encode_json [-3.0e17]                # yields [-3e+17]
+           my $value = 5; encode_json [$value]  # yields [5]
 
            # used as string, so dump as string
            print $value;
-           to_json [$value]                 # yields ["5"]
+           encode_json [$value]                 # yields ["5"]
 
            # undef becomes null
-           to_json [undef]                  # yields [null]
+           encode_json [undef]                  # yields [null]
 
         You can force the type to be a JSON string by stringifying it:
 

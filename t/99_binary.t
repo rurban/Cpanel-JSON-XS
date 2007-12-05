@@ -11,12 +11,12 @@ sub test($) {
    my $js;
 
    $js = JSON::XS->new->allow_nonref(0)->utf8->ascii->shrink->encode ([$_[0]]);
-   ok ($_[0] eq ((from_json $js)->[0]), 0);
+   ok ($_[0] eq ((decode_json $js)->[0]), 0);
    $js = JSON::XS->new->allow_nonref(0)->utf8->ascii->encode ([$_[0]]);
    ok ($_[0] eq (JSON::XS->new->utf8->shrink->decode($js))->[0], 1);
 
    $js = JSON::XS->new->allow_nonref(0)->utf8->shrink->encode ([$_[0]]);
-   ok ($_[0] eq ((from_json $js)->[0]), 2);
+   ok ($_[0] eq ((decode_json $js)->[0]), 2);
    $js = JSON::XS->new->allow_nonref(1)->utf8->encode ([$_[0]]);
    ok ($_[0] eq (JSON::XS->new->utf8->shrink->decode($js))->[0], 3);
 
