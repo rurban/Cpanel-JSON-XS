@@ -1605,14 +1605,14 @@ void DESTROY (JSON *self)
 
 PROTOTYPES: ENABLE
 
-void to_json (SV *scalar)
+void encode_json (SV *scalar)
 	PPCODE:
 {
         JSON json = { F_DEFAULT | F_UTF8 };
         XPUSHs (encode_json (scalar, &json));
 }
 
-void from_json (SV *jsonstr)
+void decode_json (SV *jsonstr)
 	PPCODE:
 {
         JSON json = { F_DEFAULT | F_UTF8 };
