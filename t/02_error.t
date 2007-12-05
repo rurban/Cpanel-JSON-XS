@@ -41,6 +41,6 @@ eval { JSON::XS->new->decode ([]) }; ok $@ =~ /malformed/;
 eval { JSON::XS->new->decode (\*STDERR) }; ok $@ =~ /malformed/;
 eval { JSON::XS->new->decode (*STDERR) }; ok !!$@; # cannot coerce GLOB
 
-eval { from_json ("\"\xa0") }; ok $@ =~ /malformed.*character/;
-eval { from_json ("\"\xa0\"") }; ok $@ =~ /malformed.*character/;
+eval { decode_json ("\"\xa0") }; ok $@ =~ /malformed.*character/;
+eval { decode_json ("\"\xa0\"") }; ok $@ =~ /malformed.*character/;
 

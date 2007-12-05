@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                JSON-XS
-version:             2.0
+version:             2.01
 abstract:            ~
 license:             ~
 generated_by:        ExtUtils::MakeMaker version 6.32

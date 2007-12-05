@@ -1,5 +1,11 @@
 Revision history for Perl extension JSON::XS
 
+2.01 Wed Dec  5 11:40:28 CET 2007
+	- INCOMPATIBLE API CHANGE: to_json and from_json have been
+          renamed to encode_json/decode_json for JSON.pm compatibility.
+          The old functions croak and might be replaced by JSON.pm
+          comaptible versions in some later release.
+
 2.0  Tue Dec  4 11:30:46 CET 2007
 	- this is supposed to be the first version of JSON::XS
           compatible with version 2.0+ of the JSON module.
