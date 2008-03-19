@@ -1,3 +1,5 @@
+=encoding utf-8
+
 =head1 NAME
 
 JSON::XS - JSON serialising/deserialising, done correctly and fast
@@ -60,15 +62,16 @@ vice versa.
 
 =item * correct Unicode handling
 
-This module knows how to handle Unicode, and even documents how and when
-it does so.
+This module knows how to handle Unicode, documents how and when it does
+so, and even documents what "correct" means.
 
 =item * round-trip integrity
 
 When you serialise a perl data structure using only datatypes supported
 by JSON, the deserialised data structure is identical on the Perl level.
 (e.g. the string "2.0" doesn't suddenly become "2" just because it looks
-like a number).
+like a number). There minor I<are> exceptions to this, read the MAPPING
+section below to learn about those.
 
 =item * strict checking of JSON correctness
 
@@ -78,17 +81,17 @@ feature).
 
 =item * fast
 
-Compared to other JSON modules, this module compares favourably in terms
-of speed, too.
+Compared to other JSON modules and other serialisers such as Storable,
+this module usually compares favourably in terms of speed, too.
 
 =item * simple to use
 
-This module has both a simple functional interface as well as an OO
-interface.
+This module has both a simple functional interface as well as an objetc
+oriented interface interface.
 
 =item * reasonably versatile output formats
 
-You can choose between the most compact guaranteed single-line format
+You can choose between the most compact guaranteed-single-line format
 possible (nice for simple line-based protocols), a pure-ascii format
 (for when your transport is not 8-bit clean, still supports the whole
 Unicode range), or a pretty-printed format (for when you want to read that
@@ -102,7 +105,7 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '2.01';
+our $VERSION = '2.1';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -176,11 +179,11 @@ Perl string - very natural.
 
 =item 2. Perl does I<not> associate an encoding with your strings.
 
-Unless you force it to, e.g. when matching it against a regex, or printing
-the scalar to a file, in which case Perl either interprets your string as
-locale-encoded text, octets/binary, or as Unicode, depending on various
-settings. In no case is an encoding stored together with your data, it is
-I<use> that decides encoding, not any magical metadata.
+... until you force it to, e.g. when matching it against a regex, or
+printing the scalar to a file, in which case Perl either interprets your
+string as locale-encoded text, octets/binary, or as Unicode, depending
+on various settings. In no case is an encoding stored together with your
+data, it is I<use> that decides encoding, not any magical meta data.
 
 =item 3. The internal utf-8 flag has no meaning with regards to the
 encoding of your string.
@@ -244,6 +247,9 @@ If C<$enable> is false, then the C<encode> method will not escape Unicode
 characters unless required by the JSON syntax or other flags. This results
 in a faster and more compact format.
 
+See also the section I<ENCODING/CODESET FLAG NOTES> later in this
+document.
+
 The main use for this flag is to produce JSON texts that can be
 transmitted over a 7-bit channel, as the encoded JSON texts will not
 contain any 8 bit characters.
@@ -264,6 +270,9 @@ expects Unicode, which is a strict superset of latin1.
 
 If C<$enable> is false, then the C<encode> method will not escape Unicode
 characters unless required by the JSON syntax or other flags.
+
+See also the section I<ENCODING/CODESET FLAG NOTES> later in this
+document.
 
 The main use for this flag is efficiently encoding binary data as JSON
 text, as most octets will not be escaped, resulting in a smaller encoded
@@ -292,6 +301,9 @@ If C<$enable> is false, then the C<encode> method will return the JSON
 string as a (non-encoded) Unicode string, while C<decode> expects thus a
 Unicode string.  Any decoding or encoding (e.g. to UTF-8 or UTF-16) needs
 to be done yourself, e.g. using the Encode module.
+
+See also the section I<ENCODING/CODESET FLAG NOTES> later in this
+document.
 
 Example, output UTF-16BE-encoded JSON:
 
@@ -708,19 +720,19 @@ A JSON number becomes either an integer, numeric (floating point) or
 string scalar in perl, depending on its range and any fractional parts. On
 the Perl level, there is no difference between those as Perl handles all
 the conversion details, but an integer may take slightly less memory and
-might represent more values exactly than (floating point) numbers.
+might represent more values exactly than floating point numbers.
 
 If the number consists of digits only, JSON::XS will try to represent
 it as an integer value. If that fails, it will try to represent it as
 a numeric (floating point) value if that is possible without loss of
-precision. Otherwise it will preserve the number as a string value.
+precision. Otherwise it will preserve the number as a string value (in
+which case you lose roundtripping ability, as the JSON number will be
+re-encoded toa JSON string).
 
 Numbers containing a fractional or exponential part will always be
 represented as numeric (floating point) values, possibly at a loss of
-precision.
-
-This might create round-tripping problems as numbers might become strings,
-but as Perl is typeless there is no other way to do it.
+precision (in which case you might lose perfect roundtripping ability, but
+the JSON number will still be re-encoded as a JSON number).
 
 =item true, false
 
@@ -776,16 +788,18 @@ respectively. You can also use C<\1> and C<\0> directly if you want.
 
 =item blessed objects
 
-Blessed objects are not allowed. JSON::XS currently tries to encode their
-underlying representation (hash- or arrayref), but this behaviour might
-change in future versions.
+Blessed objects are not directly representable in JSON. See the
+C<allow_blessed> and C<convert_blessed> methods on various options on
+how to deal with this: basically, you can choose between throwing an
+exception, encoding the reference as if it weren't blessed, or provide
+your own serialiser method.
 
 =item simple scalars
 
 Simple Perl scalars (any scalar that is not a reference) are the most
 difficult objects to encode: JSON::XS will encode undefined scalars as
-JSON null value, scalars that have last been used in a string context
-before encoding as JSON strings and anything else as number value:
+JSON C<null> values, scalars that have last been used in a string context
+before encoding as JSON strings, and anything else as number value:
 
    # dump as number
    encode_json [2]                      # yields [2]
@@ -813,7 +827,106 @@ You can force the type to be a JSON number by numifying it:
    $x *= 1;     # same thing, the choice is yours.
 
 You can not currently force the type in other, less obscure, ways. Tell me
-if you need this capability.
+if you need this capability (but don't forget to explain why its needed
+:).
+
+=back
+
+
+=head1 ENCODING/CODESET FLAG NOTES
+
+The interested reader might have seen a number of flags that signify
+encodings or codesets - C<utf8>, C<latin1> and C<ascii>. There seems to be
+some confusion on what these do, so here is a short comparison:
+
+C<utf8> controls wether the JSON text created by C<encode> (and expected
+by C<decode>) is UTF-8 encoded or not, while C<latin1> and C<ascii> only
+control wether C<encode> escapes character values outside their respective
+codeset range. Neither of these flags conflict with each other, although
+some combinations make less sense than others.
+
+Care has been taken to make all flags symmetrical with respect to
+C<encode> and C<decode>, that is, texts encoded with any combination of
+these flag values will be correctly decoded when the same flags are used
+- in general, if you use different flag settings while encoding vs. when
+decoding you likely have a bug somewhere.
+
+Below comes a verbose discussion of these flags. Note that a "codeset" is
+simply an abstract set of character-codepoint pairs, while an encoding
+takes those codepoint numbers and I<encodes> them, in our case into
+octets. Unicode is (among other things) a codeset, UTF-8 is an encoding,
+and ISO-8859-1 (= latin 1) and ASCII are both codesets I<and> encodings at
+the same time, which can be confusing.
+
+=over 4
+
+=item C<utf8> flag disabled
+
+When C<utf8> is disabled (the default), then C<encode>/C<decode> generate
+and expect Unicode strings, that is, characters with high ordinal Unicode
+values (> 255) will be encoded as such characters, and likewise such
+characters are decoded as-is, no canges to them will be done, except
+"(re-)interpreting" them as Unicode codepoints or Unicode characters,
+respectively (to Perl, these are the same thing in strings unless you do
+funny/weird/dumb stuff).
+
+This is useful when you want to do the encoding yourself (e.g. when you
+want to have UTF-16 encoded JSON texts) or when some other layer does
+the encoding for you (for example, when printing to a terminal using a
+filehandle that transparently encodes to UTF-8 you certainly do NOT want
+to UTF-8 encode your data first and have Perl encode it another time).
+
+=item C<utf8> flag enabled
+
+If the C<utf8>-flag is enabled, C<encode>/C<decode> will encode all
+characters using the corresponding UTF-8 multi-byte sequence, and will
+expect your input strings to be encoded as UTF-8, that is, no "character"
+of the input string must have any value > 255, as UTF-8 does not allow
+that.
+
+The C<utf8> flag therefore switches between two modes: disabled means you
+will get a Unicode string in Perl, enabled means you get an UTF-8 encoded
+octet/binary string in Perl.
+
+=item C<latin1> or C<ascii> flags enabled
+
+With C<latin1> (or C<ascii>) enabled, C<encode> will escape characters
+with ordinal values > 255 (> 127 with C<ascii>) and encode the remaining
+characters as specified by the C<utf8> flag.
+
+If C<utf8> is disabled, then the result is also correctly encoded in those
+character sets (as both are proper subsets of Unicode, meaning that a
+Unicode string with all character values < 256 is the same thing as a
+ISO-8859-1 string, and a Unicode string with all character values < 128 is
+the same thing as an ASCII string in Perl).
+
+If C<utf8> is enabled, you still get a correct UTF-8-encoded string,
+regardless of these flags, just some more characters will be escaped using
+C<\uXXXX> then before.
+
+Note that ISO-8859-1-I<encoded> strings are not compatible with UTF-8
+encoding, while ASCII-encoded strings are. That is because the ISO-8859-1
+encoding is NOT a subset of UTF-8 (despite the ISO-8859-1 I<codeset> being
+a subset of Unicode), while ASCII is.
+
+Surprisingly, C<decode> will ignore these flags and so treat all input
+values as governed by the C<utf8> flag. If it is disabled, this allows you
+to decode ISO-8859-1- and ASCII-encoded strings, as both strict subsets of
+Unicode. If it is enabled, you can correctly decode UTF-8 encoded strings.
+
+So neither C<latin1> nor C<ascii> are incompatible with the C<utf8> flag -
+they only govern when the JSON output engine escapes a character or not.
+
+The main use for C<latin1> is to relatively efficiently store binary data
+as JSON, at the expense of breaking compatibility with most JSON decoders.
+
+The main use for C<ascii> is to force the output to not contain characters
+with values > 127, which means you can interpret the resulting string
+as UTF-8, ISO-8859-1, ASCII, KOI8-R or most about any character set and
+8-bit-encoding, and still get the same data structure back. This is useful
+when your channel for JSON transfer is not 8-bit clean or the encoding
+might be mangled in between (e.g. in mail), and works because ASCII is a
+proper subset of most 8-bit and multibyte encodings in use in the world.
 
 =back
 
@@ -827,6 +940,17 @@ followed by some benchmark values. JSON::XS was designed not to suffer
 from any of these problems or limitations.
 
 =over 4
+
+=item JSON 2.xx
+
+A marvellous piece of engineering, this module either uses JSON::XS
+directly when available (so will be 100% compatible with it, including
+speed), or it uses JSON::PP, which is basically JSON::XS translated to
+Pure Perl, which should be 100% compatible with JSON::XS, just a bit
+slower.
+
+You cannot really lose by using this module, especially as it tries very
+hard to work even with ancient Perl versions, while JSON::XS does not.
 
 =item JSON 1.07
 
@@ -907,9 +1031,11 @@ Does not check input for validity.
 
 =head2 JSON and YAML
 
-You often hear that JSON is a subset (or a close subset) of YAML. This is,
-however, a mass hysteria and very far from the truth. In general, there is
-no way to configure JSON::XS to output a data structure as valid YAML.
+You often hear that JSON is a subset of YAML. This is, however, a mass
+hysteria(*) and very far from the truth (as of the time of this writing),
+so let me state it clearly: I<in general, there is no way to configure
+JSON::XS to output a data structure as valid YAML> that works in all
+cases.
 
 If you really must use JSON::XS to generate YAML, you should use this
 algorithm (subject to change in future versions):
@@ -917,15 +1043,44 @@ algorithm (subject to change in future versions):
    my $to_yaml = JSON::XS->new->utf8->space_after (1);
    my $yaml = $to_yaml->encode ($ref) . "\n";
 
-This will usually generate JSON texts that also parse as valid
+This will I<usually> generate JSON texts that also parse as valid
 YAML. Please note that YAML has hardcoded limits on (simple) object key
-lengths that JSON doesn't have, so you should make sure that your hash
-keys are noticeably shorter than the 1024 characters YAML allows.
+lengths that JSON doesn't have and also has different and incompatible
+unicode handling, so you should make sure that your hash keys are
+noticeably shorter than the 1024 "stream characters" YAML allows and that
+you do not have characters with codepoint values outside the Unicode BMP
+(basic multilingual page). YAML also does not allow C<\/> sequences in
+strings (which JSON::XS does not I<currently> generate, but other JSON
+generators might).
 
-There might be other incompatibilities that I am not aware of. In general
-you should not try to generate YAML with a JSON generator or vice versa,
-or try to parse JSON with a YAML parser or vice versa: chances are high
-that you will run into severe interoperability problems.
+There might be other incompatibilities that I am not aware of (or the YAML
+specification has been changed yet again - it does so quite often). In
+general you should not try to generate YAML with a JSON generator or vice
+versa, or try to parse JSON with a YAML parser or vice versa: chances are
+high that you will run into severe interoperability problems when you
+least expect it.
+
+=over 4
+
+=item (*)
+
+I have been pressured multiple times by Brian Ingerson (one of the
+authors of the YAML specification) to remove this paragraph, despite him
+acknowledging that the actual incompatibilities exist. As I was personally
+bitten by this "JSON is YAML" lie, I refused and said I will continue to
+educate people about these issues, so others do not run into the same
+problem again and again. After this, Brian called me a (quote)I<complete
+and worthless idiot>(unquote).
+
+In my opinion, instead of pressuring and insulting people who actually
+clarify issues with YAML and the wrong statements of some of its
+proponents, I would kindly suggest reading the JSON spec (which is not
+that difficult or long) and finally make YAML compatible to it, and
+educating users about the changes, instead of spreading lies about the
+real compatibility for many I<years> and trying to silence people who
+point out that it isn't true.
+
+=back
 
 
 =head2 SPEED
@@ -935,8 +1090,9 @@ tables. They have been generated with the help of the C<eg/bench> program
 in the JSON::XS distribution, to make it easy to compare on your own
 system.
 
-First comes a comparison between various modules using a very short
-single-line JSON string:
+First comes a comparison between various modules using
+a very short single-line JSON string (also available at
+L<http://dist.schmorp.de/misc/json/short.json>).
 
    {"method": "handleMessage", "params": ["user1", "we were just talking"], \
    "id": null, "array":[1,11,234,-5,1e5,1e7, true,  false]}
@@ -965,7 +1121,7 @@ than JSON, even with pretty-printing and key sorting. It also compares
 favourably to Storable for small amounts of data.
 
 Using a longer test string (roughly 18KB, generated from Yahoo! Locals
-search API (http://nanoref.com/yahooapis/mgPdGg):
+search API (L<http://dist.schmorp.de/misc/json/long.json>).
 
    module     |     encode |     decode |
    -----------|------------|------------|
@@ -1012,21 +1168,25 @@ Third, JSON::XS recurses using the C stack when decoding objects and
 arrays. The C stack is a limited resource: for instance, on my amd64
 machine with 8MB of stack size I can decode around 180k nested arrays but
 only 14k nested JSON objects (due to perl itself recursing deeply on croak
-to free the temporary). If that is exceeded, the program crashes. to be
+to free the temporary). If that is exceeded, the program crashes. To be
 conservative, the default nesting limit is set to 512. If your process
 has a smaller stack, you should adjust this setting accordingly with the
 C<max_depth> method.
 
-And last but least, something else could bomb you that I forgot to think
-of. In that case, you get to keep the pieces. I am always open for hints,
-though...
+Something else could bomb you, too, that I forgot to think of. In that
+case, you get to keep the pieces. I am always open for hints, though...
+
+Also keep in mind that JSON::XS might leak contents of your Perl data
+structures in its error messages, so when you serialise sensitive
+information you might want to make sure that exceptions thrown by JSON::XS
+will not end up in front of untrusted eyes.
 
 If you are using JSON::XS to return packets to consumption
 by JavaScript scripts in a browser you should have a look at
 L<http://jpsykes.com/47/practical-csrf-and-json-security> to see whether
 you are vulnerable to some common attack vectors (which really are browser
 design bugs, but it is still you who will have to deal with it, as major
-browser developers care only for features, not about doing security
+browser developers care only for features, not about getting security
 right).
 
 

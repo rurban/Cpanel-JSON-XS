@@ -1,5 +1,19 @@
 Revision history for Perl extension JSON::XS
 
+2.1  Wed Mar 19 23:23:18 CET 2008
+        - update documentation here and there: add a large section
+          about utf8/latin1/ascii flags, add a security consideration
+          and extend and clarify the JSON and YAML section.
+        - medium speed enhancements when encoding/decoding non-ascii chars.
+        - minor speedup in number encoding case.
+	- extend and clarify the section on incompatibilities
+          between YAML and JSON.
+        - switch to static inline from just inline when using gcc.
+        - add =encoding utf-8 to the manpage, now that perl 5.10 supports it.
+        - fix some issues with UV to JSON conversion of unknown impact.
+        - published the yahoo locals search result used in benchmarks as the
+          original url changes so comparison is impossible.
+
 2.01 Wed Dec  5 11:40:28 CET 2007
 	- INCOMPATIBLE API CHANGE: to_json and from_json have been
           renamed to encode_json/decode_json for JSON.pm compatibility.
