@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 #include <float.h>
 
 #if defined(__BORLANDC__) || defined(_MSC_VER)
@@ -17,6 +18,8 @@
 #ifndef UTF8_MAXBYTES
 # define UTF8_MAXBYTES 13
 #endif
+
+#define IVUV_MAXCHARS (sizeof (UV) * CHAR_BIT * 28 / 93 + 2)
 
 #define F_ASCII          0x00000001UL
 #define F_LATIN1         0x00000002UL
@@ -52,15 +55,19 @@
 #define SE } while (0)
 
 #if __GNUC__ >= 3
-# define expect(expr,value)         __builtin_expect ((expr),(value))
-# define inline                     inline
+# define expect(expr,value)         __builtin_expect ((expr), (value))
+# define INLINE                     static inline
 #else
 # define expect(expr,value)         (expr)
-# define inline                     static
+# define INLINE                     static
 #endif
 
 #define expect_false(expr) expect ((expr) != 0, 0)
 #define expect_true(expr)  expect ((expr) != 0, 1)
+
+#define IN_RANGE_INC(type,val,beg,end) \
+  ((unsigned type)((unsigned type)(val) - (unsigned type)(beg)) \
+  <= (unsigned type)((unsigned type)(end) - (unsigned type)(beg)))
 
 #ifdef USE_ITHREADS
 # define JSON_SLOW 1
@@ -82,7 +89,7 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////////
 // utility functions
 
-inline void
+INLINE void
 shrink (SV *sv)
 {
   sv_utf8_downgrade (sv, 1);
@@ -101,21 +108,42 @@ shrink (SV *sv)
 // we special-case "safe" characters from U+80 .. U+7FF,
 // but use the very good perl function to parse anything else.
 // note that we never call this function for a ascii codepoints
-inline UV
+INLINE UV
 decode_utf8 (unsigned char *s, STRLEN len, STRLEN *clen)
 {
-  if (expect_false (s[0] > 0xdf || s[0] < 0xc2))
-    return utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
-  else if (len > 1 && s[1] >= 0x80 && s[1] <= 0xbf)
+  if (expect_true (len >= 2
+                   && IN_RANGE_INC (char, s[0], 0xc2, 0xdf)
+                   && IN_RANGE_INC (char, s[1], 0x80, 0xbf)))
     {
       *clen = 2;
       return ((s[0] & 0x1f) << 6) | (s[1] & 0x3f);
     }
   else
-    {
-      *clen = (STRLEN)-1;
-      return (UV)-1;
-    }
+    return utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
+}
+
+// likewise for encoding, also never called for ascii codepoints
+// this function takes advantage of this fact, although current gccs
+// seem to optimise the check for >= 0x80 away anyways
+INLINE unsigned char *
+encode_utf8 (unsigned char *s, UV ch)
+{
+  if      (expect_false (ch < 0x000080))
+    *s++ = ch;
+  else if (expect_true  (ch < 0x000800))
+    *s++ = 0xc0 | ( ch >>  6),
+    *s++ = 0x80 | ( ch        & 0x3f);
+  else if (              ch < 0x010000)
+    *s++ = 0xe0 | ( ch >> 12),
+    *s++ = 0x80 | ((ch >>  6) & 0x3f),
+    *s++ = 0x80 | ( ch        & 0x3f);
+  else if (              ch < 0x110000)
+    *s++ = 0xf0 | ( ch >> 18),
+    *s++ = 0x80 | ((ch >> 12) & 0x3f),
+    *s++ = 0x80 | ((ch >>  6) & 0x3f),
+    *s++ = 0x80 | ( ch        & 0x3f);
+
+  return s;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -130,9 +158,10 @@ typedef struct
   JSON json;
   U32 indent; // indentation level
   U32 maxdepth; // max. indentation/recursion level
+  UV limit;   // escape character values >= this value when encoding
 } enc_t;
 
-inline void
+INLINE void
 need (enc_t *enc, STRLEN len)
 {
   if (expect_false (enc->cur + len >= enc->end))
@@ -144,7 +173,7 @@ need (enc_t *enc, STRLEN len)
     }
 }
 
-inline void
+INLINE void
 encode_ch (enc_t *enc, char ch)
 {
   need (enc, 1);
@@ -208,13 +237,13 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                       clen = 1;
                     }
 
-                  if (uch > 0x10FFFFUL)
-                    croak ("out of range codepoint (0x%lx) encountered, unrepresentable in JSON", (unsigned long)uch);
-
-                  if (uch < 0x80 || enc->json.flags & F_ASCII || (enc->json.flags & F_LATIN1 && uch > 0xFF))
+                  if (uch < 0x80/*0x20*/ || uch >= enc->limit)
                     {
-                      if (uch > 0xFFFFUL)
+                      if (uch >= 0x10000UL)
                         {
+                          if (uch >= 0x110000UL)
+                            croak ("out of range codepoint (0x%lx) encountered, unrepresentable in JSON", (unsigned long)uch);
+
                           need (enc, len += 11);
                           sprintf (enc->cur, "\\u%04x\\u%04x",
                                    (int)((uch - 0x10000) / 0x400 + 0xD800),
@@ -252,7 +281,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                   else
                     {
                       need (enc, len += UTF8_MAXBYTES - 1); // never more than 11 bytes needed
-                      enc->cur = uvuni_to_utf8_flags (enc->cur, uch, 0);
+                      enc->cur = encode_utf8 (enc->cur, uch);
                       ++str;
                     }
                 }
@@ -263,7 +292,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
     }
 }
 
-inline void
+INLINE void
 encode_indent (enc_t *enc)
 {
   if (enc->json.flags & F_INDENT)
@@ -276,14 +305,14 @@ encode_indent (enc_t *enc)
     }
 }
 
-inline void
+INLINE void
 encode_space (enc_t *enc)
 {
   need (enc, 1);
   encode_ch (enc, ' ');
 }
 
-inline void
+INLINE void
 encode_nl (enc_t *enc)
 {
   if (enc->json.flags & F_INDENT)
@@ -293,7 +322,7 @@ encode_nl (enc_t *enc)
     }
 }
 
-inline void
+INLINE void
 encode_comma (enc_t *enc)
 {
   encode_ch (enc, ',');
@@ -621,21 +650,16 @@ encode_sv (enc_t *enc, SV *sv)
     }
   else if (SvIOKp (sv))
     {
-      // we assume we can always read an IV as a UV
-      if (SvUV (sv) & ~(UV)0x7fff)
-        {
-          // large integer, use the (rather slow) snprintf way.
-          need (enc, sizeof (UV) * 3);
-          enc->cur += 
-             SvIsUV(sv)
-                ? snprintf (enc->cur, sizeof (UV) * 3, "%"UVuf, (UV)SvUVX (sv))
-                : snprintf (enc->cur, sizeof (UV) * 3, "%"IVdf, (IV)SvIVX (sv));
-        }
-      else
+      // we assume we can always read an IV as a UV and vice versa
+      // we assume two's complement
+      // we assume no aliasing issues in the union
+      if (SvIsUV (sv) ? SvUVX (sv) <= 59000
+                      : SvIVX (sv) <= 59000 && SvIVX (sv) >= -59000)
         {
           // optimise the "small number case"
           // code will likely be branchless and use only a single multiplication
-          I32 i = SvIV (sv);
+          // works for numbers up to 59074
+          I32 i = SvIVX (sv);
           U32 u;
           char digit, nz = 0;
 
@@ -651,12 +675,21 @@ encode_sv (enc_t *enc, SV *sv)
           // and multiplying by 5 while moving the decimal point one to the right,
           // resulting in a net multiplication by 10.
           // we always write the digit to memory but conditionally increment
-          // the pointer, to ease the usage of conditional move instructions.
-          digit = u >> 28; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0xfffffff) * 5;
-          digit = u >> 27; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x7ffffff) * 5;
-          digit = u >> 26; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x3ffffff) * 5;
-          digit = u >> 25; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x1ffffff) * 5;
+          // the pointer, to enable the use of conditional move instructions.
+          digit = u >> 28; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0xfffffffUL) * 5;
+          digit = u >> 27; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x7ffffffUL) * 5;
+          digit = u >> 26; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x3ffffffUL) * 5;
+          digit = u >> 25; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x1ffffffUL) * 5;
           digit = u >> 24; *enc->cur = digit + '0'; enc->cur += 1; // correctly generate '0'
+        }
+      else
+        {
+          // large integer, use the (rather slow) snprintf way.
+          need (enc, IVUV_MAXCHARS);
+          enc->cur += 
+             SvIsUV(sv)
+                ? snprintf (enc->cur, IVUV_MAXCHARS, "%"UVuf, (UV)SvUVX (sv))
+                : snprintf (enc->cur, IVUV_MAXCHARS, "%"IVdf, (IV)SvIVX (sv));
         }
     }
   else if (SvROK (sv))
@@ -682,6 +715,9 @@ encode_json (SV *scalar, JSON *json)
   enc.end       = SvEND (enc.sv);
   enc.indent    = 0;
   enc.maxdepth  = DEC_DEPTH (enc.json.flags);
+  enc.limit     = enc.json.flags & F_ASCII  ? 0x000080UL
+                : enc.json.flags & F_LATIN1 ? 0x000100UL
+                                            : 0x110000UL;
 
   SvPOK_only (enc.sv);
   encode_sv (&enc, scalar);
@@ -712,7 +748,7 @@ typedef struct
   U32 maxdepth; // recursion depth limit
 } dec_t;
 
-inline void
+INLINE void
 decode_comment (dec_t *dec)
 {
   // only '#'-style comments allowed a.t.m.
@@ -721,7 +757,7 @@ decode_comment (dec_t *dec)
     ++dec->cur;
 }
 
-inline void
+INLINE void
 decode_ws (dec_t *dec)
 {
   for (;;)
@@ -857,7 +893,7 @@ decode_str (dec_t *dec)
                         {
                           utf8 = 1;
 
-                          cur = (char *)uvuni_to_utf8_flags (cur, hi, 0);
+                          cur = encode_utf8 (cur, hi);
                         }
                       else
                         *cur++ = hi;
@@ -869,7 +905,7 @@ decode_str (dec_t *dec)
                     ERR ("illegal backslash escape sequence in string");
                 }
             }
-          else if (expect_true (ch >= 0x20 && ch <= 0x7f))
+          else if (expect_true (ch >= 0x20 && ch < 0x80))
             *cur++ = ch;
           else if (ch >= 0x80)
             {
@@ -1002,22 +1038,24 @@ decode_num (dec_t *dec)
     {
       int len = dec->cur - start;
 
-      // special case the rather common 1..4-digit-int case, assumes 32 bit ints or so
+      // special case the rather common 1..5-digit-int case
       if (*start == '-')
         switch (len)
           {
-            case 2: return newSViv (-(                                                      start [1] - '0' *    1));
-            case 3: return newSViv (-(                                     start [1] * 10 + start [2] - '0' *   11));
-            case 4: return newSViv (-(                   start [1] * 100 + start [2] * 10 + start [3] - '0' *  111));
-            case 5: return newSViv (-(start [1] * 1000 + start [2] * 100 + start [3] * 10 + start [4] - '0' * 1111));
+            case 2: return newSViv (-(                                                                          start [1] - '0' *     1));
+            case 3: return newSViv (-(                                                         start [1] * 10 + start [2] - '0' *    11));
+            case 4: return newSViv (-(                                       start [1] * 100 + start [2] * 10 + start [3] - '0' *   111));
+            case 5: return newSViv (-(                    start [1] * 1000 + start [2] * 100 + start [3] * 10 + start [4] - '0' *  1111));
+            case 6: return newSViv (-(start [1] * 10000 + start [2] * 1000 + start [3] * 100 + start [4] * 10 + start [5] - '0' * 11111));
           }
       else
         switch (len)
           {
-            case 1: return newSViv (                                                        start [0] - '0' *    1);
-            case 2: return newSViv (                                       start [0] * 10 + start [1] - '0' *   11);
-            case 3: return newSViv (                     start [0] * 100 + start [1] * 10 + start [2] - '0' *  111);
-            case 4: return newSViv (  start [0] * 1000 + start [1] * 100 + start [2] * 10 + start [3] - '0' * 1111);
+            case 1: return newSViv (                                                                            start [0] - '0' *     1);
+            case 2: return newSViv (                                                           start [0] * 10 + start [1] - '0' *    11);
+            case 3: return newSViv (                                         start [0] * 100 + start [1] * 10 + start [2] - '0' *   111);
+            case 4: return newSViv (                      start [0] * 1000 + start [1] * 100 + start [2] * 10 + start [3] - '0' *  1111);
+            case 5: return newSViv (  start [0] * 10000 + start [1] * 1000 + start [2] * 100 + start [3] * 10 + start [4] - '0' * 11111);
           }
 
       {
@@ -1276,12 +1314,12 @@ static SV *
 decode_sv (dec_t *dec)
 {
   // the beauty of JSON: you need exactly one character lookahead
-  // to parse anything.
+  // to parse everything.
   switch (*dec->cur)
     {
       case '"': ++dec->cur; return decode_str (dec); 
-      case '[': ++dec->cur; return decode_av (dec); 
-      case '{': ++dec->cur; return decode_hv (dec);
+      case '[': ++dec->cur; return decode_av  (dec); 
+      case '{': ++dec->cur; return decode_hv  (dec);
 
       case '-':
       case '0': case '1': case '2': case '3': case '4':
