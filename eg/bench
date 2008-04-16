@@ -2,17 +2,18 @@
 
 # Usage: bench json-file
 
-# which modules to test (JSON usually excluded because its so slow)
+# which modules to test (JSON::PP usually excluded because its so slow)
 my %tst = (
-   "JSON"         => ['JSON::encode_json $perl'  , 'JSON::decode_json $json'],
-   "JSON::PP"     => ['$pp->encode ($perl)'      , '$pp->decode ($json)'],
-   "JSON::DWIW"   => ['$dwiw->to_json ($perl)'   , '$dwiw->from_json ($json)'],
-   "JSON::PC"     => ['$pc->convert ($perl)'     , '$pc->parse ($json)'],
-   "JSON::Syck"   => ['JSON::Syck::Dump $perl'   , 'JSON::Syck::Load $json'],
-   "JSON::XS"     => ['encode_json $perl'        , 'decode_json $json'],
-   "JSON::XS/2"   => ['$xs2->encode ($perl)'     , '$xs2->decode ($json)'],
-   "JSON::XS/3"   => ['$xs3->encode ($perl)'     , '$xs3->decode ($json)'],
-   "Storable"     => ['Storable::nfreeze $perl'  , 'Storable::thaw $pst'],
+#   "JSON"          => ['JSON::encode_json $perl'  , 'JSON::decode_json $json'],
+#   "JSON::PP"      => ['$pp->encode ($perl)'      , '$pp->decode ($json)'],
+   "JSON::DWIW/FJ" => ['$dwiw->to_json ($perl)'   , '$dwiw->from_json ($json)'],
+   "JSON::DWIW/DS" => ['$dwiw->to_json ($perl)'   , 'JSON::DWIW::deserialize $json'],
+   "JSON::PC"      => ['$pc->convert ($perl)'     , '$pc->parse ($json)'],
+   "JSON::Syck"    => ['JSON::Syck::Dump $perl'   , 'JSON::Syck::Load $json'],
+   "JSON::XS"      => ['encode_json $perl'        , 'decode_json $json'],
+   "JSON::XS/2"    => ['$xs2->encode ($perl)'     , '$xs2->decode ($json)'],
+   "JSON::XS/3"    => ['$xs3->encode ($perl)'     , '$xs3->decode ($json)'],
+   "Storable"      => ['Storable::nfreeze $perl'  , 'Storable::thaw $pst'],
 );
 
 use JSON ();
@@ -77,13 +78,13 @@ sub bench($) {
    return $count / $min;
 }
 
-printf "%-10s | %10s | %10s |\n", "module", "encode", "decode";
-printf "-----------|------------|------------|\n";
+printf "%-13s | %10s | %10s |\n", "module", "encode", "decode";
+printf "--------------|------------|------------|\n";
 for my $module (sort keys %tst) {
    my $enc = bench $tst{$module}[0];
    my $dec = bench $tst{$module}[1];
 
-   printf "%-10s | %10.3f | %10.3f |\n", $module, $enc, $dec;
+   printf "%-13s | %10.3f | %10.3f |\n", $module, $enc, $dec;
 }
-printf "-----------+------------+------------+\n";
+printf "--------------+------------+------------+\n";
 
