@@ -33,18 +33,10 @@
 #define F_ALLOW_BLESSED  0x00000400UL
 #define F_CONV_BLESSED   0x00000800UL
 #define F_RELAXED        0x00001000UL
-
-#define F_MAXDEPTH       0xf8000000UL
-#define S_MAXDEPTH       27
-#define F_MAXSIZE        0x01f00000UL
-#define S_MAXSIZE        20
+#define F_ALLOW_UNKNOWN  0x00002000UL
 #define F_HOOK           0x00080000UL // some hooks exist, so slow-path processing
 
-#define DEC_DEPTH(flags) (1UL << ((flags & F_MAXDEPTH) >> S_MAXDEPTH))
-#define DEC_SIZE(flags)  (1UL << ((flags & F_MAXSIZE ) >> S_MAXSIZE ))
-
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
-#define F_DEFAULT   (9UL << S_MAXDEPTH)
 
 #define INIT_SIZE   32 // initial scalar size to be allocated
 #define INDENT_STEP 3  // spaces per indentation level
@@ -69,6 +61,8 @@
   ((unsigned type)((unsigned type)(val) - (unsigned type)(beg)) \
   <= (unsigned type)((unsigned type)(end) - (unsigned type)(beg)))
 
+#define ERR_NESTING_EXCEEDED "json text or perl structure exceeds maximum nesting level (max_depth set too low?)"
+
 #ifdef USE_ITHREADS
 # define JSON_SLOW 1
 # define JSON_STASH (json_stash ? json_stash : gv_stashpv ("JSON::XS", 1))
@@ -80,14 +74,50 @@
 static HV *json_stash, *json_boolean_stash; // JSON::XS::
 static SV *json_true, *json_false;
 
+enum {
+  INCR_M_WS = 0, // initial whitespace skipping, must be 0
+  INCR_M_STR,    // inside string
+  INCR_M_BS,     // inside backslash
+  INCR_M_JSON    // outside anything, count nesting
+};
+
+#define INCR_DONE(json) (!(json)->incr_nest && (json)->incr_mode == INCR_M_JSON)
+
 typedef struct {
   U32 flags;
+  U32 max_depth;
+  STRLEN max_size;
+
   SV *cb_object;
   HV *cb_sk_object;
+
+  // for the incremental parser
+  SV *incr_text;   // the source text so far
+  STRLEN incr_pos; // the current offset into the text
+  unsigned char incr_nest;   // {[]}-nesting level
+  unsigned char incr_mode;
 } JSON;
+
+INLINE void
+json_init (JSON *json)
+{
+  Zero (json, 1, JSON);
+  json->max_depth = 512;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // utility functions
+
+INLINE SV *
+get_bool (const char *name)
+{
+  SV *sv = get_sv (name, 1);
+
+  SvREADONLY_on (sv);
+  SvREADONLY_on (SvRV (sv));
+
+  return sv;
+}
 
 INLINE void
 shrink (SV *sv)
@@ -157,7 +187,6 @@ typedef struct
   SV *sv;     // result scalar
   JSON json;
   U32 indent; // indentation level
-  U32 maxdepth; // max. indentation/recursion level
   UV limit;   // escape character values >= this value when encoding
 } enc_t;
 
@@ -340,8 +369,8 @@ encode_av (enc_t *enc, AV *av)
 {
   int i, len = av_len (av);
 
-  if (enc->indent >= enc->maxdepth)
-    croak ("data structure too deep (hit recursion limit)");
+  if (enc->indent >= enc->json.max_depth)
+    croak (ERR_NESTING_EXCEEDED);
 
   encode_ch (enc, '[');
   
@@ -425,10 +454,9 @@ static void
 encode_hv (enc_t *enc, HV *hv)
 {
   HE *he;
-  int count;
 
-  if (enc->indent >= enc->maxdepth)
-    croak ("data structure too deep (hit recursion limit)");
+  if (enc->indent >= enc->json.max_depth)
+    croak (ERR_NESTING_EXCEEDED);
 
   encode_ch (enc, '{');
 
@@ -619,10 +647,14 @@ encode_rv (enc_t *enc, SV *sv)
         encode_str (enc, "true", 4, 0);
       else if (len == 1 && *pv == '0')
         encode_str (enc, "false", 5, 0);
+      else if (enc->json.flags & F_ALLOW_UNKNOWN)
+        encode_str (enc, "null", 4, 0);
       else
         croak ("cannot encode reference to scalar '%s' unless the scalar is 0 or 1",
                SvPV_nolen (sv_2mortal (newRV_inc (sv))));
     }
+  else if (enc->json.flags & F_ALLOW_UNKNOWN)
+    encode_str (enc, "null", 4, 0);
   else
     croak ("encountered %s, but JSON can only represent references to arrays or hashes",
            SvPV_nolen (sv_2mortal (newRV_inc (sv))));
@@ -694,7 +726,7 @@ encode_sv (enc_t *enc, SV *sv)
     }
   else if (SvROK (sv))
     encode_rv (enc, SvRV (sv));
-  else if (!SvOK (sv))
+  else if (!SvOK (sv) || enc->json.flags & F_ALLOW_UNKNOWN)
     encode_str (enc, "null", 4, 0);
   else
     croak ("encountered perl type (%s,0x%x) that JSON cannot handle, you might want to report this",
@@ -714,7 +746,6 @@ encode_json (SV *scalar, JSON *json)
   enc.cur       = SvPVX (enc.sv);
   enc.end       = SvEND (enc.sv);
   enc.indent    = 0;
-  enc.maxdepth  = DEC_DEPTH (enc.json.flags);
   enc.limit     = enc.json.flags & F_ASCII  ? 0x000080UL
                 : enc.json.flags & F_LATIN1 ? 0x000100UL
                                             : 0x110000UL;
@@ -791,7 +822,7 @@ decode_ws (dec_t *dec)
   ++dec->cur;			\
   SE
 
-#define DEC_INC_DEPTH if (++dec->depth > dec->maxdepth) ERR ("json datastructure exceeds maximum nesting level (set a higher max_depth)")
+#define DEC_INC_DEPTH if (++dec->depth > dec->json.max_depth) ERR (ERR_NESTING_EXCEEDED)
 #define DEC_DEC_DEPTH --dec->depth
 
 static SV *decode_sv (dec_t *dec);
@@ -1173,7 +1204,7 @@ decode_hv (dec_t *dec)
 
           for (;;)
             {
-              // the >= 0x80 is true on most architectures
+              // the >= 0x80 is false on most architectures
               if (p == e || *p < 0x20 || *p >= 0x80 || *p == '\\')
                 {
                   // slow path, back up and use decode_str
@@ -1331,9 +1362,9 @@ decode_sv (dec_t *dec)
           {
             dec->cur += 4;
 #if JSON_SLOW
-            json_true = get_sv ("JSON::XS::true", 1); SvREADONLY_on (json_true);
+            json_true = get_bool ("JSON::XS::true");
 #endif
-            return SvREFCNT_inc (json_true);
+            return newSVsv (json_true);
           }
         else
           ERR ("'true' expected");
@@ -1345,9 +1376,9 @@ decode_sv (dec_t *dec)
           {
             dec->cur += 5;
 #if JSON_SLOW
-            json_false = get_sv ("JSON::XS::false", 1); SvREADONLY_on (json_false);
+            json_false = get_bool ("JSON::XS::false");
 #endif
-            return SvREFCNT_inc (json_false);
+            return newSVsv (json_false);
           }
         else
           ERR ("'false' expected");
@@ -1375,18 +1406,18 @@ fail:
 }
 
 static SV *
-decode_json (SV *string, JSON *json, UV *offset_return)
+decode_json (SV *string, JSON *json, STRLEN *offset_return)
 {
   dec_t dec;
-  UV offset;
+  STRLEN offset;
   SV *sv;
 
   SvGETMAGIC (string);
   SvUPGRADE (string, SVt_PV);
 
-  if (json->flags & F_MAXSIZE && SvCUR (string) > DEC_SIZE (json->flags))
+  if (SvCUR (string) > json->max_size && json->max_size)
     croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
-           (unsigned long)SvCUR (string), (unsigned long)DEC_SIZE (json->flags));
+           (unsigned long)SvCUR (string), (unsigned long)json->max_size);
 
   if (json->flags & F_UTF8)
     sv_utf8_downgrade (string, 0);
@@ -1395,12 +1426,11 @@ decode_json (SV *string, JSON *json, UV *offset_return)
 
   SvGROW (string, SvCUR (string) + 1); // should basically be a NOP
 
-  dec.json     = *json;
-  dec.cur      = SvPVX (string);
-  dec.end      = SvEND (string);
-  dec.err      = 0;
-  dec.depth    = 0;
-  dec.maxdepth = DEC_DEPTH (dec.json.flags);
+  dec.json  = *json;
+  dec.cur   = SvPVX (string);
+  dec.end   = SvEND (string);
+  dec.err   = 0;
+  dec.depth = 0;
 
   if (dec.json.cb_object || dec.json.cb_sk_object)
     dec.json.flags |= F_HOOK;
@@ -1461,6 +1491,123 @@ decode_json (SV *string, JSON *json, UV *offset_return)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// incremental parser
+
+static void
+incr_parse (JSON *self)
+{
+  const char *p = SvPVX (self->incr_text) + self->incr_pos;
+
+  for (;;)
+    {
+      //printf ("loop pod %d *p<%c><%s>, mode %d nest %d\n", p - SvPVX (self->incr_text), *p, p, self->incr_mode, self->incr_nest);//D
+      switch (self->incr_mode)
+        {
+          // only used for intiial whitespace skipping
+          case INCR_M_WS:
+            for (;;)
+              {
+                if (*p > 0x20)
+                  {
+                    self->incr_mode = INCR_M_JSON;
+                    goto incr_m_json;
+                  }
+                else if (!*p)
+                  goto interrupt;
+
+                ++p;
+              }
+
+          // skip a single char inside a string (for \\-processing)
+          case INCR_M_BS:
+            if (!*p)
+              goto interrupt;
+
+            ++p;
+            self->incr_mode = INCR_M_STR;
+            goto incr_m_str;
+
+          // inside a string
+          case INCR_M_STR:
+          incr_m_str:
+            for (;;)
+              {
+                if (*p == '"')
+                  {
+                    ++p;
+                    self->incr_mode = INCR_M_JSON;
+
+                    if (!self->incr_nest)
+                      goto interrupt;
+
+                    goto incr_m_json;
+                  }
+                else if (*p == '\\')
+                  {
+                    ++p; // "virtually" consumes character after \
+
+                    if (!*p) // if at end of string we have to switch modes
+                      {
+                        self->incr_mode = INCR_M_BS;
+                        goto interrupt;
+                      }
+                  }
+                else if (!*p)
+                  goto interrupt;
+
+                ++p;
+              }
+
+          // after initial ws, outside string
+          case INCR_M_JSON:
+          incr_m_json:
+            for (;;)
+              {
+                switch (*p++)
+                  {
+                    case 0:
+                      --p;
+                      goto interrupt;
+
+                    case 0x09:
+                    case 0x0a:
+                    case 0x0d:
+                    case 0x20:
+                      if (!self->incr_nest)
+                        {
+                          --p; // do not eat the whitespace, let the next round do it
+                          goto interrupt;
+                        }
+                      break;
+
+                    case '"':
+                      self->incr_mode = INCR_M_STR;
+                      goto incr_m_str;
+
+                    case '[':
+                    case '{':
+                      if (++self->incr_nest > self->max_depth)
+                        croak (ERR_NESTING_EXCEEDED);
+                      break;
+
+                    case ']':
+                    case '}':
+                      if (!--self->incr_nest)
+                        goto interrupt;
+                  }
+              }
+        }
+
+      modechange:
+        ;
+    }
+
+interrupt:
+  self->incr_pos = p - SvPVX (self->incr_text);
+  //printf ("return pos %d mode %d nest %d\n", self->incr_pos, self->incr_mode, self->incr_nest);//D
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // XS interface functions
 
 MODULE = JSON::XS		PACKAGE = JSON::XS
@@ -1479,8 +1626,8 @@ BOOT:
 	json_stash         = gv_stashpv ("JSON::XS"         , 1);
 	json_boolean_stash = gv_stashpv ("JSON::XS::Boolean", 1);
 
-        json_true  = get_sv ("JSON::XS::true" , 1); SvREADONLY_on (json_true );
-        json_false = get_sv ("JSON::XS::false", 1); SvREADONLY_on (json_false);
+        json_true  = get_bool ("JSON::XS::true");
+        json_false = get_bool ("JSON::XS::false");
 }
 
 PROTOTYPES: DISABLE
@@ -1495,8 +1642,7 @@ void new (char *klass)
 {
   	SV *pv = NEWSV (0, sizeof (JSON));
         SvPOK_only (pv);
-        Zero (SvPVX (pv), 1, JSON);
-        ((JSON *)SvPVX (pv))->flags = F_DEFAULT;
+        json_init ((JSON *)SvPVX (pv));
         XPUSHs (sv_2mortal (sv_bless (
            newRV_noinc (pv),
            strEQ (klass, "JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1)
@@ -1518,6 +1664,7 @@ void ascii (JSON *self, int enable = 1)
         allow_blessed   = F_ALLOW_BLESSED
         convert_blessed = F_CONV_BLESSED
         relaxed         = F_RELAXED
+        allow_unknown   = F_ALLOW_UNKNOWN
 	PPCODE:
 {
         if (enable)
@@ -1542,49 +1689,29 @@ void get_ascii (JSON *self)
         get_allow_blessed   = F_ALLOW_BLESSED
         get_convert_blessed = F_CONV_BLESSED
         get_relaxed         = F_RELAXED
+        get_allow_unknown   = F_ALLOW_UNKNOWN
 	PPCODE:
         XPUSHs (boolSV (self->flags & ix));
 
-void max_depth (JSON *self, UV max_depth = 0x80000000UL)
+void max_depth (JSON *self, U32 max_depth = 0x80000000UL)
 	PPCODE:
-{
-        UV log2 = 0;
-
-        if (max_depth > 0x80000000UL) max_depth = 0x80000000UL;
-
-        while ((1UL << log2) < max_depth)
-          ++log2;
-
-        self->flags = self->flags & ~F_MAXDEPTH | (log2 << S_MAXDEPTH);
-
+        self->max_depth = max_depth;
         XPUSHs (ST (0));
-}
 
 U32 get_max_depth (JSON *self)
 	CODE:
-        RETVAL = DEC_DEPTH (self->flags);
+        RETVAL = self->max_depth;
 	OUTPUT:
         RETVAL
 
-void max_size (JSON *self, UV max_size = 0)
+void max_size (JSON *self, U32 max_size = 0)
 	PPCODE:
-{
-        UV log2 = 0;
-
-        if (max_size > 0x80000000UL) max_size = 0x80000000UL;
-        if (max_size == 1)           max_size = 2;
-
-        while ((1UL << log2) < max_size)
-          ++log2;
-
-        self->flags = self->flags & ~F_MAXSIZE | (log2 << S_MAXSIZE);
-
+        self->max_size = max_size;
         XPUSHs (ST (0));
-}
 
 int get_max_size (JSON *self)
 	CODE:
-        RETVAL = DEC_SIZE (self->flags);
+        RETVAL = self->max_size;
 	OUTPUT:
         RETVAL
 
@@ -1630,30 +1757,122 @@ void decode (JSON *self, SV *jsonstr)
 void decode_prefix (JSON *self, SV *jsonstr)
 	PPCODE:
 {
-  	UV offset;
+  	STRLEN offset;
         EXTEND (SP, 2);
         PUSHs (decode_json (jsonstr, self, &offset));
         PUSHs (sv_2mortal (newSVuv (offset)));
+}
+
+void incr_parse (JSON *self, SV *jsonstr = 0)
+	PPCODE:
+{
+	if (!self->incr_text)
+          self->incr_text = newSVpvn ("", 0);
+
+        // append data, if any
+        if (jsonstr)
+          {
+            if (SvUTF8 (jsonstr) && !SvUTF8 (self->incr_text))
+              {
+                /* utf-8-ness differs, need to upgrade */
+                sv_utf8_upgrade (self->incr_text);
+
+                if (self->incr_pos)
+                  self->incr_pos = utf8_hop ((U8 *)SvPVX (self->incr_text), self->incr_pos)
+                                   - (U8 *)SvPVX (self->incr_text);
+              }
+
+            {
+              STRLEN len;
+              const char *str = SvPV (jsonstr, len);
+              SvGROW (self->incr_text, SvCUR (self->incr_text) + len + 1);
+              Move (str, SvEND (self->incr_text), len, char);
+              SvCUR_set (self->incr_text, SvCUR (self->incr_text) + len);
+              *SvEND (self->incr_text) = 0; // this should basically be a nop, too, but make sure it's there
+            }
+          }
+
+        if (GIMME_V != G_VOID)
+          do
+            {
+              STRLEN offset;
+
+              if (!INCR_DONE (self))
+                {
+                  incr_parse (self);
+
+                  if (self->incr_pos > self->max_size && self->max_size)
+                    croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
+                           (unsigned long)self->incr_pos, (unsigned long)self->max_size);
+
+                  if (!INCR_DONE (self))
+                    break;
+                }
+
+              XPUSHs (decode_json (self->incr_text, self, &offset));
+
+              sv_chop (self->incr_text, SvPV_nolen (self->incr_text) + offset);
+              self->incr_pos -= offset;
+              self->incr_nest = 0;
+              self->incr_mode = 0;
+            }
+          while (GIMME_V == G_ARRAY);
+}
+
+SV *incr_text (JSON *self)
+	ATTRS: lvalue
+	CODE:
+{
+        if (self->incr_pos)
+          croak ("incr_text can not be called when the incremental parser already started parsing");
+
+        RETVAL = self->incr_text ? SvREFCNT_inc (self->incr_text) : &PL_sv_undef;
+}
+	OUTPUT:
+        RETVAL
+
+void incr_skip (JSON *self)
+	CODE:
+{
+        if (self->incr_pos)
+          {
+            sv_chop (self->incr_text, SvPV_nolen (self->incr_text) + self->incr_pos);
+            self->incr_pos  = 0;
+            self->incr_nest = 0;
+            self->incr_mode = 0;
+          }
 }
 
 void DESTROY (JSON *self)
 	CODE:
         SvREFCNT_dec (self->cb_sk_object);
         SvREFCNT_dec (self->cb_object);
+        SvREFCNT_dec (self->incr_text);
 
 PROTOTYPES: ENABLE
 
 void encode_json (SV *scalar)
+	ALIAS:
+        to_json_    = 0
+        encode_json = F_UTF8
 	PPCODE:
 {
-        JSON json = { F_DEFAULT | F_UTF8 };
+        JSON json;
+        json_init (&json);
+        json.flags |= ix;
         XPUSHs (encode_json (scalar, &json));
 }
 
 void decode_json (SV *jsonstr)
+	ALIAS:
+        from_json_  = 0
+        decode_json = F_UTF8
 	PPCODE:
 {
-        JSON json = { F_DEFAULT | F_UTF8 };
+        JSON json;
+        json_init (&json);
+        json.flags |= ix;
         XPUSHs (decode_json (jsonstr, &json, 0));
 }
+
 

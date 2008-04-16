@@ -1,5 +1,19 @@
 Revision history for Perl extension JSON::XS
 
+2.2  Wed Apr 16 20:37:25 CEST 2008
+	- lifted the log2 rounding restriction of max_depth and max_size.
+	- make booleans mutable by creating a copy instead of handing out
+          the same scalar (reported by pasha sadri).
+   	- added support for incremental json parsing (still EXPERIMENTAL).
+	- implemented and added a json_xs command line utility that can convert
+          from/to a number of serialisation formats - tell me if you need more.
+        - implement allow_unknown/get_allow_unknown methods.
+        - fixed documentation of max_depth w.r.t. higher and equal.
+	- moved down =encoding directive a bit, too much breaks if its the first
+          pod directive :/.
+        - removed documentation section on other modules, it became somewhat
+          outdated and is nowadays mostly of historical interest.
+
 2.1  Wed Mar 19 23:23:18 CET 2008
         - update documentation here and there: add a large section
           about utf8/latin1/ascii flags, add a security consideration
@@ -230,7 +244,7 @@ Revision history for Perl extension JSON::XS
           (non-unicode) codepoint is encountered.
 
 0.2  Fri Mar 23 00:23:34 CET 2007
-	- the "could not sleep without debuggign release".
+	- the "could not sleep without debugging release".
           it should basically work now, with many bugs as
           no production tests have been run yet.
 	- added more testcases.

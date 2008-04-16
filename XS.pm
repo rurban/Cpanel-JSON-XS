@@ -1,6 +1,6 @@
-=encoding utf-8
-
 =head1 NAME
+
+=encoding utf-8
 
 JSON::XS - JSON serialising/deserialising, done correctly and fast
 
@@ -105,7 +105,7 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '2.1';
+our $VERSION = '2.2';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -465,6 +465,22 @@ resulting in an invalid JSON text:
    JSON::XS->new->allow_nonref->encode ("Hello, World!")
    => "Hello, World!"
 
+=item $json = $json->allow_unknown ([$enable])
+
+=item $enabled = $json->get_allow_unknown
+
+If C<$enable> is true (or missing), then C<encode> will I<not> throw an
+exception when it encounters values it cannot represent in JSON (for
+example, filehandles) but instead will encode a JSON C<null> value. Note
+that blessed objects are not included here and are handled separately by
+c<allow_nonref>.
+
+If C<$enable> is false (the default), then C<encode> will throw an
+exception when it encounters anything it cannot encode as JSON.
+
+This option does not affect C<decode> in any way, and it is recommended to
+leave it off unless you know your communications partner.
+
 =item $json = $json->allow_blessed ([$enable])
 
 =item $enabled = $json->get_allow_blessed
@@ -614,9 +630,9 @@ internally (there is no difference on the Perl level), saving space.
 =item $max_depth = $json->get_max_depth
 
 Sets the maximum nesting level (default C<512>) accepted while encoding
-or decoding. If the JSON text or Perl data structure has an equal or
-higher nesting level then this limit, then the encoder and decoder will
-stop and croak at that point.
+or decoding. If a higher nesting level is detected in JSON text or a Perl
+data structure, then the encoder and decoder will stop and croak at that
+point.
 
 Nesting level is defined by number of hash- or arrayrefs that the encoder
 needs to traverse to reach a given point or the number of C<{> or C<[>
@@ -626,9 +642,12 @@ given character in a string.
 Setting the maximum depth to one disallows any nesting, so that ensures
 that the object is only a single hash/object or array.
 
-The argument to C<max_depth> will be rounded up to the next highest power
-of two. If no argument is given, the highest possible setting will be
-used, which is rarely useful.
+If no argument is given, the highest possible setting will be used, which
+is rarely useful.
+
+Note that nesting is implemented by recursion in C. The default value has
+been chosen to be as large as typical operating systems allow without
+crashing.
 
 See SECURITY CONSIDERATIONS, below, for more info on why this is useful.
 
@@ -638,13 +657,12 @@ See SECURITY CONSIDERATIONS, below, for more info on why this is useful.
 
 Set the maximum length a JSON text may have (in bytes) where decoding is
 being attempted. The default is C<0>, meaning no limit. When C<decode>
-is called on a string longer then this number of characters it will not
+is called on a string that is longer then this many bytes, it will not
 attempt to decode the string but throw an exception. This setting has no
 effect on C<encode> (yet).
 
-The argument to C<max_size> will be rounded up to the next B<highest>
-power of two (so may be more than requested). If no argument is given, the
-limit check will be deactivated (same as when C<0> is specified).
+If no argument is given, the limit check will be deactivated (same as when
+C<0> is specified).
 
 See SECURITY CONSIDERATIONS, below, for more info on why this is useful.
 
@@ -681,6 +699,226 @@ to know where the JSON text ends.
    => ([], 3)
 
 =back
+
+
+=head1 INCREMENTAL PARSING
+
+[This section and the API it details is still EXPERIMENTAL]
+
+In some cases, there is the need for incremental parsing of JSON
+texts. While this module always has to keep both JSON text and resulting
+Perl data structure in memory at one time, it does allow you to parse a
+JSON stream incrementally. It does so by accumulating text until it has
+a full JSON object, which it then can decode. This process is similar to
+using C<decode_prefix> to see if a full JSON object is available, but is
+much more efficient (JSON::XS will only attempt to parse the JSON text
+once it is sure it has enough text to get a decisive result, using a very
+simple but truly incremental parser).
+
+The following two methods deal with this.
+
+=over 4
+
+=item [void, scalar or list context] = $json->incr_parse ([$string])
+
+This is the central parsing function. It can both append new text and
+extract objects from the stream accumulated so far (both of these
+functions are optional).
+
+If C<$string> is given, then this string is appended to the already
+existing JSON fragment stored in the C<$json> object.
+
+After that, if the function is called in void context, it will simply
+return without doing anything further. This can be used to add more text
+in as many chunks as you want.
+
+If the method is called in scalar context, then it will try to extract
+exactly I<one> JSON object. If that is successful, it will return this
+object, otherwise it will return C<undef>. If there is a parse error,
+this method will croak just as C<decode> would do (one can then use
+C<incr_skip> to skip the errornous part). This is the most common way of
+using the method.
+
+And finally, in list context, it will try to extract as many objects
+from the stream as it can find and return them, or the empty list
+otherwise. For this to work, there must be no separators between the JSON
+objects or arrays, instead they must be concatenated back-to-back. If
+an error occurs, an exception will be raised as in the scalar context
+case. Note that in this case, any previously-parsed JSON texts will be
+lost.
+
+=item $lvalue_string = $json->incr_text
+
+This method returns the currently stored JSON fragment as an lvalue, that
+is, you can manipulate it. This I<only> works when a preceding call to
+C<incr_parse> in I<scalar context> successfully returned an object. Under
+all other circumstances you must not call this function (I mean it.
+although in simple tests it might actually work, it I<will> fail under
+real world conditions). As a special exception, you can also call this
+method before having parsed anything.
+
+This function is useful in two cases: a) finding the trailing text after a
+JSON object or b) parsing multiple JSON objects separated by non-JSON text
+(such as commas).
+
+=item $json->incr_skip
+
+This will reset the state of the incremental parser and will remove the
+parsed text from the input buffer. This is useful after C<incr_parse>
+died, in which case the input buffer and incremental parser state is left
+unchanged, to skip the text parsed so far and to reset the parse state.
+
+=back
+
+=head2 LIMITATIONS
+
+All options that affect decoding are supported, except
+C<allow_nonref>. The reason for this is that it cannot be made to
+work sensibly: JSON objects and arrays are self-delimited, i.e. you can concatenate
+them back to back and still decode them perfectly. This does not hold true
+for JSON numbers, however.
+
+For example, is the string C<1> a single JSON number, or is it simply the
+start of C<12>? Or is C<12> a single JSON number, or the concatenation
+of C<1> and C<2>? In neither case you can tell, and this is why JSON::XS
+takes the conservative route and disallows this case.
+
+=head2 EXAMPLES
+
+Some examples will make all this clearer. First, a simple example that
+works similarly to C<decode_prefix>: We want to decode the JSON object at
+the start of a string and identify the portion after the JSON object:
+
+   my $text = "[1,2,3] hello";
+
+   my $json = new JSON::XS;
+
+   my $obj = $json->incr_parse ($text)
+      or die "expected JSON object or array at beginning of string";
+
+   my $tail = $json->incr_text;
+   # $tail now contains " hello"
+
+Easy, isn't it?
+
+Now for a more complicated example: Imagine a hypothetical protocol where
+you read some requests from a TCP stream, and each request is a JSON
+array, without any separation between them (in fact, it is often useful to
+use newlines as "separators", as these get interpreted as whitespace at
+the start of the JSON text, which makes it possible to test said protocol
+with C<telnet>...).
+
+Here is how you'd do it (it is trivial to write this in an event-based
+manner):
+
+   my $json = new JSON::XS;
+
+   # read some data from the socket
+   while (sysread $socket, my $buf, 4096) {
+
+      # split and decode as many requests as possible
+      for my $request ($json->incr_parse ($buf)) {
+         # act on the $request
+      }
+   }
+
+Another complicated example: Assume you have a string with JSON objects
+or arrays, all separated by (optional) comma characters (e.g. C<[1],[2],
+[3]>). To parse them, we have to skip the commas between the JSON texts,
+and here is where the lvalue-ness of C<incr_text> comes in useful:
+
+   my $text = "[1],[2], [3]";
+   my $json = new JSON::XS;
+
+   # void context, so no parsing done
+   $json->incr_parse ($text);
+
+   # now extract as many objects as possible. note the
+   # use of scalar context so incr_text can be called.
+   while (my $obj = $json->incr_parse) {
+      # do something with $obj
+
+      # now skip the optional comma
+      $json->incr_text =~ s/^ \s* , //x;
+   }
+
+Now lets go for a very complex example: Assume that you have a gigantic
+JSON array-of-objects, many gigabytes in size, and you want to parse it,
+but you cannot load it into memory fully (this has actually happened in
+the real world :).
+
+Well, you lost, you have to implement your own JSON parser. But JSON::XS
+can still help you: You implement a (very simple) array parser and let
+JSON decode the array elements, which are all full JSON objects on their
+own (this wouldn't work if the array elements could be JSON numbers, for
+example):
+
+   my $json = new JSON::XS;
+
+   # open the monster
+   open my $fh, "<bigfile.json"
+      or die "bigfile: $!";
+
+   # first parse the initial "["
+   for (;;) {
+      sysread $fh, my $buf, 65536
+         or die "read error: $!";
+      $json->incr_parse ($buf); # void context, so no parsing
+
+      # Exit the loop once we found and removed(!) the initial "[".
+      # In essence, we are (ab-)using the $json object as a simple scalar
+      # we append data to.
+      last if $json->incr_text =~ s/^ \s* \[ //x;
+   }
+
+   # now we have the skipped the initial "[", so continue
+   # parsing all the elements.
+   for (;;) {
+      # in this loop we read data until we got a single JSON object
+      for (;;) {
+         if (my $obj = $json->incr_parse) {
+            # do something with $obj
+            last;
+         }
+
+         # add more data
+         sysread $fh, my $buf, 65536
+            or die "read error: $!";
+         $json->incr_parse ($buf); # void context, so no parsing
+      }
+
+      # in this loop we read data until we either found and parsed the
+      # separating "," between elements, or the final "]"
+      for (;;) {
+         # first skip whitespace
+         $json->incr_text =~ s/^\s*//;
+
+         # if we find "]", we are done
+         if ($json->incr_text =~ s/^\]//) {
+            print "finished.\n";
+            exit;
+         }
+
+         # if we find ",", we can continue with the next element
+         if ($json->incr_text =~ s/^,//) {
+            last;
+         }
+
+         # if we find anything else, we have a parse error!
+         if (length $json->incr_text) {
+            die "parse error near ", $json->incr_text;
+         }
+
+         # else add more data
+         sysread $fh, my $buf, 65536
+            or die "read error: $!";
+         $json->incr_parse ($buf); # void context, so no parsing
+      }
+
+This is a complex example, but most of the complexity comes from the fact
+that we are trying to be correct (bear with me if I am wrong, I never ran
+the above example :).
+
 
 
 =head1 MAPPING
@@ -827,7 +1065,7 @@ You can force the type to be a JSON number by numifying it:
    $x *= 1;     # same thing, the choice is yours.
 
 You can not currently force the type in other, less obscure, ways. Tell me
-if you need this capability (but don't forget to explain why its needed
+if you need this capability (but don't forget to explain why it's needed
 :).
 
 =back
@@ -839,9 +1077,9 @@ The interested reader might have seen a number of flags that signify
 encodings or codesets - C<utf8>, C<latin1> and C<ascii>. There seems to be
 some confusion on what these do, so here is a short comparison:
 
-C<utf8> controls wether the JSON text created by C<encode> (and expected
+C<utf8> controls whether the JSON text created by C<encode> (and expected
 by C<decode>) is UTF-8 encoded or not, while C<latin1> and C<ascii> only
-control wether C<encode> escapes character values outside their respective
+control whether C<encode> escapes character values outside their respective
 codeset range. Neither of these flags conflict with each other, although
 some combinations make less sense than others.
 
@@ -931,104 +1169,6 @@ proper subset of most 8-bit and multibyte encodings in use in the world.
 =back
 
 
-=head1 COMPARISON
-
-As already mentioned, this module was created because none of the existing
-JSON modules could be made to work correctly. First I will describe the
-problems (or pleasures) I encountered with various existing JSON modules,
-followed by some benchmark values. JSON::XS was designed not to suffer
-from any of these problems or limitations.
-
-=over 4
-
-=item JSON 2.xx
-
-A marvellous piece of engineering, this module either uses JSON::XS
-directly when available (so will be 100% compatible with it, including
-speed), or it uses JSON::PP, which is basically JSON::XS translated to
-Pure Perl, which should be 100% compatible with JSON::XS, just a bit
-slower.
-
-You cannot really lose by using this module, especially as it tries very
-hard to work even with ancient Perl versions, while JSON::XS does not.
-
-=item JSON 1.07
-
-Slow (but very portable, as it is written in pure Perl).
-
-Undocumented/buggy Unicode handling (how JSON handles Unicode values is
-undocumented. One can get far by feeding it Unicode strings and doing
-en-/decoding oneself, but Unicode escapes are not working properly).
-
-No round-tripping (strings get clobbered if they look like numbers, e.g.
-the string C<2.0> will encode to C<2.0> instead of C<"2.0">, and that will
-decode into the number 2.
-
-=item JSON::PC 0.01
-
-Very fast.
-
-Undocumented/buggy Unicode handling.
-
-No round-tripping.
-
-Has problems handling many Perl values (e.g. regex results and other magic
-values will make it croak).
-
-Does not even generate valid JSON (C<{1,2}> gets converted to C<{1:2}>
-which is not a valid JSON text.
-
-Unmaintained (maintainer unresponsive for many months, bugs are not
-getting fixed).
-
-=item JSON::Syck 0.21
-
-Very buggy (often crashes).
-
-Very inflexible (no human-readable format supported, format pretty much
-undocumented. I need at least a format for easy reading by humans and a
-single-line compact format for use in a protocol, and preferably a way to
-generate ASCII-only JSON texts).
-
-Completely broken (and confusingly documented) Unicode handling (Unicode
-escapes are not working properly, you need to set ImplicitUnicode to
-I<different> values on en- and decoding to get symmetric behaviour).
-
-No round-tripping (simple cases work, but this depends on whether the scalar
-value was used in a numeric context or not).
-
-Dumping hashes may skip hash values depending on iterator state.
-
-Unmaintained (maintainer unresponsive for many months, bugs are not
-getting fixed).
-
-Does not check input for validity (i.e. will accept non-JSON input and
-return "something" instead of raising an exception. This is a security
-issue: imagine two banks transferring money between each other using
-JSON. One bank might parse a given non-JSON request and deduct money,
-while the other might reject the transaction with a syntax error. While a
-good protocol will at least recover, that is extra unnecessary work and
-the transaction will still not succeed).
-
-=item JSON::DWIW 0.04
-
-Very fast. Very natural. Very nice.
-
-Undocumented Unicode handling (but the best of the pack. Unicode escapes
-still don't get parsed properly).
-
-Very inflexible.
-
-No round-tripping.
-
-Does not generate valid JSON texts (key strings are often unquoted, empty keys
-result in nothing being output)
-
-Does not check input for validity.
-
-=back
-
-
 =head2 JSON and YAML
 
 You often hear that JSON is a subset of YAML. This is, however, a mass
@@ -1094,8 +1234,9 @@ First comes a comparison between various modules using
 a very short single-line JSON string (also available at
 L<http://dist.schmorp.de/misc/json/short.json>).
 
-   {"method": "handleMessage", "params": ["user1", "we were just talking"], \
-   "id": null, "array":[1,11,234,-5,1e5,1e7, true,  false]}
+   {"method": "handleMessage", "params": ["user1",
+   "we were just talking"], "id": null, "array":[1,11,234,-5,1e5,1e7,
+   true,  false]}
 
 It shows the number of encodes/decodes per second (JSON::XS uses
 the functional interface, while JSON::XS/2 uses the OO interface
@@ -1195,7 +1336,7 @@ right).
 This module is I<not> guaranteed to be thread safe and there are no
 plans to change this until Perl gets thread support (as opposed to the
 horribly slow so-called "threads" which are simply slow and bloated
-process simulations - use fork, its I<much> faster, cheaper, better).
+process simulations - use fork, it's I<much> faster, cheaper, better).
 
 (It might actually work, but you have been warned).
 
@@ -1203,7 +1344,7 @@ process simulations - use fork, its I<much> faster, cheaper, better).
 =head1 BUGS
 
 While the goal of this module is to be correct, that unfortunately does
-not mean its bug-free, only that I think its design is bug-free. It is
+not mean it's bug-free, only that I think its design is bug-free. It is
 still relatively early in its development. If you keep reporting bugs they
 will be fixed swiftly, though.
 
@@ -1234,6 +1375,10 @@ use overload
    fallback => 1;
 
 1;
+
+=head1 SEE ALSO
+
+The F<json_xs> command line utility for quick experiments.
 
 =head1 AUTHOR
 
