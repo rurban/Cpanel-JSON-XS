@@ -1,5 +1,12 @@
 Revision history for Perl extension JSON::XS
 
+2.21 Tue Jun  3 08:43:23 CEST 2008
+	- (hopefully) work around a perl 5.10 bug with -DDEBUGGING.
+	- remove the experimental status of the incremental parser interface.
+	- move =encoding around again, to avoid bugs with search.cpan.org.
+          when can we finally have utf-8 in pod???
+        - add ->incr_reset method.
+
 2.2  Wed Apr 16 20:37:25 CEST 2008
 	- lifted the log2 rounding restriction of max_depth and max_size.
 	- make booleans mutable by creating a copy instead of handing out
@@ -9,7 +16,7 @@ Revision history for Perl extension JSON::XS
           from/to a number of serialisation formats - tell me if you need more.
         - implement allow_unknown/get_allow_unknown methods.
         - fixed documentation of max_depth w.r.t. higher and equal.
-	- moved down =encoding directive a bit, too much breaks if its the first
+	- moved down =encoding directive a bit, too much breaks if it's the first
           pod directive :/.
         - removed documentation section on other modules, it became somewhat
           outdated and is nowadays mostly of historical interest.

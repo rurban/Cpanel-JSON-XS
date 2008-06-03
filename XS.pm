@@ -1,8 +1,8 @@
 =head1 NAME
 
-=encoding utf-8
-
 JSON::XS - JSON serialising/deserialising, done correctly and fast
+
+=encoding utf-8
 
 JSON::XS - 正しくて高速な JSON シリアライザ/デシリアライザ
            (http://fleur.hio.jp/perldoc/mix/lib/JSON/XS.html)
@@ -39,7 +39,7 @@ I<fast>. To reach the latter goal it was written in C.
 
 Beginning with version 2.0 of the JSON module, when both JSON and
 JSON::XS are installed, then JSON will fall back on JSON::XS (this can be
-overriden) with no overhead due to emulation (by inheritign constructor
+overridden) with no overhead due to emulation (by inheriting constructor
 and methods). If JSON::XS is not available, it will fall back to the
 compatible JSON::PP module as backend, so using JSON instead of JSON::XS
 gives you a portable JSON API that can be fast when you need and doesn't
@@ -67,7 +67,7 @@ so, and even documents what "correct" means.
 
 =item * round-trip integrity
 
-When you serialise a perl data structure using only datatypes supported
+When you serialise a perl data structure using only data types supported
 by JSON, the deserialised data structure is identical on the Perl level.
 (e.g. the string "2.0" doesn't suddenly become "2" just because it looks
 like a number). There minor I<are> exceptions to this, read the MAPPING
@@ -86,13 +86,13 @@ this module usually compares favourably in terms of speed, too.
 
 =item * simple to use
 
-This module has both a simple functional interface as well as an objetc
+This module has both a simple functional interface as well as an object
 oriented interface interface.
 
 =item * reasonably versatile output formats
 
 You can choose between the most compact guaranteed-single-line format
-possible (nice for simple line-based protocols), a pure-ascii format
+possible (nice for simple line-based protocols), a pure-ASCII format
 (for when your transport is not 8-bit clean, still supports the whole
 Unicode range), or a pretty-printed format (for when you want to read that
 stuff). Or you can combine those features in whatever way you like.
@@ -105,7 +105,7 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '2.2';
+our $VERSION = '2.21';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -139,7 +139,7 @@ This function call is functionally identical to:
 
    $json_text = JSON::XS->new->utf8->encode ($perl_scalar)
 
-except being faster.
+Except being faster.
 
 =item $perl_scalar = decode_json $json_text
 
@@ -151,7 +151,7 @@ This function call is functionally identical to:
 
    $perl_scalar = JSON::XS->new->utf8->decode ($json_text)
 
-except being faster.
+Except being faster.
 
 =item $is_boolean = JSON::XS::is_bool $scalar
 
@@ -199,7 +199,7 @@ If you didn't know about that flag, just the better, pretend it doesn't
 exist.
 
 =item 4. A "Unicode String" is simply a string where each character can be
-validly interpreted as a Unicode codepoint.
+validly interpreted as a Unicode code point.
 
 If you have UTF-8 encoded data, it is no longer a Unicode string, but a
 Unicode string encoded in UTF-8, giving you a binary string.
@@ -703,8 +703,6 @@ to know where the JSON text ends.
 
 =head1 INCREMENTAL PARSING
 
-[This section and the API it details is still EXPERIMENTAL]
-
 In some cases, there is the need for incremental parsing of JSON
 texts. While this module always has to keep both JSON text and resulting
 Perl data structure in memory at one time, it does allow you to parse a
@@ -767,6 +765,15 @@ This will reset the state of the incremental parser and will remove the
 parsed text from the input buffer. This is useful after C<incr_parse>
 died, in which case the input buffer and incremental parser state is left
 unchanged, to skip the text parsed so far and to reset the parse state.
+
+=item $json->incr_reset
+
+This completely resets the incremental parser, that is, after this call,
+it will be as if the parser had never parsed anything.
+
+This is useful if you want ot repeatedly parse JSON objects and want to
+ignore any trailing data, which means you have to reset the parser after
+each successful decode.
 
 =back
 
@@ -1017,7 +1024,7 @@ exception to be thrown, except for references to the integers C<0> and
 C<1>, which get turned into C<false> and C<true> atoms in JSON. You can
 also use C<JSON::XS::false> and C<JSON::XS::true> to improve readability.
 
-   encode_json [\0,JSON::XS::true]      # yields [false,true]
+   encode_json [\0, JSON::XS::true]      # yields [false,true]
 
 =item JSON::XS::true, JSON::XS::false
 
@@ -1344,9 +1351,8 @@ process simulations - use fork, it's I<much> faster, cheaper, better).
 =head1 BUGS
 
 While the goal of this module is to be correct, that unfortunately does
-not mean it's bug-free, only that I think its design is bug-free. It is
-still relatively early in its development. If you keep reporting bugs they
-will be fixed swiftly, though.
+not mean it's bug-free, only that I think its design is bug-free. If you
+keep reporting bugs they will be fixed swiftly, though.
 
 Please refrain from using rt.cpan.org or any other bug reporting
 service. I put the contact address into my modules for a reason.
