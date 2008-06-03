@@ -34,7 +34,7 @@ DESCRIPTION
 
     Beginning with version 2.0 of the JSON module, when both JSON and
     JSON::XS are installed, then JSON will fall back on JSON::XS (this can
-    be overriden) with no overhead due to emulation (by inheritign
+    be overridden) with no overhead due to emulation (by inheriting
     constructor and methods). If JSON::XS is not available, it will fall
     back to the compatible JSON::PP module as backend, so using JSON instead
     of JSON::XS gives you a portable JSON API that can be fast when you need
@@ -59,7 +59,7 @@ DESCRIPTION
 
     *   round-trip integrity
 
-        When you serialise a perl data structure using only datatypes
+        When you serialise a perl data structure using only data types
         supported by JSON, the deserialised data structure is identical on
         the Perl level. (e.g. the string "2.0" doesn't suddenly become "2"
         just because it looks like a number). There minor *are* exceptions
@@ -80,12 +80,12 @@ DESCRIPTION
     *   simple to use
 
         This module has both a simple functional interface as well as an
-        objetc oriented interface interface.
+        object oriented interface interface.
 
     *   reasonably versatile output formats
 
         You can choose between the most compact guaranteed-single-line
-        format possible (nice for simple line-based protocols), a pure-ascii
+        format possible (nice for simple line-based protocols), a pure-ASCII
         format (for when your transport is not 8-bit clean, still supports
         the whole Unicode range), or a pretty-printed format (for when you
         want to read that stuff). Or you can combine those features in
@@ -103,7 +103,7 @@ FUNCTIONAL INTERFACE
 
            $json_text = JSON::XS->new->utf8->encode ($perl_scalar)
 
-        except being faster.
+        Except being faster.
 
     $perl_scalar = decode_json $json_text
         The opposite of "encode_json": expects an UTF-8 (binary) string and
@@ -114,7 +114,7 @@ FUNCTIONAL INTERFACE
 
            $perl_scalar = JSON::XS->new->utf8->decode ($json_text)
 
-        except being faster.
+        Except being faster.
 
     $is_boolean = JSON::XS::is_bool $scalar
         Returns true if the passed scalar represents either JSON::XS::true
@@ -154,7 +154,7 @@ A FEW NOTES ON UNICODE AND PERL
         doesn't exist.
 
     4. A "Unicode String" is simply a string where each character can be
-    validly interpreted as a Unicode codepoint.
+    validly interpreted as a Unicode code point.
         If you have UTF-8 encoded data, it is no longer a Unicode string,
         but a Unicode string encoded in UTF-8, giving you a binary string.
 
@@ -625,8 +625,6 @@ OBJECT-ORIENTED INTERFACE
            => ([], 3)
 
 INCREMENTAL PARSING
-    [This section and the API it details is still EXPERIMENTAL]
-
     In some cases, there is the need for incremental parsing of JSON texts.
     While this module always has to keep both JSON text and resulting Perl
     data structure in memory at one time, it does allow you to parse a JSON
@@ -686,6 +684,14 @@ INCREMENTAL PARSING
         "incr_parse" died, in which case the input buffer and incremental
         parser state is left unchanged, to skip the text parsed so far and
         to reset the parse state.
+
+    $json->incr_reset
+        This completely resets the incremental parser, that is, after this
+        call, it will be as if the parser had never parsed anything.
+
+        This is useful if you want ot repeatedly parse JSON objects and want
+        to ignore any trailing data, which means you have to reset the
+        parser after each successful decode.
 
   LIMITATIONS
     All options that affect decoding are supported, except "allow_nonref".
@@ -915,7 +921,7 @@ MAPPING
         can also use "JSON::XS::false" and "JSON::XS::true" to improve
         readability.
 
-           encode_json [\0,JSON::XS::true]      # yields [false,true]
+           encode_json [\0, JSON::XS::true]      # yields [false,true]
 
     JSON::XS::true, JSON::XS::false
         These special values become JSON true and JSON false values,
@@ -1220,9 +1226,8 @@ THREADS
 
 BUGS
     While the goal of this module is to be correct, that unfortunately does
-    not mean it's bug-free, only that I think its design is bug-free. It is
-    still relatively early in its development. If you keep reporting bugs
-    they will be fixed swiftly, though.
+    not mean it's bug-free, only that I think its design is bug-free. If you
+    keep reporting bugs they will be fixed swiftly, though.
 
     Please refrain from using rt.cpan.org or any other bug reporting
     service. I put the contact address into my modules for a reason.

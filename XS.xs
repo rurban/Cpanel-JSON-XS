@@ -123,6 +123,7 @@ INLINE void
 shrink (SV *sv)
 {
   sv_utf8_downgrade (sv, 1);
+
   if (SvLEN (sv) > SvCUR (sv) + 1)
     {
 #ifdef SvPV_shrink_to_cur
@@ -1415,6 +1416,13 @@ decode_json (SV *string, JSON *json, STRLEN *offset_return)
   SvGETMAGIC (string);
   SvUPGRADE (string, SVt_PV);
 
+  /* work around a bug in perl 5.10, which causes SvCUR to fail an
+   * assertion with -DDEBUGGING, although SvCUR is documented to
+   * return the xpv_cur field which certainly exists after upgrading.
+   * according to nicholas clark, calling SvPOK fixes this.
+   */
+  SvPOK (string);
+
   if (SvCUR (string) > json->max_size && json->max_size)
     croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
            (unsigned long)SvCUR (string), (unsigned long)json->max_size);
@@ -1841,6 +1849,16 @@ void incr_skip (JSON *self)
             self->incr_nest = 0;
             self->incr_mode = 0;
           }
+}
+
+void incr_reset (JSON *self)
+	CODE:
+{
+	SvREFCNT_dec (self->incr_text);
+        self->incr_text = 0;
+        self->incr_pos  = 0;
+        self->incr_nest = 0;
+        self->incr_mode = 0;
 }
 
 void DESTROY (JSON *self)
