@@ -3,7 +3,7 @@
 use strict;
 no warnings;
 use Test::More;
-BEGIN { plan tests => 693 };
+BEGIN { plan tests => 697 };
 
 use JSON::XS;
 
@@ -73,6 +73,22 @@ splitter +JSON::XS->new->allow_nonref, ' "5" ';
    my $coder = JSON::XS->new->max_depth (3);
    ok (!$coder->incr_parse ("[[["), "incdepth1");
    eval { !$coder->incr_parse (" [] ") }; ok ($@ =~ /maximum nesting/, "incdepth2 $@");
+}
+
+# contributed by yuval kogman, reformatted to fit style
+{
+   my $coder = JSON::XS->new;
+   
+   my $res = eval { $coder->incr_parse("]") };
+   my $e = $@; # test more clobbers $@, we need it twice
+   
+   ok (!$res, "unbalanced bracket");
+   ok ($e, "got error");
+   like ($e, qr/malformed/, "malformed json string error");
+   
+   $coder->incr_skip;
+   
+   is_deeply (eval { $coder->incr_parse("[42]") }, [42], "valid data after incr_skip");
 }
 
 

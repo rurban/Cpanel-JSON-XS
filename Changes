@@ -1,5 +1,11 @@
 Revision history for Perl extension JSON::XS
 
+2.22 Tue Jul 15 13:26:51 CEST 2008
+	- allow higher nesting levels in incremental parser.
+        - error out earlier in some cases in the incremental parser
+          (as suggested by Yuval Kogman).
+        - improve incr-parser test (Yuval Kogman).
+
 2.21 Tue Jun  3 08:43:23 CEST 2008
 	- (hopefully) work around a perl 5.10 bug with -DDEBUGGING.
 	- remove the experimental status of the incremental parser interface.
