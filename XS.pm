@@ -105,7 +105,7 @@ package JSON::XS;
 
 use strict;
 
-our $VERSION = '2.21';
+our $VERSION = '2.22';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -708,12 +708,20 @@ texts. While this module always has to keep both JSON text and resulting
 Perl data structure in memory at one time, it does allow you to parse a
 JSON stream incrementally. It does so by accumulating text until it has
 a full JSON object, which it then can decode. This process is similar to
-using C<decode_prefix> to see if a full JSON object is available, but is
-much more efficient (JSON::XS will only attempt to parse the JSON text
-once it is sure it has enough text to get a decisive result, using a very
-simple but truly incremental parser).
+using C<decode_prefix> to see if a full JSON object is available, but
+is much more efficient (and can be implemented with a minimum of method
+calls).
 
-The following two methods deal with this.
+JSON::XS will only attempt to parse the JSON text once it is sure it
+has enough text to get a decisive result, using a very simple but
+truly incremental parser. This means that it sometimes won't stop as
+early as the full parser, for example, it doesn't detect parenthese
+mismatches. The only thing it guarantees is that it starts decoding as
+soon as a syntactically valid JSON text has been seen. This means you need
+to set resource limits (e.g. C<max_size>) to ensure the parser will stop
+parsing in the presence if syntax errors.
+
+The following methods implement this incremental parser.
 
 =over 4
 

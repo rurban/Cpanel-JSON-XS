@@ -81,7 +81,7 @@ enum {
   INCR_M_JSON    // outside anything, count nesting
 };
 
-#define INCR_DONE(json) (!(json)->incr_nest && (json)->incr_mode == INCR_M_JSON)
+#define INCR_DONE(json) ((json)->incr_nest <= 0 && (json)->incr_mode == INCR_M_JSON)
 
 typedef struct {
   U32 flags;
@@ -94,7 +94,7 @@ typedef struct {
   // for the incremental parser
   SV *incr_text;   // the source text so far
   STRLEN incr_pos; // the current offset into the text
-  unsigned char incr_nest;   // {[]}-nesting level
+  int incr_nest;   // {[]}-nesting level
   unsigned char incr_mode;
 } JSON;
 
@@ -1600,7 +1600,7 @@ incr_parse (JSON *self)
 
                     case ']':
                     case '}':
-                      if (!--self->incr_nest)
+                      if (--self->incr_nest <= 0)
                         goto interrupt;
                   }
               }
