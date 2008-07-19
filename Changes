@@ -1,5 +1,9 @@
 Revision history for Perl extension JSON::XS
 
+2.222 Sat Jul 19 06:15:34 CEST 2008
+	- you work around one -DDEBUGGING assertion bug in perl 5.10
+          just to hit the next one. work around this one, too.
+
 2.22 Tue Jul 15 13:26:51 CEST 2008
 	- allow higher nesting levels in incremental parser.
         - error out earlier in some cases in the incremental parser
