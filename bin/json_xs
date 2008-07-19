@@ -38,7 +38,7 @@ C<fromformat> can be one of:
 
 =item storable-file - a Storable file (Storable has two incompatible formats)
 
-=item clzf - Compress::LZF format (requires thta module to be installed)
+=item clzf - Compress::LZF format (requires that module to be installed)
 
 =item yaml - YAML (avoid at all costs, requires the YAML module :)
 
