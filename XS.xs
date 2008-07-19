@@ -1420,8 +1420,12 @@ decode_json (SV *string, JSON *json, STRLEN *offset_return)
    * assertion with -DDEBUGGING, although SvCUR is documented to
    * return the xpv_cur field which certainly exists after upgrading.
    * according to nicholas clark, calling SvPOK fixes this.
+   * But it doesn't fix it, so try another workaround, call SvPV_nolen
+   * and hope for the best.
    */
-  SvPOK (string);
+#ifdef DEBUGGING
+  SvPV_nolen (string);
+#endif
 
   if (SvCUR (string) > json->max_size && json->max_size)
     croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
