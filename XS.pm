@@ -103,9 +103,10 @@ stuff). Or you can combine those features in whatever way you like.
 
 package JSON::XS;
 
+no warnings;
 use strict;
 
-our $VERSION = '2.222';
+our $VERSION = '2.2222';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
