@@ -1422,12 +1422,17 @@ decode_json (SV *string, JSON *json, STRLEN *offset_return)
    * according to nicholas clark, calling SvPOK fixes this.
    * But it doesn't fix it, so try another workaround, call SvPV_nolen
    * and hope for the best.
+   * Damnit, SvPV_nolen still trips over yet another assertion. This
+   * assertion business is seriously broken, try yet another workaround
+   * for the broken -DDEBUGGING.
    */
 #ifdef DEBUGGING
-  SvPV_nolen (string);
+  offset = SvOK (string) ? sv_len (string) : 0;
+#else
+  offset = SvCUR (string);
 #endif
 
-  if (SvCUR (string) > json->max_size && json->max_size)
+  if (offset > json->max_size && json->max_size)
     croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
            (unsigned long)SvCUR (string), (unsigned long)json->max_size);
 
