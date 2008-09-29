@@ -1,5 +1,10 @@
 Revision history for Perl extension JSON::XS
 
+2.23 Mon Sep 29 05:08:29 CEST 2008
+	- fix a compilation problem when perl is not using char * as, well,
+          char *.
+	- use PL_hexdigit in favour of rolling our own.
+
 2.2222 Sun Jul 20 18:49:00 CEST 2008
 	- same game again, broken 5.10 finds yet another assertion
           failure, and the workaround causes additional runtime warnings.
