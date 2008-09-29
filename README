@@ -46,8 +46,6 @@ DESCRIPTION
     cases their maintainers are unresponsive, gone missing, or not listening
     to bug reports for other reasons.
 
-    See COMPARISON, below, for a comparison to some other JSON modules.
-
     See MAPPING, below, on how JSON::XS maps perl values to JSON values and
     vice versa.
 

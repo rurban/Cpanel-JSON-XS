@@ -93,6 +93,10 @@ version of it to STDOUT.
 
 Same as above, but write YAML instead (not using JSON at all :)
 
+   lwp-request http://cpantesters.perl.org/show/JSON-XS.json | json_xs
+
+Fetch the cpan-testers result summary C<JSON::XS> and pretty-print it.
+
 =head1 AUTHOR
 
 Copyright (C) 2008 Marc Lehmann <json@schmorp.de>
