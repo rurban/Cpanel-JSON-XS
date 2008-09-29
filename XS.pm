@@ -51,8 +51,6 @@ modules, none of them correctly handle all corner cases, and in most cases
 their maintainers are unresponsive, gone missing, or not listening to bug
 reports for other reasons.
 
-See COMPARISON, below, for a comparison to some other JSON modules.
-
 See MAPPING, below, on how JSON::XS maps perl values to JSON values and
 vice versa.
 
@@ -106,7 +104,7 @@ package JSON::XS;
 no warnings;
 use strict;
 
-our $VERSION = '2.2222';
+our $VERSION = '2.23';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);

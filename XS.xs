@@ -196,7 +196,7 @@ need (enc_t *enc, STRLEN len)
 {
   if (expect_false (enc->cur + len >= enc->end))
     {
-      STRLEN cur = enc->cur - SvPVX (enc->sv);
+      STRLEN cur = enc->cur - (char *)SvPVX (enc->sv);
       SvGROW (enc->sv, cur + len + 1);
       enc->cur = SvPVX (enc->sv) + cur;
       enc->end = SvPVX (enc->sv) + SvLEN (enc->sv) - 1;
@@ -282,14 +282,13 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                         }
                       else
                         {
-                          static char hexdigit [16] = "0123456789abcdef";
                           need (enc, len += 5);
                           *enc->cur++ = '\\';
                           *enc->cur++ = 'u';
-                          *enc->cur++ = hexdigit [ uch >> 12      ];
-                          *enc->cur++ = hexdigit [(uch >>  8) & 15];
-                          *enc->cur++ = hexdigit [(uch >>  4) & 15];
-                          *enc->cur++ = hexdigit [(uch >>  0) & 15];
+                          *enc->cur++ = PL_hexdigit [ uch >> 12      ];
+                          *enc->cur++ = PL_hexdigit [(uch >>  8) & 15];
+                          *enc->cur++ = PL_hexdigit [(uch >>  4) & 15];
+                          *enc->cur++ = PL_hexdigit [(uch >>  0) & 15];
                         }
 
                       str += clen;
@@ -463,7 +462,7 @@ encode_hv (enc_t *enc, HV *hv)
 
   // for canonical output we have to sort by keys first
   // actually, this is mostly due to the stupid so-called
-  // security workaround added somewhere in 5.8.x.
+  // security workaround added somewhere in 5.8.x
   // that randomises hash orderings
   if (enc->json.flags & F_CANONICAL)
     {
