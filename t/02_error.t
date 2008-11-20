@@ -2,6 +2,7 @@ BEGIN { $| = 1; print "1..31\n"; }
 
 use utf8;
 use JSON::XS;
+no warnings;
 
 our $test;
 sub ok($) {

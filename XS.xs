@@ -1412,7 +1412,13 @@ decode_json (SV *string, JSON *json, STRLEN *offset_return)
   STRLEN offset;
   SV *sv;
 
-  SvGETMAGIC (string);
+  /* work around bugs in 5.10 where manipulating magic values
+   * will perl ignore the magic in subsequent accesses
+   */
+  /*SvGETMAGIC (string);*/
+  if (SvMAGICAL (string))
+    string = sv_2mortal (newSVsv (string));
+
   SvUPGRADE (string, SVt_PV);
 
   /* work around a bug in perl 5.10, which causes SvCUR to fail an
