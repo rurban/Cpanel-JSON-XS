@@ -1,5 +1,12 @@
 Revision history for Perl extension JSON::XS
 
+2.231 Thu Nov 20 04:59:08 CET 2008
+	- work around 5.10.0 magic bugs where manipulating magic values
+          (such as $1) would permanently damage them as perl would
+          ignore the magicalness, by making a full copy of the string,
+          reported by Dmitry Karasik.
+        - work around spurious wanrings under older perl 5.8's.
+
 2.23 Mon Sep 29 05:08:29 CEST 2008
 	- fix a compilation problem when perl is not using char * as, well,
           char *.
