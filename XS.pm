@@ -104,7 +104,7 @@ package JSON::XS;
 no warnings;
 use strict;
 
-our $VERSION = '2.231';
+our $VERSION = '2.2311';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -768,17 +768,21 @@ JSON object or b) parsing multiple JSON objects separated by non-JSON text
 
 =item $json->incr_skip
 
-This will reset the state of the incremental parser and will remove the
-parsed text from the input buffer. This is useful after C<incr_parse>
-died, in which case the input buffer and incremental parser state is left
-unchanged, to skip the text parsed so far and to reset the parse state.
+This will reset the state of the incremental parser and will remove
+the parsed text from the input buffer so far. This is useful after
+C<incr_parse> died, in which case the input buffer and incremental parser
+state is left unchanged, to skip the text parsed so far and to reset the
+parse state.
+
+The difference to C<incr_reset> is that only text until the parse error
+occured is removed.
 
 =item $json->incr_reset
 
 This completely resets the incremental parser, that is, after this call,
 it will be as if the parser had never parsed anything.
 
-This is useful if you want ot repeatedly parse JSON objects and want to
+This is useful if you want to repeatedly parse JSON objects and want to
 ignore any trailing data, which means you have to reset the parser after
 each successful decode.
 
@@ -1181,6 +1185,71 @@ might be mangled in between (e.g. in mail), and works because ASCII is a
 proper subset of most 8-bit and multibyte encodings in use in the world.
 
 =back
+
+
+=head2 JSON and ECMAscript
+
+JSON syntax is based on how literals are represented in javascript (the
+not-standardised predecessor of ECMAscript) which is presumably why it is
+called "JavaScript Object Notation".
+
+However, JSON is not a subset (and also not a superset of course) of
+ECMAscript (the standard) or javascript (whatever browsers actually
+implement).
+
+If you want to use javascript's C<eval> function to "parse" JSON, you
+might run into parse errors for valid JSON texts, or the resulting data
+structure might not be queryable:
+
+One of the problems is that U+2028 and U+2029 are valid characters inside
+JSON strings, but are not allowed in ECMAscript string literals, so the
+following Perl fragment will not output something that can be guaranteed
+to be parsable by javascript's C<eval>:
+
+   use JSON::XS;
+
+   print encode_json [chr 0x2028];
+
+The right fix for this is to use a proper JSON parser in your javascript
+programs, and not rely on C<eval> (see for example Douglas Crockford's
+F<json2.js> parser).
+
+If this is not an option, you can, as a stop-gap measure, simply encode to
+ASCII-only JSON:
+
+   use JSON::XS;
+
+   print JSON::XS->new->ascii->encode ([chr 0x2028]);
+
+Note that this will enlarge the resulting JSON text quite a bit if you
+have many non-ASCII characters. You might be tempted to run some regexes
+to only escape U+2028 and U+2029, e.g.:
+
+   # DO NOT USE THIS!
+   my $json = JSON::XS->new->utf8->encode ([chr 0x2028]);
+   $json =~ s/\xe2\x80\xa8/\\u2028/g; # escape U+2028
+   $json =~ s/\xe2\x80\xa9/\\u2029/g; # escape U+2029
+   print $json;
+
+Note that I<this is a bad idea>: the above only works for U+2028 and
+U+2029 and thus only for fully ECMAscript-compliant parsers. Many existing
+javascript implementations, however, have issues with other characters as
+well - using C<eval> naively simply I<will> cause problems.
+
+Another problem is that some javascript implementations reserve
+some property names for their own purposes (which probably makes
+them non-ECMAscript-compliant). For example, Iceweasel reserves the
+C<__proto__> property name for it's own purposes.
+
+If that is a problem, you could parse try to filter the resulting JSON
+output for these property strings, e.g.:
+
+   $json =~ s/"__proto__"\s*:/"__proto__renamed":/g;
+
+This works because C<__proto__> is not valid outside of strings, so every
+occurence of C<"__proto__"\s*:> must be a string used as property name.
+
+If you know of other incompatibilities, please let me know.
 
 
 =head2 JSON and YAML
