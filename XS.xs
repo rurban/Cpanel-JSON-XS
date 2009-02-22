@@ -197,7 +197,7 @@ need (enc_t *enc, STRLEN len)
   if (expect_false (enc->cur + len >= enc->end))
     {
       STRLEN cur = enc->cur - (char *)SvPVX (enc->sv);
-      SvGROW (enc->sv, cur + len + 1);
+      SvGROW (enc->sv, cur + (len < (cur >> 2) ? cur >> 2 : len) + 1);
       enc->cur = SvPVX (enc->sv) + cur;
       enc->end = SvPVX (enc->sv) + SvLEN (enc->sv) - 1;
     }
@@ -972,7 +972,11 @@ decode_str (dec_t *dec)
 
         if (sv)
           {
-            SvGROW (sv, SvCUR (sv) + len + 1);
+            STRLEN cur = SvCUR (sv);
+
+            if (SvLEN (sv) <= cur + len)
+              SvGROW (sv, cur + (len < (cur >> 2) ? cur >> 2 : len) + 1);
+
             memcpy (SvPVX (sv) + SvCUR (sv), buf, len);
             SvCUR_set (sv, SvCUR (sv) + len);
           }
@@ -1807,7 +1811,11 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
             {
               STRLEN len;
               const char *str = SvPV (jsonstr, len);
-              SvGROW (self->incr_text, SvCUR (self->incr_text) + len + 1);
+              STRLEN cur = SvCUR (self->incr_text);
+
+              if (SvLEN (self->incr_text) <= cur + len)
+                SvGROW (self->incr_text, cur + (len < (cur >> 2) ? cur >> 2 : len) + 1);
+
               Move (str, SvEND (self->incr_text), len, char);
               SvCUR_set (self->incr_text, SvCUR (self->incr_text) + len);
               *SvEND (self->incr_text) = 0; // this should basically be a nop, too, but make sure it's there
