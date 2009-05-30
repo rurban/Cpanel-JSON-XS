@@ -104,7 +104,7 @@ package JSON::XS;
 no warnings;
 use strict;
 
-our $VERSION = '2.232';
+our $VERSION = '2.24';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
