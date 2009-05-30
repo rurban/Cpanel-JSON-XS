@@ -177,6 +177,15 @@ encode_utf8 (unsigned char *s, UV ch)
   return s;
 }
 
+// convert offset pointer to character index, sv must be string
+static STRLEN
+ptr_to_index (SV *sv, char *offset)
+{
+  return SvUTF8 (sv)
+         ? utf8_distance (offset, SvPVX (sv))
+         : offset - SvPVX (sv);
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // encoder
 
@@ -1410,10 +1419,9 @@ fail:
 }
 
 static SV *
-decode_json (SV *string, JSON *json, STRLEN *offset_return)
+decode_json (SV *string, JSON *json, char **offset_return)
 {
   dec_t dec;
-  STRLEN offset;
   SV *sv;
 
   /* work around bugs in 5.10 where manipulating magic values
@@ -1435,15 +1443,17 @@ decode_json (SV *string, JSON *json, STRLEN *offset_return)
    * assertion business is seriously broken, try yet another workaround
    * for the broken -DDEBUGGING.
    */
+  {
 #ifdef DEBUGGING
-  offset = SvOK (string) ? sv_len (string) : 0;
+    STRLEN offset = SvOK (string) ? sv_len (string) : 0;
 #else
-  offset = SvCUR (string);
+    STRLEN offset = SvCUR (string);
 #endif
 
-  if (offset > json->max_size && json->max_size)
-    croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
-           (unsigned long)SvCUR (string), (unsigned long)json->max_size);
+    if (offset > json->max_size && json->max_size)
+      croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
+             (unsigned long)SvCUR (string), (unsigned long)json->max_size);
+  }
 
   if (json->flags & F_UTF8)
     sv_utf8_downgrade (string, 0);
@@ -1466,6 +1476,9 @@ decode_json (SV *string, JSON *json, STRLEN *offset_return)
   decode_ws (&dec);
   sv = decode_sv (&dec);
 
+  if (offset_return)
+    *offset_return = dec.cur;
+
   if (!(offset_return || !sv))
     {
       // check for trailing garbage
@@ -1477,16 +1490,6 @@ decode_json (SV *string, JSON *json, STRLEN *offset_return)
           SvREFCNT_dec (sv);
           sv = 0;
         }
-    }
-
-  if (offset_return || !sv)
-    {
-      offset = dec.json.flags & F_UTF8
-               ? dec.cur - SvPVX (string)
-               : utf8_distance (dec.cur, SvPVX (string));
-
-      if (offset_return)
-        *offset_return = offset;
     }
 
   if (!sv)
@@ -1502,9 +1505,9 @@ decode_json (SV *string, JSON *json, STRLEN *offset_return)
       pv_uni_display (uni, dec.cur, dec.end - dec.cur, 20, UNI_DISPLAY_QQ);
       LEAVE;
 
-      croak ("%s, at character offset %d [\"%s\"]",
+      croak ("%s, at character offset %d (before \"%s\")",
              dec.err,
-             (int)offset,
+             ptr_to_index (string, dec.cur),
              dec.cur != dec.end ? SvPV_nolen (uni) : "(end of string)");
     }
 
@@ -1783,10 +1786,10 @@ void decode (JSON *self, SV *jsonstr)
 void decode_prefix (JSON *self, SV *jsonstr)
 	PPCODE:
 {
-  	STRLEN offset;
+        char *offset;
         EXTEND (SP, 2);
         PUSHs (decode_json (jsonstr, self, &offset));
-        PUSHs (sv_2mortal (newSVuv (offset)));
+        PUSHs (sv_2mortal (newSVuv (ptr_to_index (jsonstr, offset))));
 }
 
 void incr_parse (JSON *self, SV *jsonstr = 0)
@@ -1798,15 +1801,20 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
         // append data, if any
         if (jsonstr)
           {
-            if (SvUTF8 (jsonstr) && !SvUTF8 (self->incr_text))
+            if (SvUTF8 (jsonstr))
               {
-                /* utf-8-ness differs, need to upgrade */
-                sv_utf8_upgrade (self->incr_text);
+                if (!SvUTF8 (self->incr_text))
+                  {
+                    /* utf-8-ness differs, need to upgrade */
+                    sv_utf8_upgrade (self->incr_text);
 
-                if (self->incr_pos)
-                  self->incr_pos = utf8_hop ((U8 *)SvPVX (self->incr_text), self->incr_pos)
-                                   - (U8 *)SvPVX (self->incr_text);
+                    if (self->incr_pos)
+                      self->incr_pos = utf8_hop ((U8 *)SvPVX (self->incr_text), self->incr_pos)
+                                       - (U8 *)SvPVX (self->incr_text);
+                  }
               }
+            else if (SvUTF8 (self->incr_text))
+              sv_utf8_upgrade (jsonstr);
 
             {
               STRLEN len;
@@ -1825,7 +1833,7 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
         if (GIMME_V != G_VOID)
           do
             {
-              STRLEN offset;
+              char *offset;
 
               if (!INCR_DONE (self))
                 {
@@ -1841,10 +1849,11 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
 
               XPUSHs (decode_json (self->incr_text, self, &offset));
 
-              sv_chop (self->incr_text, SvPV_nolen (self->incr_text) + offset);
-              self->incr_pos -= offset;
+              self->incr_pos -= offset - SvPVX (self->incr_text);
               self->incr_nest = 0;
               self->incr_mode = 0;
+
+              sv_chop (self->incr_text, offset);
             }
           while (GIMME_V == G_ARRAY);
 }
