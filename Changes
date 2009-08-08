@@ -1,5 +1,12 @@
 Revision history for Perl extension JSON::XS
 
+2.25  Sat Aug  8 12:04:41 CEST 2009
+	- the perl debugger completely breaks lvalue subs - try to work
+          around the issue.
+	- ignore RMAGICAL hashes w.r.t. CANONICAL.
+	- try to work around a possible char signedness issue on aix.
+        - require common sense.
+
 2.24  Sat May 30 08:25:45 CEST 2009
 	- the incremental parser did not update its parse offset
           pointer correctly when parsing utf8-strings (nicely
