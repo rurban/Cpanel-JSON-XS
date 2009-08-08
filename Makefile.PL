@@ -10,5 +10,8 @@ WriteMakefile(
     EXE_FILES    => [ "bin/json_xs" ],
     VERSION_FROM => "XS.pm",
     NAME         => "JSON::XS",
+    PREREQ_PM    => {
+       common::sense => 0,
+    },
 );
 

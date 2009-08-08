@@ -22,8 +22,8 @@ SYNOPSIS
      # Note that JSON version 2.0 and above will automatically use JSON::XS
      # if available, at virtually no speed overhead either, so you should
      # be able to just:
-     
- use JSON;
+ 
+     use JSON;
 
      # and do the same things, except that you have a pure-perl fallback now.
 
@@ -379,6 +379,8 @@ OBJECT-ORIENTED INTERFACE
         in Perl.
 
         This setting has no effect when decoding JSON texts.
+
+        This setting has currently no effect on tied hashes.
 
     $json = $json->allow_nonref ([$enable])
     $enabled = $json->get_allow_nonref

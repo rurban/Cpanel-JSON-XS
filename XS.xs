@@ -14,7 +14,7 @@
 #endif
 
 // some old perls do not have this, try to make it work, no
-// guarentees, though. if it breaks, you get to keep the pieces.
+// guarantees, though. if it breaks, you get to keep the pieces.
 #ifndef UTF8_MAXBYTES
 # define UTF8_MAXBYTES 13
 #endif
@@ -473,7 +473,7 @@ encode_hv (enc_t *enc, HV *hv)
   // actually, this is mostly due to the stupid so-called
   // security workaround added somewhere in 5.8.x
   // that randomises hash orderings
-  if (enc->json.flags & F_CANONICAL)
+  if (enc->json.flags & F_CANONICAL && !SvRMAGICAL (hv))
     {
       int count = hv_iterinit (hv);
 
@@ -1086,20 +1086,20 @@ decode_num (dec_t *dec)
       if (*start == '-')
         switch (len)
           {
-            case 2: return newSViv (-(                                                                          start [1] - '0' *     1));
-            case 3: return newSViv (-(                                                         start [1] * 10 + start [2] - '0' *    11));
-            case 4: return newSViv (-(                                       start [1] * 100 + start [2] * 10 + start [3] - '0' *   111));
-            case 5: return newSViv (-(                    start [1] * 1000 + start [2] * 100 + start [3] * 10 + start [4] - '0' *  1111));
-            case 6: return newSViv (-(start [1] * 10000 + start [2] * 1000 + start [3] * 100 + start [4] * 10 + start [5] - '0' * 11111));
+            case 2: return newSViv (-(IV)(                                                                          start [1] - '0' *     1));
+            case 3: return newSViv (-(IV)(                                                         start [1] * 10 + start [2] - '0' *    11));
+            case 4: return newSViv (-(IV)(                                       start [1] * 100 + start [2] * 10 + start [3] - '0' *   111));
+            case 5: return newSViv (-(IV)(                    start [1] * 1000 + start [2] * 100 + start [3] * 10 + start [4] - '0' *  1111));
+            case 6: return newSViv (-(IV)(start [1] * 10000 + start [2] * 1000 + start [3] * 100 + start [4] * 10 + start [5] - '0' * 11111));
           }
       else
         switch (len)
           {
-            case 1: return newSViv (                                                                            start [0] - '0' *     1);
-            case 2: return newSViv (                                                           start [0] * 10 + start [1] - '0' *    11);
-            case 3: return newSViv (                                         start [0] * 100 + start [1] * 10 + start [2] - '0' *   111);
-            case 4: return newSViv (                      start [0] * 1000 + start [1] * 100 + start [2] * 10 + start [3] - '0' *  1111);
-            case 5: return newSViv (  start [0] * 10000 + start [1] * 1000 + start [2] * 100 + start [3] * 10 + start [4] - '0' * 11111);
+            case 1: return newSViv (                                                                                start [0] - '0' *     1);
+            case 2: return newSViv (                                                               start [0] * 10 + start [1] - '0' *    11);
+            case 3: return newSViv (                                             start [0] * 100 + start [1] * 10 + start [2] - '0' *   111);
+            case 4: return newSViv (                          start [0] * 1000 + start [1] * 100 + start [2] * 10 + start [3] - '0' *  1111);
+            case 5: return newSViv (      start [0] * 10000 + start [1] * 1000 + start [2] * 100 + start [3] * 10 + start [4] - '0' * 11111);
           }
 
       {
@@ -1657,6 +1657,8 @@ BOOT:
 
         json_true  = get_bool ("JSON::XS::true");
         json_false = get_bool ("JSON::XS::false");
+
+        CvNODEBUG_on (get_cv ("JSON::XS::incr_text", 0)); /* the debugger completely breaks lvalue subs */
 }
 
 PROTOTYPES: DISABLE

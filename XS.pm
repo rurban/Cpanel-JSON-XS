@@ -101,10 +101,9 @@ stuff). Or you can combine those features in whatever way you like.
 
 package JSON::XS;
 
-no warnings;
-use strict;
+use common::sense;
 
-our $VERSION = '2.24';
+our $VERSION = '2.25';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -443,6 +442,8 @@ the same hash might be encoded differently even if contains the same data,
 as key-value pairs have no inherent ordering in Perl.
 
 This setting has no effect when decoding JSON texts.
+
+This setting has currently no effect on tied hashes.
 
 =item $json = $json->allow_nonref ([$enable])
 
