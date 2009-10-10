@@ -11,7 +11,7 @@ sub ok($) {
 ok (JSON::XS->new->allow_nonref (1)->utf8 (1)->encode ("ü") eq "\"\xc3\xbc\"");
 ok (JSON::XS->new->allow_nonref (1)->encode ("ü") eq "\"ü\"");
 ok (JSON::XS->new->allow_nonref (1)->ascii (1)->utf8 (1)->encode (chr 0x8000) eq '"\u8000"');
-ok (JSON::XS->new->allow_nonref (1)->ascii (1)->utf8 (1)->pretty (1)->encode (chr 0x10402) eq '"\ud801\udc02"');
+ok (JSON::XS->new->allow_nonref (1)->ascii (1)->utf8 (1)->pretty (1)->encode (chr 0x10402) eq "\"\\ud801\\udc02\"\n");
 
 eval { JSON::XS->new->allow_nonref (1)->utf8 (1)->decode ('"ü"') };
 ok $@ =~ /malformed UTF-8/;
