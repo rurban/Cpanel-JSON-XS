@@ -103,7 +103,7 @@ package JSON::XS;
 
 use common::sense;
 
-our $VERSION = '2.25';
+our $VERSION = '2.26';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -1270,12 +1270,12 @@ algorithm (subject to change in future versions):
 This will I<usually> generate JSON texts that also parse as valid
 YAML. Please note that YAML has hardcoded limits on (simple) object key
 lengths that JSON doesn't have and also has different and incompatible
-unicode handling, so you should make sure that your hash keys are
-noticeably shorter than the 1024 "stream characters" YAML allows and that
-you do not have characters with codepoint values outside the Unicode BMP
-(basic multilingual page). YAML also does not allow C<\/> sequences in
-strings (which JSON::XS does not I<currently> generate, but other JSON
-generators might).
+unicode character escape syntax, so you should make sure that your hash
+keys are noticeably shorter than the 1024 "stream characters" YAML allows
+and that you do not have characters with codepoint values outside the
+Unicode BMP (basic multilingual page). YAML also does not allow C<\/>
+sequences in strings (which JSON::XS does not I<currently> generate, but
+other JSON generators might).
 
 There might be other incompatibilities that I am not aware of (or the YAML
 specification has been changed yet again - it does so quite often). In
@@ -1303,6 +1303,12 @@ that difficult or long) and finally make YAML compatible to it, and
 educating users about the changes, instead of spreading lies about the
 real compatibility for many I<years> and trying to silence people who
 point out that it isn't true.
+
+Addendum/2009: the YAML 1.2 spec is still incomaptible with JSON, even
+though the incompatibilities have been documented (and are known to
+Brian) for many years and the spec makes explicit claims that YAML is a
+superset of JSON. It would be so easy to fix, but apparently, bullying and
+corrupting userdata is so much easier.
 
 =back
 

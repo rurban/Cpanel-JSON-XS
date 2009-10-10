@@ -19,7 +19,8 @@
 # define UTF8_MAXBYTES 13
 #endif
 
-#define IVUV_MAXCHARS (sizeof (UV) * CHAR_BIT * 28 / 93 + 2)
+// three extra for rounding, sign, and end of string
+#define IVUV_MAXCHARS (sizeof (UV) * CHAR_BIT * 28 / 93 + 3)
 
 #define F_ASCII          0x00000001UL
 #define F_LATIN1         0x00000002UL
@@ -761,6 +762,7 @@ encode_json (SV *scalar, JSON *json)
 
   SvPOK_only (enc.sv);
   encode_sv (&enc, scalar);
+  encode_nl (&enc);
 
   SvCUR_set (enc.sv, enc.cur - SvPVX (enc.sv));
   *SvEND (enc.sv) = 0; // many xs functions expect a trailing 0 for text strings
@@ -950,11 +952,10 @@ decode_str (dec_t *dec)
           else if (ch >= 0x80)
             {
               STRLEN clen;
-              UV uch;
 
               --dec_cur;
 
-              uch = decode_utf8 (dec_cur, dec->end - dec_cur, &clen);
+              decode_utf8 (dec_cur, dec->end - dec_cur, &clen);
               if (clen == (STRLEN)-1)
                 ERR ("malformed UTF-8 character in JSON string");
 

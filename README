@@ -1155,10 +1155,10 @@ ENCODING/CODESET FLAG NOTES
     This will *usually* generate JSON texts that also parse as valid YAML.
     Please note that YAML has hardcoded limits on (simple) object key
     lengths that JSON doesn't have and also has different and incompatible
-    unicode handling, so you should make sure that your hash keys are
-    noticeably shorter than the 1024 "stream characters" YAML allows and
-    that you do not have characters with codepoint values outside the
-    Unicode BMP (basic multilingual page). YAML also does not allow "\/"
+    unicode character escape syntax, so you should make sure that your hash
+    keys are noticeably shorter than the 1024 "stream characters" YAML
+    allows and that you do not have characters with codepoint values outside
+    the Unicode BMP (basic multilingual page). YAML also does not allow "\/"
     sequences in strings (which JSON::XS does not *currently* generate, but
     other JSON generators might).
 
@@ -1184,6 +1184,12 @@ ENCODING/CODESET FLAG NOTES
         compatible to it, and educating users about the changes, instead of
         spreading lies about the real compatibility for many *years* and
         trying to silence people who point out that it isn't true.
+
+        Addendum/2009: the YAML 1.2 spec is still incomaptible with JSON,
+        even though the incompatibilities have been documented (and are
+        known to Brian) for many years and the spec makes explicit claims
+        that YAML is a superset of JSON. It would be so easy to fix, but
+        apparently, bullying and corrupting userdata is so much easier.
 
   SPEED
     It seems that JSON::XS is surprisingly fast, as shown in the following
