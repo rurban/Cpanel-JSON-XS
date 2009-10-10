@@ -33,3 +33,4 @@ t/21_evans.t
 t/99_binary.t
 typemap
 META.yml                                 Module meta-data (added by MakeMaker)
+META.json                                Module meta-data (added by MakeMaker)

@@ -24,7 +24,8 @@ is($js,q|[
    {
       "foo" : "bar"
    }
-]|);
+]
+|);
 
 $obj = { foo => [ {a=>"b"}, 0, 1, 2 ] };
 $pc->pretty(0);
@@ -44,7 +45,8 @@ is($js,q|{
       1,
       2
    ]
-}|);
+}
+|);
 
 $obj = { foo => [ {a=>"b"}, 0, 1, 2 ] };
 $pc->pretty(0);
@@ -54,11 +56,11 @@ is($js,q|{"foo":[{"a":"b"},0,1,2]}|);
 
 $obj = {foo => "bar"};
 $pc->indent(1);
-is($pc->encode($obj), qq|{\n   "foo":"bar"\n}|, "nospace");
+is($pc->encode($obj), qq|{\n   "foo":"bar"\n}\n|, "nospace");
 $pc->space_after(1);
-is($pc->encode($obj), qq|{\n   "foo": "bar"\n}|, "after");
+is($pc->encode($obj), qq|{\n   "foo": "bar"\n}\n|, "after");
 $pc->space_before(1);
-is($pc->encode($obj), qq|{\n   "foo" : "bar"\n}|, "both");
+is($pc->encode($obj), qq|{\n   "foo" : "bar"\n}\n|, "both");
 $pc->space_after(0);
-is($pc->encode($obj), qq|{\n   "foo" :"bar"\n}|, "before");
+is($pc->encode($obj), qq|{\n   "foo" :"bar"\n}\n|, "before");
 

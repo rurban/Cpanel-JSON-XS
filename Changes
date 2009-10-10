@@ -1,5 +1,11 @@
 Revision history for Perl extension JSON::XS
 
+2.26  Sat Oct 10 03:26:19 CEST 2009
+	- big integers could become truncated (based on patch
+          by Strobl Anton).
+	- output format change: indent now adds a final newline, which is
+          more expected and more true to the documentation.
+
 2.25  Sat Aug  8 12:04:41 CEST 2009
 	- the perl debugger completely breaks lvalue subs - try to work
           around the issue.
