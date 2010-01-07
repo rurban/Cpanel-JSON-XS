@@ -1,5 +1,9 @@
 Revision history for Perl extension JSON::XS
 
+2.27  Thu Jan  7 07:35:08 CET 2010
+	- support relaxed option inside the incremental parser
+          (testcase provided by IKEGAMI via Makamaka).
+
 2.26  Sat Oct 10 03:26:19 CEST 2009
 	- big integers could become truncated (based on patch
           by Strobl Anton).

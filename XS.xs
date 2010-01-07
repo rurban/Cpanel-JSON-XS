@@ -79,6 +79,8 @@ enum {
   INCR_M_WS = 0, // initial whitespace skipping, must be 0
   INCR_M_STR,    // inside string
   INCR_M_BS,     // inside backslash
+  INCR_M_C0,     // inside comment in initial whitespace sequence
+  INCR_M_C1,     // inside comment in other places
   INCR_M_JSON    // outside anything, count nesting
 };
 
@@ -1528,19 +1530,30 @@ incr_parse (JSON *self)
 {
   const char *p = SvPVX (self->incr_text) + self->incr_pos;
 
+  // the state machine here is a bit convoluted and could be simplified a lot
+  // but this would make it slower, so...
+
   for (;;)
     {
       //printf ("loop pod %d *p<%c><%s>, mode %d nest %d\n", p - SvPVX (self->incr_text), *p, p, self->incr_mode, self->incr_nest);//D
       switch (self->incr_mode)
         {
-          // only used for intiial whitespace skipping
+          // only used for initial whitespace skipping
           case INCR_M_WS:
             for (;;)
               {
                 if (*p > 0x20)
                   {
-                    self->incr_mode = INCR_M_JSON;
-                    goto incr_m_json;
+                    if (*p == '#')
+                      {
+                        self->incr_mode = INCR_M_C0;
+                        goto incr_m_c;
+                      }
+                    else
+                      {
+                        self->incr_mode = INCR_M_JSON;
+                        goto incr_m_json;
+                      }
                   }
                 else if (!*p)
                   goto interrupt;
@@ -1556,6 +1569,25 @@ incr_parse (JSON *self)
             ++p;
             self->incr_mode = INCR_M_STR;
             goto incr_m_str;
+
+          // inside #-style comments
+          case INCR_M_C0:
+          case INCR_M_C1:
+          incr_m_c:
+            for (;;)
+              {
+                if (*p == '\n')
+                  {
+                    self->incr_mode = self->incr_mode == INCR_M_C0 ? INCR_M_WS : INCR_M_JSON;
+                    break;
+                  }
+                else if (!*p)
+                  goto interrupt;
+
+                ++p;
+              }
+
+            break;
 
           // inside a string
           case INCR_M_STR:
@@ -1624,6 +1656,11 @@ incr_parse (JSON *self)
                     case '}':
                       if (--self->incr_nest <= 0)
                         goto interrupt;
+                      break;
+
+                    case '#':
+                      self->incr_mode = INCR_M_C1;
+                      goto incr_m_c;
                   }
               }
         }
@@ -1634,6 +1671,7 @@ incr_parse (JSON *self)
 
 interrupt:
   self->incr_pos = p - SvPVX (self->incr_text);
+  //printf ("interrupt<%.*s>\n", self->incr_pos, SvPVX(self->incr_text));//D
   //printf ("return pos %d mode %d nest %d\n", self->incr_pos, self->incr_mode, self->incr_nest);//D
 }
 
