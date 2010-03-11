@@ -1,5 +1,14 @@
 Revision history for Perl extension JSON::XS
 
+2.28  Thu Mar 11 20:30:46 CET 2010
+	- implement our own atof function - perl's can be orders of
+          magnitudes slower than even the system one. on the positive
+          side, ours seems to be more exact in general than perl's.
+          (testcase provided by Tim Meadowcroft).
+        - clarify floating point conversion issues a bit.
+	- update jpsykes csrf article url.
+        - updated benchmark section - JSON::PP became much faster!
+
 2.27  Thu Jan  7 07:35:08 CET 2010
 	- support relaxed option inside the incremental parser
           (testcase provided by IKEGAMI via Makamaka).
