@@ -5,10 +5,10 @@
 # which modules to test (JSON::PP usually excluded because its so slow)
 my %tst = (
 #   "JSON"          => ['JSON::encode_json $perl'  , 'JSON::decode_json $json'],
-#   "JSON::PP"      => ['$pp->encode ($perl)'      , '$pp->decode ($json)'],
+   "JSON::PP"      => ['$pp->encode ($perl)'      , '$pp->decode ($json)'],
    "JSON::DWIW/FJ" => ['$dwiw->to_json ($perl)'   , '$dwiw->from_json ($json)'],
    "JSON::DWIW/DS" => ['$dwiw->to_json ($perl)'   , 'JSON::DWIW::deserialize $json'],
-   "JSON::PC"      => ['$pc->convert ($perl)'     , '$pc->parse ($json)'],
+#   "JSON::PC"      => ['$pc->convert ($perl)'     , '$pc->parse ($json)'],
    "JSON::Syck"    => ['JSON::Syck::Dump $perl'   , 'JSON::Syck::Load $json'],
    "JSON::XS"      => ['encode_json $perl'        , 'decode_json $json'],
    "JSON::XS/2"    => ['$xs2->encode ($perl)'     , '$xs2->decode ($json)'],

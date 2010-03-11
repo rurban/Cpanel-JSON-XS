@@ -190,6 +190,100 @@ ptr_to_index (SV *sv, char *offset)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// fp hell
+
+// scan a group of digits, and a trailing exponent
+static void
+json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
+{
+  UV  uaccum = 0;
+  int eaccum = 0;
+
+  // if we recurse too deep, skip all remaining digits
+  // to avoid a stack overflow attack
+  if (expect_false (--maxdepth <= 0))
+    while (((U8)*s - '0') < 10)
+      ++s;
+
+  for (;;)
+    {
+      U8 dig = (U8)*s - '0';
+
+      if (expect_false (dig >= 10))
+        {
+          if (dig == (U8)((U8)'.' - (U8)'0'))
+            {
+              ++s;
+              json_atof_scan1 (s, accum, expo, 1, maxdepth);
+            }
+          else if ((dig | ' ') == 'e' - '0')
+            {
+              int exp2 = 0;
+              int neg  = 0;
+
+              ++s;
+
+              if (*s == '-')
+                {
+                  ++s;
+                  neg = 1;
+                }
+              else if (*s == '+')
+                ++s;
+
+              while ((dig = (U8)*s - '0') < 10)
+                exp2 = exp2 * 10 + *s++ - '0';
+
+              *expo += neg ? -exp2 : exp2;
+            }
+
+          break;
+        }
+
+      ++s;
+
+      uaccum = uaccum * 10 + dig;
+      ++eaccum;
+
+      // if we have too many digits, then recurse for more
+      // we actually do this for rather few digits
+      if (uaccum >= (UV_MAX - 9) / 10)
+        {
+          if (postdp) *expo -= eaccum;
+          json_atof_scan1 (s, accum, expo, postdp, maxdepth);
+          if (postdp) *expo += eaccum;
+
+          break;
+        }
+    }
+
+  // this relies greatly on the quality of the pow ()
+  // implementation of the platform, but a good
+  // implementation is hard to beat.
+  if (postdp) *expo -= eaccum;
+  *accum += uaccum * Perl_pow (10., *expo);
+  *expo += eaccum;
+}
+
+static NV
+json_atof (const char *s)
+{
+  NV accum = 0.;
+  int expo = 0;
+  int neg  = 0;
+
+  if (*s == '-')
+    {
+      ++s;
+      neg = 1;
+    }
+
+  // a recursion depth of ten gives us >>500 bits
+  json_atof_scan1 (s, &accum, &expo, 0, 10);
+
+  return neg ? -accum : accum;
+}
+/////////////////////////////////////////////////////////////////////////////
 // encoder
 
 // structure used for encoding JSON
@@ -1121,20 +1215,16 @@ decode_num (dec_t *dec)
       len -= *start == '-' ? 1 : 0;
 
       // does not fit into IV or UV, try NV
-      if ((sizeof (NV) == sizeof (double) && DBL_DIG >= len)
-          #if defined (LDBL_DIG)
-          || (sizeof (NV) == sizeof (long double) && LDBL_DIG >= len)
-          #endif
-         )
+      if (len <= NV_DIG)
         // fits into NV without loss of precision
-        return newSVnv (Atof (start));
+        return newSVnv (json_atof (start));
 
       // everything else fails, convert it to a string
       return newSVpvn (start, dec->cur - start);
     }
 
   // loss of precision here
-  return newSVnv (Atof (start));
+  return newSVnv (json_atof (start));
 
 fail:
   return 0;
@@ -1964,5 +2054,4 @@ void decode_json (SV *jsonstr)
         json.flags |= ix;
         XPUSHs (decode_json (jsonstr, &json, 0));
 }
-
 
