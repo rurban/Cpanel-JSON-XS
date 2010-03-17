@@ -1,5 +1,10 @@
 Revision history for Perl extension JSON::XS
 
+2.29  Wed Mar 17 02:39:12 CET 2010
+	- fix a memory leak when callbacks set using filter_json_object
+          or filter_json_single_key_object were called (great testcase
+          by Eric Wilhelm).
+
 2.28  Thu Mar 11 20:30:46 CET 2010
 	- implement our own atof function - perl's can be orders of
           magnitudes slower than even the system one. on the positive
