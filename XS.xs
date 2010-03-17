@@ -1403,6 +1403,7 @@ decode_hv (dec_t *dec)
 
               ENTER; SAVETMPS; PUSHMARK (SP);
               XPUSHs (HeVAL (he));
+              sv_2mortal (sv);
 
               PUTBACK; count = call_sv (HeVAL (cb), G_ARRAY); SPAGAIN;
 
@@ -1413,6 +1414,7 @@ decode_hv (dec_t *dec)
                   return sv;
                 }
 
+              SvREFCNT_inc (sv);
               FREETMPS; LEAVE;
             }
         }
