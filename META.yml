@@ -9,9 +9,9 @@
       "version" : 1.4,
       "url" : "http://module-build.sourceforge.net/META-spec-v1.4.html"
    },
-   "generated_by" : "ExtUtils::MakeMaker version 6.54",
+   "generated_by" : "ExtUtils::MakeMaker version 6.56",
    "distribution_type" : "module",
-   "version" : "2.29",
+   "version" : "2.3",
    "name" : "JSON-XS",
    "author" : [],
    "license" : "unknown",

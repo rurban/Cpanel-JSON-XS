@@ -42,13 +42,15 @@ C<fromformat> can be one of:
 
 =item yaml - YAML (avoid at all costs, requires the YAML module :)
 
+=item eval - evaluate the given code as (non-utf-8) Perl, basically the reverse of "-t dump"
+
 =back
 
 =item -t toformat
 
 Write the file in the given format to STDOUT.
 
-C<fromformat> can be one of:
+C<toformat> can be one of:
 
 =over 4
 
@@ -67,6 +69,13 @@ C<fromformat> can be one of:
 =item clzf - Compress::LZF format
 
 =item yaml - YAML
+
+=item dump - Data::Dump
+
+=item dumper - Data::Dumper
+
+Note that Data::Dumper doesn't handle self-referential data structures
+correctly - use "dump" instead.
 
 =back
 
@@ -138,6 +147,7 @@ my %F = (
    "storable-file" => sub { open my $fh, "<", \$_; Storable::fd_retrieve $fh },
    "clzf"          => sub { require Compress::LZF; Compress::LZF::sthaw ($_) },
    "yaml"          => sub { require YAML; YAML::Load ($_) },
+   "eval"          => sub { my $v = eval "no strict; no warnings; no utf8;\n#line 1 \"input\"\n$_"; die "$@" if $@; $v },
 );
 
 my %T = (
@@ -155,6 +165,21 @@ my %T = (
 
    "clzf"          => sub { require Compress::LZF; Compress::LZF::sfreeze_cr ($_) },
    "yaml"          => sub { require YAML; YAML::Dump ($_) },
+   "dumper"        => sub {
+      require Data::Dumper;
+      #local $Data::Dumper::Purity    = 1; # hopeless case
+      local $Data::Dumper::Terse     = 1;
+      local $Data::Dumper::Indent    = 1;
+      local $Data::Dumper::Useqq     = 1;
+      local $Data::Dumper::Quotekeys = 0;
+      local $Data::Dumper::Sortkeys  = 1;
+      Data::Dumper::Dumper($_)
+   },
+   "dump"          => sub {
+      require Data::Dump;
+      local $Data::Dump::TRY_BASE64 = 0;
+      Data::Dump::dump ($_) . "\n"
+   },
 );
 
 $F{$opt_from}

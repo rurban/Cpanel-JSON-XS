@@ -103,7 +103,7 @@ package JSON::XS;
 
 use common::sense;
 
-our $VERSION = '2.29';
+our $VERSION = '2.3';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
