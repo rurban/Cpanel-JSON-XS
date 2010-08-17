@@ -1,5 +1,12 @@
 Revision history for Perl extension JSON::XS
 
+2.3   Wed Aug 18 01:26:47 CEST 2010
+	- make sure decoder doesn't change the decoding in the incremental
+          parser (testcase provided by Hendrik Schumacher).
+	- applied patch by DaTa for Data::Dumper support in json_xs.
+        - added -t dump support to json_xs, using Data::Dump.
+        - added -f eval support to json_xs.
+
 2.29  Wed Mar 17 02:39:12 CET 2010
 	- fix a memory leak when callbacks set using filter_json_object
           or filter_json_single_key_object were called (great testcase

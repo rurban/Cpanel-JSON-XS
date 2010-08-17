@@ -44,6 +44,8 @@
 
 #define SHORT_STRING_LEN 16384 // special-case strings of up to this size
 
+#define DECODE_WANTS_OCTETS(json) ((json)->flags & F_UTF8)
+
 #define SB do {
 #define SE } while (0)
 
@@ -1550,7 +1552,7 @@ decode_json (SV *string, JSON *json, char **offset_return)
              (unsigned long)SvCUR (string), (unsigned long)json->max_size);
   }
 
-  if (json->flags & F_UTF8)
+  if (DECODE_WANTS_OCTETS (json))
     sv_utf8_downgrade (string, 0);
   else
     sv_utf8_upgrade (string);
@@ -1931,24 +1933,36 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
 	if (!self->incr_text)
           self->incr_text = newSVpvn ("", 0);
 
+        /* if utf8-ness doesn't match the decoder, need to upgrade/downgrade */
+        if (!DECODE_WANTS_OCTETS (self) == !SvUTF8 (self->incr_text))
+          if (DECODE_WANTS_OCTETS (self))
+            {
+              if (self->incr_pos)
+                self->incr_pos = utf8_length ((U8 *)SvPVX (self->incr_text),
+                                              (U8 *)SvPVX (self->incr_text) + self->incr_pos);
+
+              sv_utf8_downgrade (self->incr_text, 0);
+            }
+          else
+            {
+              sv_utf8_upgrade (self->incr_text);
+
+              if (self->incr_pos)
+                self->incr_pos = utf8_hop ((U8 *)SvPVX (self->incr_text), self->incr_pos)
+                                 - (U8 *)SvPVX (self->incr_text);
+            }
+
         // append data, if any
         if (jsonstr)
           {
-            if (SvUTF8 (jsonstr))
-              {
-                if (!SvUTF8 (self->incr_text))
-                  {
-                    /* utf-8-ness differs, need to upgrade */
-                    sv_utf8_upgrade (self->incr_text);
+            /* make sure both strings have same encoding */
+            if (SvUTF8 (jsonstr) != SvUTF8 (self->incr_text))
+              if (SvUTF8 (jsonstr))
+                sv_utf8_downgrade (jsonstr, 0);
+              else
+                sv_utf8_upgrade (jsonstr);
 
-                    if (self->incr_pos)
-                      self->incr_pos = utf8_hop ((U8 *)SvPVX (self->incr_text), self->incr_pos)
-                                       - (U8 *)SvPVX (self->incr_text);
-                  }
-              }
-            else if (SvUTF8 (self->incr_text))
-              sv_utf8_upgrade (jsonstr);
-
+            /* and then just blindly append */
             {
               STRLEN len;
               const char *str = SvPV (jsonstr, len);
