@@ -1,1 +1,41 @@
-{"no_index":{"directory":["t","inc"]},"meta-spec":{"version":1.4,"url":"http://module-build.sourceforge.net/META-spec-v1.4.html"},"generated_by":"ExtUtils::MakeMaker version 6.56","distribution_type":"module","version":"2.3","name":"JSON-XS","author":[],"license":"unknown","build_requires":{"ExtUtils::MakeMaker":0},"requires":{"common::sense":0},"abstract":null,"configure_requires":{"ExtUtils::MakeMaker":0}}
+{
+   "abstract" : "unknown",
+   "author" : [
+      "unknown"
+   ],
+   "dynamic_config" : 1,
+   "generated_by" : "ExtUtils::MakeMaker version 6.58, CPAN::Meta::Converter version 2.110930001",
+   "license" : [
+      "unknown"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "JSON-XS",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "inc"
+      ]
+   },
+   "prereqs" : {
+      "build" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : 0
+         }
+      },
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : 0
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "common::sense" : 0
+         }
+      }
+   },
+   "release_status" : "stable",
+   "version" : "2.31"
+}

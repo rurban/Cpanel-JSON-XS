@@ -1,5 +1,15 @@
 Revision history for Perl extension JSON::XS
 
+TODO: maybe detetc and croak on more invalid inputs (e.g. +-inf/nan)
+
+2.31 Wed Jul 27 17:53:05 CEST 2011
+   	- don't accumulate initial whitespace in the incremental buffer
+          (this can be useful to allow whitespace-keepalive on a tcp
+          connection without triggering the max_size limit).
+	- properly croak on some invalid inputs that are not strings
+          (e.g. undef) when trying to decode a json text (reported
+          and analyzed by Goro Fuji).
+
 2.3   Wed Aug 18 01:26:47 CEST 2010
 	- make sure decoder doesn't change the decoding in the incremental
           parser (testcase provided by Hendrik Schumacher).
