@@ -638,7 +638,7 @@ INCREMENTAL PARSING
     JSON::XS will only attempt to parse the JSON text once it is sure it has
     enough text to get a decisive result, using a very simple but truly
     incremental parser. This means that it sometimes won't stop as early as
-    the full parser, for example, it doesn't detect parenthese mismatches.
+    the full parser, for example, it doesn't detect mismatched parentheses.
     The only thing it guarantees is that it starts decoding as soon as a
     syntactically valid JSON text has been seen. This means you need to set
     resource limits (e.g. "max_size") to ensure the parser will stop parsing
@@ -1145,7 +1145,7 @@ ENCODING/CODESET FLAG NOTES
     Another problem is that some javascript implementations reserve some
     property names for their own purposes (which probably makes them
     non-ECMAscript-compliant). For example, Iceweasel reserves the
-    "__proto__" property name for it's own purposes.
+    "__proto__" property name for its own purposes.
 
     If that is a problem, you could parse try to filter the resulting JSON
     output for these property strings, e.g.:
@@ -1203,11 +1203,12 @@ ENCODING/CODESET FLAG NOTES
         spreading lies about the real compatibility for many *years* and
         trying to silence people who point out that it isn't true.
 
-        Addendum/2009: the YAML 1.2 spec is still incomaptible with JSON,
+        Addendum/2009: the YAML 1.2 spec is still incompatible with JSON,
         even though the incompatibilities have been documented (and are
         known to Brian) for many years and the spec makes explicit claims
         that YAML is a superset of JSON. It would be so easy to fix, but
-        apparently, bullying and corrupting userdata is so much easier.
+        apparently, bullying people and corrupting userdata is so much
+        easier.
 
   SPEED
     It seems that JSON::XS is surprisingly fast, as shown in the following

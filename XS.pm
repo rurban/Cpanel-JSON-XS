@@ -103,7 +103,7 @@ package JSON::XS;
 
 use common::sense;
 
-our $VERSION = '2.3';
+our $VERSION = '2.31';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -715,8 +715,8 @@ calls).
 JSON::XS will only attempt to parse the JSON text once it is sure it
 has enough text to get a decisive result, using a very simple but
 truly incremental parser. This means that it sometimes won't stop as
-early as the full parser, for example, it doesn't detect parenthese
-mismatches. The only thing it guarantees is that it starts decoding as
+early as the full parser, for example, it doesn't detect mismatched
+parentheses. The only thing it guarantees is that it starts decoding as
 soon as a syntactically valid JSON text has been seen. This means you need
 to set resource limits (e.g. C<max_size>) to ensure the parser will stop
 parsing in the presence if syntax errors.
@@ -1257,7 +1257,7 @@ well - using C<eval> naively simply I<will> cause problems.
 Another problem is that some javascript implementations reserve
 some property names for their own purposes (which probably makes
 them non-ECMAscript-compliant). For example, Iceweasel reserves the
-C<__proto__> property name for it's own purposes.
+C<__proto__> property name for its own purposes.
 
 If that is a problem, you could parse try to filter the resulting JSON
 output for these property strings, e.g.:
@@ -1321,10 +1321,10 @@ educating users about the changes, instead of spreading lies about the
 real compatibility for many I<years> and trying to silence people who
 point out that it isn't true.
 
-Addendum/2009: the YAML 1.2 spec is still incomaptible with JSON, even
-though the incompatibilities have been documented (and are known to
-Brian) for many years and the spec makes explicit claims that YAML is a
-superset of JSON. It would be so easy to fix, but apparently, bullying and
+Addendum/2009: the YAML 1.2 spec is still incompatible with JSON, even
+though the incompatibilities have been documented (and are known to Brian)
+for many years and the spec makes explicit claims that YAML is a superset
+of JSON. It would be so easy to fix, but apparently, bullying people and
 corrupting userdata is so much easier.
 
 =back

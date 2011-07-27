@@ -262,6 +262,7 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
   // this relies greatly on the quality of the pow ()
   // implementation of the platform, but a good
   // implementation is hard to beat.
+  // (IEEE 754 conformant ones are required to be exact)
   if (postdp) *expo -= eaccum;
   *accum += uaccum * Perl_pow (10., *expo);
   *expo += eaccum;
@@ -1522,10 +1523,12 @@ decode_json (SV *string, JSON *json, char **offset_return)
   SV *sv;
 
   /* work around bugs in 5.10 where manipulating magic values
-   * will perl ignore the magic in subsequent accesses
+   * will perl ignore the magic in subsequent accesses.
+   * also make a copy of non-PV values, to get them into a clean
+   * state (SvPV should do that, but it's buggy, see below).
    */
   /*SvGETMAGIC (string);*/
-  if (SvMAGICAL (string))
+  if (SvMAGICAL (string) || !SvPOK (string))
     string = sv_2mortal (newSVsv (string));
 
   SvUPGRADE (string, SVt_PV);
@@ -1991,7 +1994,13 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
                            (unsigned long)self->incr_pos, (unsigned long)self->max_size);
 
                   if (!INCR_DONE (self))
-                    break;
+                    {
+                      // as an optimisation, do not accumulate white space in the incr buffer
+                      if (self->incr_mode == INCR_M_WS)
+                        SvCUR_set (self->incr_text, 0);
+
+                      break;
+                    }
                 }
 
               XPUSHs (decode_json (self->incr_text, self, &offset));
