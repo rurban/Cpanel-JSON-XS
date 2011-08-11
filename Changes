@@ -2,6 +2,9 @@ Revision history for Perl extension JSON::XS
 
 TODO: maybe detetc and croak on more invalid inputs (e.g. +-inf/nan)
 
+2.32 Thu Aug 11 19:06:38 CEST 2011
+	- fix a bug in the initial whitespace accumulation.
+
 2.31 Wed Jul 27 17:53:05 CEST 2011
    	- don't accumulate initial whitespace in the incremental buffer
           (this can be useful to allow whitespace-keepalive on a tcp

@@ -1996,8 +1996,11 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
                   if (!INCR_DONE (self))
                     {
                       // as an optimisation, do not accumulate white space in the incr buffer
-                      if (self->incr_mode == INCR_M_WS)
-                        SvCUR_set (self->incr_text, 0);
+                      if (self->incr_mode == INCR_M_WS && self->incr_pos)
+                        {
+                          self->incr_pos = 0;
+                          SvCUR_set (self->incr_text, 0);
+                        }
 
                       break;
                     }
