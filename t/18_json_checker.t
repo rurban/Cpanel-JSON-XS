@@ -8,10 +8,10 @@ no warnings;
 use Test::More;
 BEGIN { plan tests => 39 };
 
-use JSON::XS;
+use Cpanel::JSON::XS;
 
 # emulate JSON_checker default config
-my $json = JSON::XS->new->utf8->max_depth(32)->canonical;
+my $json = Cpanel::JSON::XS->new->utf8->max_depth(32)->canonical;
 
 binmode DATA;
 

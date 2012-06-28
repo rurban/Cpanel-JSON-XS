@@ -1,14 +1,13 @@
-use Test::More;
+use Test::More tests => 20;
 
-# copied over from JSON::PC and modified to use JSON::XS
+# copied over from JSON::PC and modified to use Cpanel::JSON::XS
 
 use strict;
-BEGIN { plan tests => 20 };
-use JSON::XS;
+use Cpanel::JSON::XS;
 
 my ($js,$obj);
 
-my $pc = new JSON::XS;
+my $pc = new Cpanel::JSON::XS;
 
 $js  = q|{}|;
 
@@ -77,6 +76,9 @@ is($js = $pc->encode($obj),'["\\u001b"]');
 $obj = $pc->decode($js);
 is($obj->[0],"\e");
 
+SKIP: {
+skip "5.6", 3 if $] < 5.008;
+
 $js = '{"id":"}';
 eval q{ $pc->decode($js) };
 like($@, qr/unexpected end/i);
@@ -93,3 +95,4 @@ $obj = { foo => \$js };
 eval q{ $js = $pc->encode($obj) };
 like($@, qr/cannot encode reference/i, 'invalid value (ref)');
 
+}

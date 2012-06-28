@@ -5,14 +5,14 @@ use warnings;
 
 use Test::More tests => 13;
 
-use JSON::XS;
+use Cpanel::JSON::XS;
 
 use Data::Dumper qw( Dumper );
 
 sub decoder {
    my ($str) = @_;
 
-   my $json = JSON::XS->new->relaxed;
+   my $json = Cpanel::JSON::XS->new->relaxed;
 
    $json->incr_parse($_[0]);
 

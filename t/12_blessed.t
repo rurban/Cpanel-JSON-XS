@@ -1,6 +1,6 @@
 BEGIN { $| = 1; print "1..16\n"; }
 
-use JSON::XS;
+use Cpanel::JSON::XS;
 
 our $test;
 sub ok($;$) {
@@ -14,7 +14,7 @@ sub XX::TO_JSON {
    {__,""}
 }
 
-my $js = JSON::XS->new;
+my $js = Cpanel::JSON::XS->new;
 
 eval { $js->encode ($o1) }; ok ($@ =~ /allow_blessed/);
 eval { $js->encode ($o2) }; ok ($@ =~ /allow_blessed/);
@@ -46,5 +46,9 @@ $js->filter_json_single_key_object ("a");
 ok (4 == $js->decode ('[{"a":4}]')->[0]{a});
 
 $js->filter_json_single_key_object (a => sub { });
-ok (4 == $js->decode ('[{"a":4}]')->[0]{a});
+if ($]<5.008) {
+  print "not ok 16 #skip 5.6\n";
+} else {
+  ok (4 == $js->decode ('[{"a":4}]')->[0]{a});
+}
 
