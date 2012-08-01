@@ -827,7 +827,7 @@ encode_sv (enc_t *enc, SV *sv)
         {
           // large integer, use the (rather slow) snprintf way.
           need (enc, IVUV_MAXCHARS);
-          enc->cur += 
+          enc->cur +=
              SvIsUV(sv)
                 ? snprintf (enc->cur, IVUV_MAXCHARS, "%"UVuf, (UV)SvUVX (sv))
                 : snprintf (enc->cur, IVUV_MAXCHARS, "%"IVdf, (IV)SvIVX (sv));
@@ -839,7 +839,7 @@ encode_sv (enc_t *enc, SV *sv)
     encode_str (enc, "null", 4, 0);
   else
     croak ("encountered perl type (%s,0x%x) that JSON cannot handle, you might want to report this",
-           SvPV_nolen (sv), SvFLAGS (sv));
+           SvPV_nolen (sv), (unsigned int)SvFLAGS (sv));
 }
 
 static SV *
@@ -1607,7 +1607,7 @@ decode_json (SV *string, JSON *json, char **offset_return)
 
       croak ("%s, at character offset %d (before \"%s\")",
              dec.err,
-             ptr_to_index (string, dec.cur),
+             (int)ptr_to_index (string, dec.cur),
              dec.cur != dec.end ? SvPV_nolen (uni) : "(end of string)");
     }
 
@@ -1894,7 +1894,7 @@ void filter_json_object (JSON *self, SV *cb = &PL_sv_undef)
 void filter_json_single_key_object (JSON *self, SV *key, SV *cb = &PL_sv_undef)
 	PPCODE:
 {
-  	if (!self->cb_sk_object)
+	if (!self->cb_sk_object)
           self->cb_sk_object = newHV ();
 
         if (SvOK (cb))
@@ -1915,18 +1915,22 @@ void filter_json_single_key_object (JSON *self, SV *key, SV *cb = &PL_sv_undef)
 
 void encode (JSON *self, SV *scalar)
 	PPCODE:
-        XPUSHs (encode_json (scalar, self));
+        PUTBACK; scalar = encode_json (scalar, self); SPAGAIN;
+        XPUSHs (scalar);
 
 void decode (JSON *self, SV *jsonstr)
 	PPCODE:
-        XPUSHs (decode_json (jsonstr, self, 0));
+        PUTBACK; jsonstr = decode_json (jsonstr, self, 0); SPAGAIN;
+        XPUSHs (jsonstr);
 
 void decode_prefix (JSON *self, SV *jsonstr)
 	PPCODE:
 {
+	SV *sv;
         char *offset;
+        PUTBACK; sv = decode_json (jsonstr, self, &offset); SPAGAIN;
         EXTEND (SP, 2);
-        PUSHs (decode_json (jsonstr, self, &offset));
+        PUSHs (sv);
         PUSHs (sv_2mortal (newSVuv (ptr_to_index (jsonstr, offset))));
 }
 
@@ -1983,6 +1987,7 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
         if (GIMME_V != G_VOID)
           do
             {
+              SV *sv;
               char *offset;
 
               if (!INCR_DONE (self))
@@ -2006,7 +2011,8 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
                     }
                 }
 
-              XPUSHs (decode_json (self->incr_text, self, &offset));
+              PUTBACK; sv = decode_json (self->incr_text, self, &offset); SPAGAIN;
+              XPUSHs (sv);
 
               self->incr_pos -= offset - SvPVX (self->incr_text);
               self->incr_nest = 0;
@@ -2068,7 +2074,8 @@ void encode_json (SV *scalar)
         JSON json;
         json_init (&json);
         json.flags |= ix;
-        XPUSHs (encode_json (scalar, &json));
+        PUTBACK; scalar = encode_json (scalar, &json); SPAGAIN;
+        XPUSHs (scalar);
 }
 
 void decode_json (SV *jsonstr)
@@ -2080,6 +2087,7 @@ void decode_json (SV *jsonstr)
         JSON json;
         json_init (&json);
         json.flags |= ix;
-        XPUSHs (decode_json (jsonstr, &json, 0));
+        PUTBACK; jsonstr = decode_json (jsonstr, &json, 0); SPAGAIN;
+        XPUSHs (jsonstr);
 }
 
