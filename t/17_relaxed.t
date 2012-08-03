@@ -1,12 +1,6 @@
-BEGIN { $| = 1; print "1..8\n"; }
-
+use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 8);
 use utf8;
 use Cpanel::JSON::XS;
-
-our $test;
-sub ok($) {
-   print $_[0] ? "" : "not ", "ok ", ++$test, "\n";
-}
 
 my $json = Cpanel::JSON::XS->new->relaxed;
 

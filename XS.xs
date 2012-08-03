@@ -73,7 +73,11 @@
 
 #define SHORT_STRING_LEN 16384 // special-case strings of up to this size
 
+#if PERL_VERSION >= 8
 #define DECODE_WANTS_OCTETS(json) ((json)->flags & F_UTF8)
+#else
+#define DECODE_WANTS_OCTETS(json) (0)
+#endif
 
 #define SB do {
 #define SE } while (0)
@@ -183,12 +187,14 @@ decode_utf8 (unsigned char *s, STRLEN len, STRLEN *clen)
       *clen = 2;
       return ((s[0] & 0x1f) << 6) | (s[1] & 0x3f);
     }
+  else {
 #if PERL_VERSION >= 8
-  else
     return utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
 #else
-  croak("No utf8n_to_uvuni for 5.6 yet");
+    clen = 1;
+    return s;
 #endif
+  }
 }
 
 /* likewise for encoding, also never called for ascii codepoints */
@@ -1592,10 +1598,12 @@ decode_json (SV *string, JSON *json, char **offset_return)
              (unsigned long)SvCUR (string), (unsigned long)json->max_size);
   }
 
+#if PERL_VERSION >= 8
   if (DECODE_WANTS_OCTETS (json))
     sv_utf8_downgrade (string, 0);
   else
     sv_utf8_upgrade (string);
+#endif
 
   SvGROW (string, SvCUR (string) + 1); /* should basically be a NOP */
 

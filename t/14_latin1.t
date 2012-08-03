@@ -1,5 +1,5 @@
 use Cpanel::JSON::XS;
-use Test::More $] < 5.008 ? (skip_all) : (tests => 4);
+use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 4);
 
 my $xs = Cpanel::JSON::XS->new->latin1->allow_nonref;
 

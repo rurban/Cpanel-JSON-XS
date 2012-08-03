@@ -12,6 +12,7 @@ use Cpanel::JSON::XS;
 
 # emulate JSON_checker default config
 my $json = Cpanel::JSON::XS->new->utf8->max_depth(32)->canonical;
+$json = Cpanel::JSON::XS->new->max_depth(32)->canonical if $] < 5.008;
 
 binmode DATA;
 

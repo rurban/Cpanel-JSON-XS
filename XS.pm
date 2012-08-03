@@ -101,7 +101,7 @@ stuff). Or you can combine those features in whatever way you like.
 Since the original author mlehmann is also unresponsive, has no public
 source or bugtracker, this cPanel fork sits now on github.
 
-src repo: L<https://github.com/rurban/JSON-XS>
+src repo: L<https://github.com/rurban/Cpanel-JSON-XS>
 
 issues:   L<https://github.com/rurban/Cpanel-JSON-XS/issues>
 
@@ -1514,3 +1514,5 @@ The F<json_xs> command line utility for quick experiments.
  Reini Urban <rurban@cpanel.net>
 
 =cut
+
+

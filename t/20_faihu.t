@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Cpanel::JSON::XS;
-use Test::More $] < 5.008 ? (skip_all) : (tests => 3);
+use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 3);
 use Encode qw(encode decode);
 
 my ($faihu, $faihu_json, $roundtrip, $js) = "\x{10346}";
