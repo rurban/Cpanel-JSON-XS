@@ -10,9 +10,9 @@ my %tst = (
    "JSON::DWIW/DS" => ['$dwiw->to_json ($perl)'   , 'JSON::DWIW::deserialize $json'],
 #   "JSON::PC"      => ['$pc->convert ($perl)'     , '$pc->parse ($json)'],
    "JSON::Syck"    => ['JSON::Syck::Dump $perl'   , 'JSON::Syck::Load $json'],
-   "JSON::XS"      => ['encode_json $perl'        , 'decode_json $json'],
-   "JSON::XS/2"    => ['$xs2->encode ($perl)'     , '$xs2->decode ($json)'],
-   "JSON::XS/3"    => ['$xs3->encode ($perl)'     , '$xs3->decode ($json)'],
+   "Cpanel::JSON::XS"      => ['encode_json $perl'        , 'decode_json $json'],
+   "Cpanel::JSON::XS/2"    => ['$xs2->encode ($perl)'     , '$xs2->decode ($json)'],
+   "Cpanel::JSON::XS/3"    => ['$xs3->encode ($perl)'     , '$xs3->decode ($json)'],
    "Storable"      => ['Storable::nfreeze $perl'  , 'Storable::thaw $pst'],
 );
 
@@ -20,7 +20,7 @@ use JSON ();
 use JSON::DWIW;
 use JSON::PC;
 use JSON::PP ();
-use JSON::XS qw(encode_json decode_json);
+use Cpanel::JSON::XS qw(encode_json decode_json);
 use JSON::Syck;
 use Storable ();
 
@@ -32,8 +32,8 @@ use utf8;
 my $dwiw = new JSON::DWIW;
 my $pc   = new JSON::PC;
 my $pp   = JSON::PP->new->max_depth (512);
-my $xs2  = JSON::XS->new->utf8->pretty->canonical;
-my $xs3  = JSON::XS->new->utf8->shrink;
+my $xs2  = Cpanel::JSON::XS->new->utf8->pretty->canonical;
+my $xs3  = Cpanel::JSON::XS->new->utf8->shrink;
 
 my $json; # the test string
 
@@ -41,9 +41,9 @@ local $/;
 $json = <>;
 
 # fix syck-brokenised stuff
-#$json = JSON::XS->new->ascii(1)->encode (JSON::Syck::Load $json);
+#$json = Cpanel::JSON::XS->new->ascii(1)->encode (JSON::Syck::Load $json);
 
-#srand 0; $json = JSON::XS->new->utf8(1)->ascii(0)->encode ([join "", map +(chr rand 255), 0..2047]);
+#srand 0; $json = Cpanel::JSON::XS->new->utf8(1)->ascii(0)->encode ([join "", map +(chr rand 255), 0..2047]);
 
 #if (1) {
 #   use Storable;
@@ -58,8 +58,8 @@ $json = <>;
 sub bench($) {
    my ($code) = @_;
 
-   my $pst  = Storable::nfreeze JSON::XS::decode_json $json; # seperately decode as storable stringifies :/
-   my $perl = JSON::XS::decode_json $json;
+   my $pst  = Storable::nfreeze Cpanel::JSON::XS::decode_json $json; # seperately decode as storable stringifies :/
+   my $perl = Cpanel::JSON::XS::decode_json $json;
 
    my $count = 5;
    my $times = 200;

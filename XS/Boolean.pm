@@ -1,6 +1,6 @@
 =head1 NAME
 
-JSON::XS::Boolean - dummy module providing JSON::XS::Boolean
+Cpanel::JSON::XS::Boolean - dummy module providing Cpanel::JSON::XS::Boolean
 
 =head1 SYNOPSIS
 
@@ -9,11 +9,11 @@ JSON::XS::Boolean - dummy module providing JSON::XS::Boolean
 =head1 DESCRIPTION
 
 This module exists only to provide overload resolution for Storable and similar modules. See
-L<JSON::XS> for more info about this class.
+L<Cpanel::JSON::XS> for more info about this class.
 
 =cut
 
-use JSON::XS ();
+use Cpanel::JSON::XS ();
 
 1;
 

@@ -2,15 +2,15 @@
 
 =head1 NAME
 
-json_xs - JSON::XS commandline utility
+cpanel_json_xs - Cpanel::JSON::XS commandline utility
 
 =head1 SYNOPSIS
 
-   json_xs [-v] [-f inputformat] [-t outputformat]
+   cpanel_json_xs [-v] [-f inputformat] [-t outputformat]
 
 =head1 DESCRIPTION
 
-F<json_xs> converts between some input and output formats (one of them is
+F<cpanel_json_xs> converts between some input and output formats (one of them is
 JSON).
 
 The default input format is C<json> and the default output format is
@@ -83,28 +83,28 @@ correctly - use "dump" instead.
 
 =head1 EXAMPLES
 
-   json_xs -t null <isitreally.json
+   cpanel_json_xs -t null <isitreally.json
 
 "JSON Lint" - tries to parse the file F<isitreally.json> as JSON - if it
 is valid JSON, the command outputs nothing, otherwise it will print an
 error message and exit with non-zero exit status.
 
-   <src.json json_xs >pretty.json
+   <src.json cpanel_json_xs >pretty.json
 
 Prettify the JSON file F<src.json> to F<dst.json>.
 
-   json_xs -f storable-file <file
+   cpanel_json_xs -f storable-file <file
 
 Read the serialised Storable file F<file> and print a human-readable JSON
 version of it to STDOUT.
 
-   json_xs -f storable-file -t yaml <file
+   cpanel_json_xs -f storable-file -t yaml <file
 
 Same as above, but write YAML instead (not using JSON at all :)
 
-   lwp-request http://cpantesters.perl.org/show/JSON-XS.json | json_xs
+   lwp-request http://cpantesters.perl.org/show/JSON-XS.json | cpanel_json_xs
 
-Fetch the cpan-testers result summary C<JSON::XS> and pretty-print it.
+Fetch the cpan-testers result summary C<Cpanel::JSON::XS> and pretty-print it.
 
 =head1 AUTHOR
 
@@ -118,7 +118,7 @@ use Getopt::Long;
 use Storable ();
 use Encode;
 
-use JSON::XS;
+use Cpanel::JSON::XS;
 
 my $opt_verbose;
 my $opt_from = "json";
@@ -141,7 +141,7 @@ my %F = (
        : /^.\x00.\x00/s    ? "utf-16le"
        :                     "utf-8";
       warn "input text encoding is $enc\n" if $opt_verbose;
-      JSON::XS->new->decode (decode $enc, $_)
+      Cpanel::JSON::XS->new->decode (decode $enc, $_)
    },
    "storable"      => sub { Storable::thaw $_ },
    "storable-file" => sub { open my $fh, "<", \$_; Storable::fd_retrieve $fh },
@@ -154,11 +154,11 @@ my %T = (
    "null"          => sub { "" },
    "json"          => sub { encode_json $_ },
    "json-utf-8"    => sub { encode_json $_ },
-   "json-pretty"   => sub { JSON::XS->new->utf8->pretty->encode ($_) },
-   "json-utf-16le" => sub { encode "utf-16le", JSON::XS->new->encode ($_) },
-   "json-utf-16be" => sub { encode "utf-16be", JSON::XS->new->encode ($_) },
-   "json-utf-32le" => sub { encode "utf-32le", JSON::XS->new->encode ($_) },
-   "json-utf-32be" => sub { encode "utf-32be", JSON::XS->new->encode ($_) },
+   "json-pretty"   => sub { Cpanel::JSON::XS->new->utf8->pretty->encode ($_) },
+   "json-utf-16le" => sub { encode "utf-16le", Cpanel::JSON::XS->new->encode ($_) },
+   "json-utf-16be" => sub { encode "utf-16be", Cpanel::JSON::XS->new->encode ($_) },
+   "json-utf-32le" => sub { encode "utf-32le", Cpanel::JSON::XS->new->encode ($_) },
+   "json-utf-32be" => sub { encode "utf-32be", Cpanel::JSON::XS->new->encode ($_) },
 
    "storable"      => sub { Storable::nfreeze $_ },
    "storable-file" => sub { open my $fh, ">", \my $buf; Storable::nstore_fd $_, $fh; $buf },
