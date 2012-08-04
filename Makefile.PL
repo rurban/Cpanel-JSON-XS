@@ -8,7 +8,7 @@ WriteMakefile(
 	             COMPRESS	=> 'gzip -9v',
 	             SUFFIX	=> '.gz',
 	            },
-    EXE_FILES    => [ "bin/json_xs" ],
+    EXE_FILES    => [ "bin/cpanel_json_xs" ],
     VERSION_FROM => "XS.pm",
     NAME         => "Cpanel::JSON::XS",
     PREREQ_PM    => {

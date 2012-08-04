@@ -17,4 +17,4 @@ no_index:
   directory:
     - t
     - inc
-version: 2.32_01_cpanel
+version: 2.32_02
