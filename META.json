@@ -12,7 +12,7 @@
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
       "version" : "2"
    },
-   "name" : "JSON-XS",
+   "name" : "Cpanel-JSON-XS",
    "no_index" : {
       "directory" : [
          "t",
@@ -37,5 +37,5 @@
       }
    },
    "release_status" : "stable",
-   "version" : "2.32"
+   "version" : "2.32_02"
 }

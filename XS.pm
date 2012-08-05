@@ -119,7 +119,7 @@ package Cpanel::JSON::XS;
 
 #use common::sense;
 
-our $VERSION = '2.32_01';
+our $VERSION = '2.32_02';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -1502,7 +1502,7 @@ use overload
 
 =head1 SEE ALSO
 
-The F<json_xs> command line utility for quick experiments.
+The F<cpanel_json_xs> command line utility for quick experiments.
 
 =head1 AUTHOR
 
