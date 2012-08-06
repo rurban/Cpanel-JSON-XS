@@ -17,28 +17,12 @@ SYNOPSIS
      $pretty_printed_unencoded = $coder->encode ($perl_scalar);
      $perl_scalar = $coder->decode ($unicode_json_text);
 
-     # Note that JSON version 2.0 and above will automatically use Cpanel::JSON::XS
-     # if available, at virtually no speed overhead either, so you should
-     # be able to just:
- 
-     use JSON;
-
-     # and do the same things, except that you have a pure-perl fallback now.
-
      # Note that 5.6 misses most utf8 and encoding functionalities of newer releases
 
 DESCRIPTION
     This module converts Perl data structures to JSON and vice versa. Its
     primary goal is to be *correct* and its secondary goal is to be *fast*.
     To reach the latter goal it was written in C.
-
-    Beginning with version 2.0 of the JSON module, when both JSON and
-    JSON::XS are installed, then JSON will fall back on JSON::XS (this can
-    be overridden) with no overhead due to emulation (by inheriting
-    constructor and methods). If JSON::XS is not available, it will fall
-    back to the compatible JSON::PP module as backend, so using JSON instead
-    of JSON::XS gives you a portable JSON API that can be fast when you need
-    and doesn't require a C compiler when that is a problem.
 
     As this is the n-th-something JSON module on CPAN, what was the reason
     to write yet another JSON module? While it seems there are many JSON
@@ -94,10 +78,10 @@ DESCRIPTION
         whatever way you like.
 
   cPanel fork
-    Since the original author mlehmann is also unresponsive, has no public
+    Since the original author mlehmann is unresponsive and has no public
     source or bugtracker, this cPanel fork sits now on github.
 
-    src repo: <https://github.com/rurban/JSON-XS>
+    src repo: <https://github.com/rurban/Cpanel-JSON-XS>
 
     issues: <https://github.com/rurban/Cpanel-JSON-XS/issues>
 
@@ -1355,7 +1339,7 @@ BUGS
     Issues: <https://github.com/rurban/Cpanel-JSON-XS/issues>
 
 SEE ALSO
-    The json_xs command line utility for quick experiments.
+    The cpanel_json_xs command line utility for quick experiments.
 
 AUTHOR
      Marc Lehmann <schmorp@schmorp.de>
