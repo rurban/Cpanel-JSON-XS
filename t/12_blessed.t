@@ -45,10 +45,9 @@ ok (9 eq join ":", @{ $js->decode ('[{"a":9}]') });
 $js->filter_json_single_key_object ("a");
 ok (4 == $js->decode ('[{"a":4}]')->[0]{a});
 
-$js->filter_json_single_key_object (a => sub { });
 if ($]<5.008) {
-  print "not ok 16 #skip 5.6\n";
+  print "ok 16 # skip 5.6\n";
 } else {
+  $js->filter_json_single_key_object (a => sub { });
   ok (4 == $js->decode ('[{"a":4}]')->[0]{a});
 }
-
