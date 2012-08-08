@@ -1,12 +1,28 @@
 Revision history for Perl extension JSON::XS
 
 TODO: maybe detetc and croak on more invalid inputs (e.g. +-inf/nan)
+TODO: maybe avoid the reblessing and better support readonly objects.
+TODO: http://stevehanov.ca/blog/index.php?id=104 compression
+
+2.33_01 2012-08-08 16:29:52 (rurban)
+	- merge with JSON-XS-2.33
+
+2.33 Wed Aug  1 21:03:52 CEST 2012
+	- internal encode/decode XS wrappers did not expect stack
+          moves caused by callbacks (analyzed and testcase by Jesse Luehrs).
+	- add bencode as to/from option in bin/json_xs.
+        - add -e option to json_xs, and none and string in/out formats.
+
+2.32_02 Wed Jun 27 19:59:18 2012 (rurban)
+	- forked from JSON-XS-2.32
+	- Cpanel perl-5.6.2 support
+	- prefix with Cpanel
 
 2.32 Thu Aug 11 19:06:38 CEST 2011
 	- fix a bug in the initial whitespace accumulation.
 
 2.31 Wed Jul 27 17:53:05 CEST 2011
-   	- don't accumulate initial whitespace in the incremental buffer
+	- don't accumulate initial whitespace in the incremental buffer
           (this can be useful to allow whitespace-keepalive on a tcp
           connection without triggering the max_size limit).
 	- properly croak on some invalid inputs that are not strings
