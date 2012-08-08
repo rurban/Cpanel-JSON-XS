@@ -17,7 +17,7 @@ SYNOPSIS
      $pretty_printed_unencoded = $coder->encode ($perl_scalar);
      $perl_scalar = $coder->decode ($unicode_json_text);
 
-     # Note that 5.6 misses most utf8 and encoding functionalities of newer releases
+     # Note that 5.6 misses most utf8 and encoding functionalities of newer releases.
 
 DESCRIPTION
     This module converts Perl data structures to JSON and vice versa. Its
@@ -78,8 +78,8 @@ DESCRIPTION
         whatever way you like.
 
   cPanel fork
-    Since the original author mlehmann is unresponsive and has no public
-    source or bugtracker, this cPanel fork sits now on github.
+    Since the original author MLEHMANN has no public source repo or
+    bugtracker, this cPanel fork sits now on github.
 
     src repo: <https://github.com/rurban/Cpanel-JSON-XS>
 
