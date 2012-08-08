@@ -2,8 +2,7 @@
 
 use strict;
 no warnings;
-use Test::More;
-BEGIN { plan tests => 697 };
+use Test::More $] < 5.008 ? (tests => 389) : (tests => 697);
 
 use Cpanel::JSON::XS;
 
@@ -24,8 +23,10 @@ sub splitter {
    }
 }
 
-splitter +Cpanel::JSON::XS->new              , '  ["x\\"","\\u1000\\\\n\\nx",1,{"\\\\" :5 , "": "x"}]';
-splitter +Cpanel::JSON::XS->new              , '[ "x\\"","\\u1000\\\\n\\nx" , 1,{"\\\\ " :5 , "": " x"} ] ';
+if ($] >= 5.008) {
+  splitter +Cpanel::JSON::XS->new              , '  ["x\\"","\\u1000\\\\n\\nx",1,{"\\\\" :5 , "": "x"}]';
+  splitter +Cpanel::JSON::XS->new              , '[ "x\\"","\\u1000\\\\n\\nx" , 1,{"\\\\ " :5 , "": " x"} ] ';
+}
 splitter +Cpanel::JSON::XS->new->allow_nonref, '"test"';
 splitter +Cpanel::JSON::XS->new->allow_nonref, ' "5" ';
 
@@ -52,6 +53,9 @@ splitter +Cpanel::JSON::XS->new->allow_nonref, ' "5" ';
       ok (!defined $j5, "cjson5");
    }
 }
+
+diag "skip rest for 5.6" if $] < 5.008;
+exit if $] < 5.008;
 
 {
    my $text = '[x][5]';

@@ -98,8 +98,9 @@ stuff). Or you can combine those features in whatever way you like.
 
 =head2 cPanel fork
 
-Since the original author mlehmann is also unresponsive, has no public
-source or bugtracker, this cPanel fork sits now on github.
+Since the original author MLEHMANN has no public
+source repo or bugtracker, this cPanel fork sits now
+on github.
 
 src repo: L<https://github.com/rurban/Cpanel-JSON-XS>
 
@@ -125,13 +126,21 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(encode_json decode_json to_json from_json);
 
 sub to_json($) {
-   require Carp;
-   Carp::croak ("Cpanel::JSON::XS::to_json has been renamed to encode_json, either downgrade to pre-2.0 versions of Cpanel::JSON::XS or rename the call");
+   if ($] >= 5.008) {
+     require Carp;
+     Carp::croak ("Cpanel::JSON::XS::to_json has been renamed to encode_json, either downgrade to pre-2.0 versions of Cpanel::JSON::XS or rename the call");
+   } else {
+     to_json_(shift);
+   }
 }
 
 sub from_json($) {
-   require Carp;
-   Carp::croak ("Cpanel::JSON::XS::from_json has been renamed to decode_json, either downgrade to pre-2.0 versions of Cpanel::JSON::XS or rename the call");
+   if ($] >= 5.008) {
+     require Carp;
+     Carp::croak ("Cpanel::JSON::XS::from_json has been renamed to decode_json, either downgrade to pre-2.0 versions of Cpanel::JSON::XS or rename the call");
+   } else {
+     from_json_(shift);
+   }
 }
 
 use Exporter;
@@ -1514,5 +1523,4 @@ The F<cpanel_json_xs> command line utility for quick experiments.
  Reini Urban <rurban@cpanel.net>
 
 =cut
-
 
