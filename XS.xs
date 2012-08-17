@@ -1633,14 +1633,15 @@ decode_json (SV *string, JSON *json, char **offset_return)
           dec.err = "garbage after JSON object";
           SvREFCNT_dec (sv);
           sv = 0;
+	  return sv;
         }
     }
 
-#if PERL_VERSION >= 8
   if (!sv)
     {
       SV *uni = sv_newmortal ();
 
+#if PERL_VERSION >= 8
       /* horrible hack to silence warning inside pv_uni_display */
       COP cop = *PL_curcop;
       cop.cop_warnings = pWARN_NONE;
@@ -1649,13 +1650,12 @@ decode_json (SV *string, JSON *json, char **offset_return)
       PL_curcop = &cop;
       pv_uni_display (uni, dec.cur, dec.end - dec.cur, 20, UNI_DISPLAY_QQ);
       LEAVE;
-
+#endif
       croak ("%s, at character offset %d (before \"%s\")",
              dec.err,
              (int)ptr_to_index (string, dec.cur),
              dec.cur != dec.end ? SvPV_nolen (uni) : "(end of string)");
     }
-#endif
 
   sv = sv_2mortal (sv);
 

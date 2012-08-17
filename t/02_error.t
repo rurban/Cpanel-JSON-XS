@@ -1,5 +1,5 @@
 #BEGIN { $| = 1; print "1..31\n"; }
-use Test::More tests => 31;
+use Test::More tests => 32;
 
 use utf8;
 use Cpanel::JSON::XS;
@@ -16,6 +16,8 @@ eval { Cpanel::JSON::XS->new->encode ([\2]) }; ok $@ =~ /cannot encode reference
 eval { Cpanel::JSON::XS->new->encode ([\{}]) }; ok $@ =~ /cannot encode reference/;
 eval { Cpanel::JSON::XS->new->encode ([\[]]) }; ok $@ =~ /cannot encode reference/;
 eval { Cpanel::JSON::XS->new->encode ([\\1]) }; ok $@ =~ /cannot encode reference/;
+
+eval { $x = Cpanel::JSON::XS->new->ascii->decode ('croak') }; ok $@ =~ /malformed JSON/, $@;
 
 SKIP: {
 skip "5.6", 25 if $] < 5.008;
