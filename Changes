@@ -4,6 +4,9 @@ TODO: maybe detetc and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+2.33_02 2012-08-17 16:29:52 (rurban)
+	- fix crash with invalid JSON, empty sv 
+
 2.33_01 2012-08-08 16:29:52 (rurban)
 	- merge with JSON-XS-2.33
 

@@ -104,7 +104,7 @@ package Cpanel::JSON::XS;
 
 #use common::sense;
 
-our $VERSION = '2.33_01';
+our $VERSION = '2.33_02';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
