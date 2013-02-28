@@ -1633,7 +1633,6 @@ decode_json (SV *string, JSON *json, char **offset_return)
           dec.err = "garbage after JSON object";
           SvREFCNT_dec (sv);
           sv = 0;
-	  return sv;
         }
     }
 
