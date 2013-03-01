@@ -1243,7 +1243,7 @@ decode_num (dec_t *dec)
       {
         UV uv;
         int numtype = grok_number (start, len, &uv);
-        if (numtype & IS_NUMBER_IN_UV)
+        if (numtype & IS_NUMBER_IN_UV) {
           if (numtype & IS_NUMBER_NEG)
             {
               if (uv < (UV)IV_MIN)
@@ -1251,6 +1251,7 @@ decode_num (dec_t *dec)
             }
           else
             return newSVuv (uv);
+	}
       }
 
       len -= *start == '-' ? 1 : 0;
@@ -1986,7 +1987,7 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
           self->incr_text = newSVpvn ("", 0);
 
         /* if utf8-ness doesn't match the decoder, need to upgrade/downgrade */
-        if (!DECODE_WANTS_OCTETS (self) == !SvUTF8 (self->incr_text))
+        if (!DECODE_WANTS_OCTETS (self) == !SvUTF8 (self->incr_text)) {
           if (DECODE_WANTS_OCTETS (self))
             {
               if (self->incr_pos)
@@ -2003,16 +2004,18 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
                 self->incr_pos = utf8_hop ((U8 *)SvPVX (self->incr_text), self->incr_pos)
                                  - (U8 *)SvPVX (self->incr_text);
             }
+	}
 
         /* append data, if any */
         if (jsonstr)
           {
             /* make sure both strings have same encoding */
-            if (SvUTF8 (jsonstr) != SvUTF8 (self->incr_text))
+            if (SvUTF8 (jsonstr) != SvUTF8 (self->incr_text)) {
               if (SvUTF8 (jsonstr))
                 sv_utf8_downgrade (jsonstr, 0);
               else
                 sv_utf8_upgrade (jsonstr);
+	    }
 
             /* and then just blindly append */
             {
@@ -2068,8 +2071,10 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
           while (GIMME_V == G_ARRAY);
 }
 
+#if PERL_VERSION > 6
+
 SV *incr_text (JSON *self)
-	ATTRS: lvalue
+        ATTRS: lvalue
 	CODE:
 {
         if (self->incr_pos)
@@ -2079,6 +2084,21 @@ SV *incr_text (JSON *self)
 }
 	OUTPUT:
         RETVAL
+
+#else
+
+SV *incr_text (JSON *self)
+	CODE:
+{
+        if (self->incr_pos)
+          croak ("incr_text can not be called when the incremental parser already started parsing");
+
+        RETVAL = self->incr_text ? SvREFCNT_inc (self->incr_text) : &PL_sv_undef;
+}
+	OUTPUT:
+        RETVAL
+
+#endif
 
 void incr_skip (JSON *self)
 	CODE:

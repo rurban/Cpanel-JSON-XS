@@ -104,7 +104,7 @@ package Cpanel::JSON::XS;
 
 #use common::sense;
 
-our $VERSION = '2.33_03';
+our $VERSION = '2.33_04';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -755,15 +755,17 @@ them.
 
    my @objs = Cpanel::JSON::XS->new->incr_parse ("[5][7][1,2]");
 
-=item $lvalue_string = $json->incr_text
+=item $lvalue_string = $json->incr_text (>5.8 only)
 
 This method returns the currently stored JSON fragment as an lvalue, that
 is, you can manipulate it. This I<only> works when a preceding call to
-C<incr_parse> in I<scalar context> successfully returned an object. Under
-all other circumstances you must not call this function (I mean it.
-although in simple tests it might actually work, it I<will> fail under
-real world conditions). As a special exception, you can also call this
-method before having parsed anything.
+C<incr_parse> in I<scalar context> successfully returned an object, and
+2. only with Perl >= 5.8 
+
+Under all other circumstances you must not call this function (I mean
+it.  although in simple tests it might actually work, it I<will> fail
+under real world conditions). As a special exception, you can also
+call this method before having parsed anything.
 
 This function is useful in two cases: a) finding the trailing text after a
 JSON object or b) parsing multiple JSON objects separated by non-JSON text
