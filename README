@@ -671,15 +671,16 @@ INCREMENTAL PARSING
 
            my @objs = Cpanel::JSON::XS->new->incr_parse ("[5][7][1,2]");
 
-    $lvalue_string = $json->incr_text
+    $lvalue_string = $json->incr_text (>5.8 only)
         This method returns the currently stored JSON fragment as an lvalue,
         that is, you can manipulate it. This *only* works when a preceding
         call to "incr_parse" in *scalar context* successfully returned an
-        object. Under all other circumstances you must not call this
-        function (I mean it. although in simple tests it might actually
-        work, it *will* fail under real world conditions). As a special
-        exception, you can also call this method before having parsed
-        anything.
+        object, and 2. only with Perl >= 5.8
+
+        Under all other circumstances you must not call this function (I
+        mean it. although in simple tests it might actually work, it *will*
+        fail under real world conditions). As a special exception, you can
+        also call this method before having parsed anything.
 
         This function is useful in two cases: a) finding the trailing text
         after a JSON object or b) parsing multiple JSON objects separated by
