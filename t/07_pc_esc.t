@@ -4,10 +4,10 @@
 
 # copied over from JSON::PC and modified to use JSON::XS
 
-use Test::More;
+use Test::More tests => 17;
 use strict;
 use utf8;
-BEGIN { plan tests => 17 };
+#BEGIN { plan tests => 17 };
 use JSON::XS;
 
 #########################
@@ -61,6 +61,9 @@ $obj = {test => "abc\\def"};
 $str = $pc->encode($obj);
 is($str,q|{"test":"abc\\\\def"}|);
 
+SKIP: {
+skip "5.6", 2 if $] < 5.008;
+
 $obj = {test => "あいうえお"};
 $str = $pc->encode($obj);
 is($str,q|{"test":"あいうえお"}|);
@@ -68,6 +71,7 @@ is($str,q|{"test":"あいうえお"}|);
 $obj = {"あいうえお" => "かきくけこ"};
 $str = $pc->encode($obj);
 is($str,q|{"あいうえお":"かきくけこ"}|);
+}
 
 $obj = $pc->decode(q|{"id":"abc\ndef"}|);
 is($obj->{id},"abc\ndef",q|{"id":"abc\ndef"}|);

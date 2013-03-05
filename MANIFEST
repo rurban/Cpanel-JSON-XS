@@ -2,6 +2,7 @@ README
 Changes
 MANIFEST
 COPYING
+ppport.h
 Makefile.PL
 XS.pm
 XS.xs

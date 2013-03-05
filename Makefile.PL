@@ -1,4 +1,5 @@
-use 5.008002;
+#use 5.008002;
+use 5.006002;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
@@ -11,7 +12,6 @@ WriteMakefile(
     VERSION_FROM => "XS.pm",
     NAME         => "JSON::XS",
     PREREQ_PM    => {
-       common::sense => 0,
     },
 );
 

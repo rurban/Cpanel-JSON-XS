@@ -1,4 +1,4 @@
-# copied over from JSON::PC and modified to use JSON::XS
+# copied over from JSON::XS and modified to use JSON::XS
 
 use Test::More;
 use strict;

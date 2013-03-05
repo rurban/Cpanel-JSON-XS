@@ -1,11 +1,6 @@
 =head1 NAME
 
-JSON::XS - JSON serialising/deserialising, done correctly and fast
-
-=encoding utf-8
-
-JSON::XS - 正しくて高速な JSON シリアライザ/デシリアライザ
-           (http://fleur.hio.jp/perldoc/mix/lib/JSON/XS.html)
+JSON::XS - JSON::XS for Cpanel, fast and correct serialising, also for 5.6.2
 
 =head1 SYNOPSIS
 
@@ -23,13 +18,7 @@ JSON::XS - 正しくて高速な JSON シリアライザ/デシリアライザ
  $pretty_printed_unencoded = $coder->encode ($perl_scalar);
  $perl_scalar = $coder->decode ($unicode_json_text);
 
- # Note that JSON version 2.0 and above will automatically use JSON::XS
- # if available, at virtually no speed overhead either, so you should
- # be able to just:
- 
- use JSON;
-
- # and do the same things, except that you have a pure-perl fallback now.
+ # Note that 5.6 misses most utf8 and encoding functionalities of newer releases.
 
 =head1 DESCRIPTION
 
@@ -37,22 +26,16 @@ This module converts Perl data structures to JSON and vice versa. Its
 primary goal is to be I<correct> and its secondary goal is to be
 I<fast>. To reach the latter goal it was written in C.
 
-Beginning with version 2.0 of the JSON module, when both JSON and
-JSON::XS are installed, then JSON will fall back on JSON::XS (this can be
-overridden) with no overhead due to emulation (by inheriting constructor
-and methods). If JSON::XS is not available, it will fall back to the
-compatible JSON::PP module as backend, so using JSON instead of JSON::XS
-gives you a portable JSON API that can be fast when you need and doesn't
-require a C compiler when that is a problem.
-
 As this is the n-th-something JSON module on CPAN, what was the reason
 to write yet another JSON module? While it seems there are many JSON
 modules, none of them correctly handle all corner cases, and in most cases
 their maintainers are unresponsive, gone missing, or not listening to bug
 reports for other reasons.
 
-See MAPPING, below, on how JSON::XS maps perl values to JSON values and
-vice versa.
+See below for the Cpanel fork.
+
+See MAPPING, below, on how JSON::XS maps perl values to JSON
+values and vice versa.
 
 =head2 FEATURES
 
@@ -60,8 +43,8 @@ vice versa.
 
 =item * correct Unicode handling
 
-This module knows how to handle Unicode, documents how and when it does
-so, and even documents what "correct" means.
+This module knows how to handle Unicode with Perl version higher than 5.8.5,
+documents how and when it does so, and even documents what "correct" means.
 
 =item * round-trip integrity
 
@@ -97,25 +80,51 @@ stuff). Or you can combine those features in whatever way you like.
 
 =back
 
+=head2 cPanel fork
+
+Since the original author MLEHMANN has no public
+source repo or bugtracker, this cPanel fork sits now
+on github.
+
+src repo: L<https://github.com/bdraco/JSON-XS>
+
+issues:   L<https://github.com/bdraco/JSON-XS/issues>
+
+Changes to JSON::XS
+
+- 5.6.2 support, sacrificing some utf8 features
+
+- use ppport.h and sanify XS.xs comment styles
+
+- common::sense not in the published production module, just during development.
+
 =cut
 
 package JSON::XS;
 
-use common::sense;
+#use common::sense;
 
-our $VERSION = '2.33';
+our $VERSION = '2.33_04';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
 
 sub to_json($) {
-   require Carp;
-   Carp::croak ("JSON::XS::to_json has been renamed to encode_json, either downgrade to pre-2.0 versions of JSON::XS or rename the call");
+   if ($] >= 5.008) {
+     require Carp;
+     Carp::croak ("JSON::XS::to_json has been renamed to encode_json, either downgrade to pre-2.0 versions of JSON::XS or rename the call");
+   } else {
+     to_json_(shift);
+   }
 }
 
 sub from_json($) {
-   require Carp;
-   Carp::croak ("JSON::XS::from_json has been renamed to decode_json, either downgrade to pre-2.0 versions of JSON::XS or rename the call");
+   if ($] >= 5.008) {
+     require Carp;
+     Carp::croak ("JSON::XS::from_json has been renamed to decode_json, either downgrade to pre-2.0 versions of JSON::XS or rename the call");
+   } else {
+     from_json_(shift);
+   }
 }
 
 use Exporter;
@@ -186,16 +195,6 @@ data, it is I<use> that decides encoding, not any magical meta data.
 =item 3. The internal utf-8 flag has no meaning with regards to the
 encoding of your string.
 
-Just ignore that flag unless you debug a Perl bug, a module written in
-XS or want to dive into the internals of perl. Otherwise it will only
-confuse you, as, despite the name, it says nothing about how your string
-is encoded. You can have Unicode strings with that flag set, with that
-flag clear, and you can have binary data with that flag set and that flag
-clear. Other possibilities exist, too.
-
-If you didn't know about that flag, just the better, pretend it doesn't
-exist.
-
 =item 4. A "Unicode String" is simply a string where each character can be
 validly interpreted as a Unicode code point.
 
@@ -203,8 +202,6 @@ If you have UTF-8 encoded data, it is no longer a Unicode string, but a
 Unicode string encoded in UTF-8, giving you a binary string.
 
 =item 5. A string containing "high" (> 255) character values is I<not> a UTF-8 string.
-
-It's a fact. Learn to live with it.
 
 =back
 
@@ -220,7 +217,7 @@ decoding style, within the limits of supported formats.
 
 =item $json = new JSON::XS
 
-Creates a new JSON::XS object that can be used to de/encode JSON
+Creates a new JSON object that can be used to de/encode JSON
 strings. All boolean flags described below are by default I<disabled>.
 
 The mutators for flags all return the JSON object again and thus calls can
@@ -758,15 +755,17 @@ them.
 
    my @objs = JSON::XS->new->incr_parse ("[5][7][1,2]");
 
-=item $lvalue_string = $json->incr_text
+=item $lvalue_string = $json->incr_text (>5.8 only)
 
 This method returns the currently stored JSON fragment as an lvalue, that
 is, you can manipulate it. This I<only> works when a preceding call to
-C<incr_parse> in I<scalar context> successfully returned an object. Under
-all other circumstances you must not call this function (I mean it.
-although in simple tests it might actually work, it I<will> fail under
-real world conditions). As a special exception, you can also call this
-method before having parsed anything.
+C<incr_parse> in I<scalar context> successfully returned an object, and
+2. only with Perl >= 5.8 
+
+Under all other circumstances you must not call this function (I mean
+it.  although in simple tests it might actually work, it I<will> fail
+under real world conditions). As a special exception, you can also
+call this method before having parsed anything.
 
 This function is useful in two cases: a) finding the trailing text after a
 JSON object or b) parsing multiple JSON objects separated by non-JSON text
@@ -1337,6 +1336,12 @@ tables. They have been generated with the help of the C<eg/bench> program
 in the JSON::XS distribution, to make it easy to compare on your own
 system.
 
+JSON::XS is with L<Data::MessagePack> one of the fastest serializers,
+because JSON and JSON::XS do not support backrefs (no graph structures),
+only trees. Storable supports backrefs, i.e. graphs. Data::MessagePack
+encodes its data binary (as Storable) and supports only very simple
+subset of JSON.
+
 First comes a comparison between various modules using
 a very short single-line JSON string (also available at
 L<http://dist.schmorp.de/misc/json/short.json>).
@@ -1446,15 +1451,24 @@ process simulations - use fork, it's I<much> faster, cheaper, better).
 
 (It might actually work, but you have been warned).
 
+L<Data::MessagePack> in comparison is thread-safe.
 
 =head1 BUGS
 
-While the goal of this module is to be correct, that unfortunately does
-not mean it's bug-free, only that I think its design is bug-free. If you
-keep reporting bugs they will be fixed swiftly, though.
+While the goal of the JSON::XS module is to be correct, that
+unfortunately does not mean it's bug-free, only that the author thinks
+its design is bug-free. If you keep reporting bugs they will be fixed
+swiftly, though.
 
-Please refrain from using rt.cpan.org or any other bug reporting
-service. I put the contact address into my modules for a reason.
+Since the JSON::XS author refuses to use public bugtracker, we've
+setup a tracker at github, so you'll have to report any issues
+twice. Once in private to MLEHMANN to be fixed in JSON::XS for the
+masses and one to our the public tracker. Issues fixed by JSON::XS
+with a new release will also be backported to JSON::XS and
+5.6.2, as long as Cpanel relies on 5.6.2 and JSON::XS as our serializer
+of choice.
+
+Issues:   L<https://github.com/bdraco/JSON-XS/issues>
 
 =cut
 
@@ -1469,7 +1483,7 @@ sub is_bool($) {
 #      or UNIVERSAL::isa $_[0], "JSON::Literal"
 }
 
-XSLoader::load "JSON::XS", $VERSION;
+XSLoader::load 'JSON::XS', $VERSION;
 
 package JSON::XS::Boolean;
 
@@ -1489,6 +1503,11 @@ The F<json_xs> command line utility for quick experiments.
 
  Marc Lehmann <schmorp@schmorp.de>
  http://home.schmorp.de/
+
+=head1 MAINTAINER
+
+ Reini Urban <rurban@cpanel.net>
+ J. Nick Koston <nick@cpanel.net>
 
 =cut
 

@@ -1,11 +1,5 @@
-BEGIN { $| = 1; print "1..24576\n"; }
-
+use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 24576);
 use JSON::XS;
-
-our $test;
-sub ok($;$) {
-   print $_[0] ? "" : "not ", "ok ", ++$test, " - $_[1]\n";
-}
 
 sub test($) {
    my $js;
@@ -39,4 +33,3 @@ for (1..768) {
    test join "", map chr ($_ * 97 & ~0x4000), 0..$_;
    test join "", map chr (rand (2**20) & ~0x800), 0..$_;
 }
-

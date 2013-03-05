@@ -1,6 +1,12 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#define NEED_PL_parser
+#define NEED_grok_number
+#define NEED_grok_numeric_radix
+#define NEED_newRV_noinc
+#define NEED_sv_2pv_flags
+#include "ppport.h"
 
 #include <assert.h>
 #include <string.h>
@@ -17,6 +23,28 @@
 // guarantees, though. if it breaks, you get to keep the pieces.
 #ifndef UTF8_MAXBYTES
 # define UTF8_MAXBYTES 13
+#endif
+
+// 5.6:
+#ifndef IS_NUMBER_IN_UV
+#define IS_NUMBER_IN_UV		      0x01 /* number within UV range (maybe not
+					      int).  value returned in pointed-
+					      to UV */
+#define IS_NUMBER_GREATER_THAN_UV_MAX 0x02 // pointed to UV undefined
+#define IS_NUMBER_NOT_INT	      0x04 // saw . or E notation
+#define IS_NUMBER_NEG		      0x08 // leading minus sign
+#define IS_NUMBER_INFINITY	      0x10 // this is big
+#define IS_NUMBER_NAN                 0x20 // this is not
+#endif
+#ifndef UNI_DISPLAY_QQ
+#define UNI_DISPLAY_ISPRINT	0x0001
+#define UNI_DISPLAY_BACKSLASH	0x0002
+#define UNI_DISPLAY_QQ		(UNI_DISPLAY_ISPRINT|UNI_DISPLAY_BACKSLASH)
+#define UNI_DISPLAY_REGEX	(UNI_DISPLAY_ISPRINT|UNI_DISPLAY_BACKSLASH)
+#endif
+// with 5.6 hek can only be non-utf8
+#ifndef HeKUTF8
+#define HeKUTF8(he) 0
 #endif
 
 // three extra for rounding, sign, and end of string
@@ -44,21 +72,25 @@
 
 #define SHORT_STRING_LEN 16384 // special-case strings of up to this size
 
+#if PERL_VERSION >= 8
 #define DECODE_WANTS_OCTETS(json) ((json)->flags & F_UTF8)
+#else
+#define DECODE_WANTS_OCTETS(json) (0)
+#endif
 
 #define SB do {
 #define SE } while (0)
 
 #if __GNUC__ >= 3
-# define expect(expr,value)         __builtin_expect ((expr), (value))
+# define _expect(expr,value)        __builtin_expect ((expr), (value))
 # define INLINE                     static inline
 #else
-# define expect(expr,value)         (expr)
+# define _expect(expr,value)        (expr)
 # define INLINE                     static
 #endif
 
-#define expect_false(expr) expect ((expr) != 0, 0)
-#define expect_true(expr)  expect ((expr) != 0, 1)
+#define expect_false(expr) _expect ((expr) != 0, 0)
+#define expect_true(expr)  _expect ((expr) != 0, 1)
 
 #define IN_RANGE_INC(type,val,beg,end) \
   ((unsigned type)((unsigned type)(val) - (unsigned type)(beg)) \
@@ -119,7 +151,7 @@ get_bool (const char *name)
   SV *sv = get_sv (name, 1);
 
   SvREADONLY_on (sv);
-  SvREADONLY_on (SvRV (sv));
+  SvREADONLY_on (SvRV(sv));
 
   return sv;
 }
@@ -154,8 +186,14 @@ decode_utf8 (unsigned char *s, STRLEN len, STRLEN *clen)
       *clen = 2;
       return ((s[0] & 0x1f) << 6) | (s[1] & 0x3f);
     }
-  else
+  else {
+#if PERL_VERSION >= 8
     return utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
+#else
+    clen = 1;
+    return s;
+#endif
+  }
 }
 
 // likewise for encoding, also never called for ascii codepoints
@@ -1205,7 +1243,7 @@ decode_num (dec_t *dec)
       {
         UV uv;
         int numtype = grok_number (start, len, &uv);
-        if (numtype & IS_NUMBER_IN_UV)
+        if (numtype & IS_NUMBER_IN_UV) 
           if (numtype & IS_NUMBER_NEG)
             {
               if (uv < (UV)IV_MIN)
@@ -1218,7 +1256,11 @@ decode_num (dec_t *dec)
       len -= *start == '-' ? 1 : 0;
 
       // does not fit into IV or UV, try NV
-      if (len <= NV_DIG)
+      if ((sizeof (NV) == sizeof (double) && DBL_DIG >= len)
+          #if defined (LDBL_DIG)
+          || (sizeof (NV) == sizeof (long double) && LDBL_DIG >= len)
+          #endif
+         )
         // fits into NV without loss of precision
         return newSVnv (json_atof (start));
 
@@ -1555,10 +1597,12 @@ decode_json (SV *string, JSON *json, char **offset_return)
              (unsigned long)SvCUR (string), (unsigned long)json->max_size);
   }
 
+#if PERL_VERSION >= 8
   if (DECODE_WANTS_OCTETS (json))
     sv_utf8_downgrade (string, 0);
   else
     sv_utf8_upgrade (string);
+#endif
 
   SvGROW (string, SvCUR (string) + 1); // should basically be a NOP
 
@@ -1596,6 +1640,7 @@ decode_json (SV *string, JSON *json, char **offset_return)
     {
       SV *uni = sv_newmortal ();
 
+#if PERL_VERSION >= 8
       // horrible hack to silence warning inside pv_uni_display
       COP cop = *PL_curcop;
       cop.cop_warnings = pWARN_NONE;
@@ -1604,6 +1649,7 @@ decode_json (SV *string, JSON *json, char **offset_return)
       PL_curcop = &cop;
       pv_uni_display (uni, dec.cur, dec.end - dec.cur, 20, UNI_DISPLAY_QQ);
       LEAVE;
+#endif
 
       croak ("%s, at character offset %d (before \"%s\")",
              dec.err,
@@ -2023,8 +2069,10 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
           while (GIMME_V == G_ARRAY);
 }
 
+#if PERL_VERSION > 6
+
 SV *incr_text (JSON *self)
-	ATTRS: lvalue
+        ATTRS: lvalue
 	CODE:
 {
         if (self->incr_pos)
@@ -2034,6 +2082,21 @@ SV *incr_text (JSON *self)
 }
 	OUTPUT:
         RETVAL
+
+#else
+
+SV *incr_text (JSON *self)
+	CODE:
+{
+        if (self->incr_pos)
+          croak ("incr_text can not be called when the incremental parser already started parsing");
+
+        RETVAL = self->incr_text ? SvREFCNT_inc (self->incr_text) : &PL_sv_undef;
+}
+	OUTPUT:
+        RETVAL
+
+#endif
 
 void incr_skip (JSON *self)
 	CODE:

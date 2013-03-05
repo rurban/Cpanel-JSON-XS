@@ -1,13 +1,14 @@
-BEGIN { $| = 1; print "1..31\n"; }
+#BEGIN { $| = 1; print "1..31\n"; }
+use Test::More tests => 32;
 
 use utf8;
 use JSON::XS;
 no warnings;
 
-our $test;
-sub ok($) {
-   print $_[0] ? "" : "not ", "ok ", ++$test, "\n";
-}
+#our $test;
+#sub ok($) {
+#   print $_[0] ? "" : "not ", "ok ", ++$test, "\n";
+#}
 
 eval { JSON::XS->new->encode ([\-1]) }; ok $@ =~ /cannot encode reference/;
 eval { JSON::XS->new->encode ([\undef]) }; ok $@ =~ /cannot encode reference/;
@@ -15,6 +16,11 @@ eval { JSON::XS->new->encode ([\2]) }; ok $@ =~ /cannot encode reference/;
 eval { JSON::XS->new->encode ([\{}]) }; ok $@ =~ /cannot encode reference/;
 eval { JSON::XS->new->encode ([\[]]) }; ok $@ =~ /cannot encode reference/;
 eval { JSON::XS->new->encode ([\\1]) }; ok $@ =~ /cannot encode reference/;
+
+eval { $x = JSON::XS->new->ascii->decode ('croak') }; ok $@ =~ /malformed JSON/, $@;
+
+SKIP: {
+skip "5.6", 25 if $] < 5.008;
 
 eval { JSON::XS->new->allow_nonref (1)->decode ('"\u1234\udc00"') }; ok $@ =~ /missing high /;
 eval { JSON::XS->new->allow_nonref->decode ('"\ud800"') }; ok $@ =~ /missing low /;
@@ -45,3 +51,4 @@ eval { JSON::XS->new->decode (*STDERR) }; ok !!$@; # cannot coerce GLOB
 eval { decode_json ("\"\xa0") }; ok $@ =~ /malformed.*character/;
 eval { decode_json ("\"\xa0\"") }; ok $@ =~ /malformed.*character/;
 
+}

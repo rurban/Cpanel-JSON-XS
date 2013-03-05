@@ -1,11 +1,5 @@
-BEGIN { $| = 1; print "1..11\n"; }
-
+use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 11);
 use JSON::XS;
-
-our $test;
-sub ok($;$) {
-   print $_[0] ? "" : "not ", "ok ", ++$test, "\n";
-}
 
 my $def = 512;
 
@@ -26,4 +20,3 @@ ok (!eval { $js->encode ([[{}]]), 1 });
 
 ok (eval { ref $js->max_size (8)->decode ("[      ]") });
 eval { $js->max_size (8)->decode ("[       ]") }; ok ($@ =~ /max_size/);
-

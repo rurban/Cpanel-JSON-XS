@@ -6,9 +6,8 @@ use strict;
 use warnings;
 
 use JSON::XS;
+use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 3);
 use Encode qw(encode decode);
-
-use Test::More tests => 3;
 
 my ($faihu, $faihu_json, $roundtrip, $js) = "\x{10346}";
 
