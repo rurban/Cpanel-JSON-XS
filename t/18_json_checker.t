@@ -7,12 +7,12 @@ use strict;
 no warnings;
 use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 39);
 
-use Cpanel::JSON::XS;
+use JSON::XS;
 exit if $] < 5.008;
 
 # emulate JSON_checker default config
-my $json = Cpanel::JSON::XS->new->utf8->max_depth(32)->canonical;
-$json = Cpanel::JSON::XS->new->max_depth(32)->canonical if $] < 5.008;
+my $json = JSON::XS->new->utf8->max_depth(32)->canonical;
+$json = JSON::XS->new->max_depth(32)->canonical if $] < 5.008;
 
 binmode DATA;
 

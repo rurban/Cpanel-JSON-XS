@@ -1,14 +1,14 @@
-# copied over from JSON::PC and modified to use Cpanel::JSON::XS
+# copied over from JSON::PC and modified to use JSON::XS
 
 use Test::More;
 use strict;
 BEGIN { plan tests => 6 };
-use Cpanel::JSON::XS;
+use JSON::XS;
 use utf8;
 
 #########################
 my ($js,$obj);
-my $pc = new Cpanel::JSON::XS;
+my $pc = new JSON::XS;
 
 $js  = '{"foo":0}';
 $obj = $pc->decode($js);

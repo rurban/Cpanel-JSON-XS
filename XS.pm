@@ -1,10 +1,10 @@
 =head1 NAME
 
-Cpanel::JSON::XS - JSON::XS for Cpanel, fast and correct serialising, also for 5.6.2
+JSON::XS - JSON::XS for Cpanel, fast and correct serialising, also for 5.6.2
 
 =head1 SYNOPSIS
 
- use Cpanel::JSON::XS;
+ use JSON::XS;
 
  # exported functions, they croak on error
  # and expect/generate UTF-8
@@ -14,7 +14,7 @@ Cpanel::JSON::XS - JSON::XS for Cpanel, fast and correct serialising, also for 5
 
  # OO-interface
 
- $coder = Cpanel::JSON::XS->new->ascii->pretty->allow_nonref;
+ $coder = JSON::XS->new->ascii->pretty->allow_nonref;
  $pretty_printed_unencoded = $coder->encode ($perl_scalar);
  $perl_scalar = $coder->decode ($unicode_json_text);
 
@@ -34,7 +34,7 @@ reports for other reasons.
 
 See below for the Cpanel fork.
 
-See MAPPING, below, on how Cpanel::JSON::XS maps perl values to JSON
+See MAPPING, below, on how JSON::XS maps perl values to JSON
 values and vice versa.
 
 =head2 FEATURES
@@ -100,7 +100,7 @@ Changes to JSON::XS
 
 =cut
 
-package Cpanel::JSON::XS;
+package JSON::XS;
 
 #use common::sense;
 
@@ -112,7 +112,7 @@ our @EXPORT = qw(encode_json decode_json to_json from_json);
 sub to_json($) {
    if ($] >= 5.008) {
      require Carp;
-     Carp::croak ("Cpanel::JSON::XS::to_json has been renamed to encode_json, either downgrade to pre-2.0 versions of Cpanel::JSON::XS or rename the call");
+     Carp::croak ("JSON::XS::to_json has been renamed to encode_json, either downgrade to pre-2.0 versions of JSON::XS or rename the call");
    } else {
      to_json_(shift);
    }
@@ -121,7 +121,7 @@ sub to_json($) {
 sub from_json($) {
    if ($] >= 5.008) {
      require Carp;
-     Carp::croak ("Cpanel::JSON::XS::from_json has been renamed to decode_json, either downgrade to pre-2.0 versions of Cpanel::JSON::XS or rename the call");
+     Carp::croak ("JSON::XS::from_json has been renamed to decode_json, either downgrade to pre-2.0 versions of JSON::XS or rename the call");
    } else {
      from_json_(shift);
    }
@@ -144,7 +144,7 @@ Converts the given Perl data structure to a UTF-8 encoded, binary string
 
 This function call is functionally identical to:
 
-   $json_text = Cpanel::JSON::XS->new->utf8->encode ($perl_scalar)
+   $json_text = JSON::XS->new->utf8->encode ($perl_scalar)
 
 Except being faster.
 
@@ -156,14 +156,14 @@ reference. Croaks on error.
 
 This function call is functionally identical to:
 
-   $perl_scalar = Cpanel::JSON::XS->new->utf8->decode ($json_text)
+   $perl_scalar = JSON::XS->new->utf8->decode ($json_text)
 
 Except being faster.
 
-=item $is_boolean = Cpanel::JSON::XS::is_bool $scalar
+=item $is_boolean = JSON::XS::is_bool $scalar
 
-Returns true if the passed scalar represents either Cpanel::JSON::XS::true or
-Cpanel::JSON::XS::false, two constants that act like C<1> and C<0>, respectively
+Returns true if the passed scalar represents either JSON::XS::true or
+JSON::XS::false, two constants that act like C<1> and C<0>, respectively
 and are used to represent JSON C<true> and C<false> values in Perl.
 
 See MAPPING, below, for more information on how JSON values are mapped to
@@ -215,7 +215,7 @@ decoding style, within the limits of supported formats.
 
 =over 4
 
-=item $json = new Cpanel::JSON::XS
+=item $json = new JSON::XS
 
 Creates a new JSON object that can be used to de/encode JSON
 strings. All boolean flags described below are by default I<disabled>.
@@ -223,7 +223,7 @@ strings. All boolean flags described below are by default I<disabled>.
 The mutators for flags all return the JSON object again and thus calls can
 be chained:
 
-   my $json = Cpanel::JSON::XS->new->utf8->space_after->encode ({a => [1,2]})
+   my $json = JSON::XS->new->utf8->space_after->encode ({a => [1,2]})
    => {"a": [1, 2]}
 
 =item $json = $json->ascii ([$enable])
@@ -249,7 +249,7 @@ The main use for this flag is to produce JSON texts that can be
 transmitted over a 7-bit channel, as the encoded JSON texts will not
 contain any 8 bit characters.
 
-  Cpanel::JSON::XS->new->ascii (1)->encode ([chr 0x10401])
+  JSON::XS->new->ascii (1)->encode ([chr 0x10401])
   => ["\ud801\udc01"]
 
 =item $json = $json->latin1 ([$enable])
@@ -277,7 +277,7 @@ transferring), a rare encoding for JSON. It is therefore most useful when
 you want to store data structures known to contain binary data efficiently
 in files or databases, not when talking to other JSON encoders/decoders.
 
-  Cpanel::JSON::XS->new->latin1->encode (["\x{89}\x{abc}"]
+  JSON::XS->new->latin1->encode (["\x{89}\x{abc}"]
   => ["\x{89}\\u0abc"]    # (perl syntax, U+abc escaped, U+89 not)
 
 =item $json = $json->utf8 ([$enable])
@@ -303,12 +303,12 @@ document.
 Example, output UTF-16BE-encoded JSON:
 
   use Encode;
-  $jsontext = encode "UTF-16BE", Cpanel::JSON::XS->new->encode ($object);
+  $jsontext = encode "UTF-16BE", JSON::XS->new->encode ($object);
 
 Example, decode UTF-32LE-encoded JSON:
 
   use Encode;
-  $object = Cpanel::JSON::XS->new->decode (decode "UTF-32LE", $jsontext);
+  $object = JSON::XS->new->decode (decode "UTF-32LE", $jsontext);
 
 =item $json = $json->pretty ([$enable])
 
@@ -318,7 +318,7 @@ generate the most readable (or most compact) form possible.
 
 Example, pretty-print some simple structure:
 
-   my $json = Cpanel::JSON::XS->new->pretty(1)->encode ({a => [1,2]})
+   my $json = JSON::XS->new->pretty(1)->encode ({a => [1,2]})
    =>
    {
       "a" : [
@@ -459,7 +459,7 @@ JSON object or array.
 Example, encode a Perl scalar as JSON value with enabled C<allow_nonref>,
 resulting in an invalid JSON text:
 
-   Cpanel::JSON::XS->new->allow_nonref->encode ("Hello, World!")
+   JSON::XS->new->allow_nonref->encode ("Hello, World!")
    => "Hello, World!"
 
 =item $json = $json->allow_unknown ([$enable])
@@ -535,7 +535,7 @@ way.
 
 Example, convert all JSON objects into the integer 5:
 
-   my $js = Cpanel::JSON::XS->new->filter_json_object (sub { 5 });
+   my $js = JSON::XS->new->filter_json_object (sub { 5 });
    # returns [5]
    $js->decode ('[{}]')
    # throw an exception because allow_nonref is not enabled
@@ -574,7 +574,7 @@ Example, decode JSON objects of the form C<< { "__widget__" => <id> } >>
 into the corresponding C<< $WIDGET{<id>} >> object:
 
    # return whatever is in $WIDGET{5}:
-   Cpanel::JSON::XS
+   JSON::XS
       ->new
       ->filter_json_single_key_object (__widget__ => sub {
             $WIDGET{ $_[0] }
@@ -692,7 +692,7 @@ This is useful if your JSON texts are not delimited by an outer protocol
 (which is not the brightest thing to do in the first place) and you need
 to know where the JSON text ends.
 
-   Cpanel::JSON::XS->new->decode_prefix ("[1] the tail")
+   JSON::XS->new->decode_prefix ("[1] the tail")
    => ([], 3)
 
 =back
@@ -709,7 +709,7 @@ using C<decode_prefix> to see if a full JSON object is available, but
 is much more efficient (and can be implemented with a minimum of method
 calls).
 
-Cpanel::JSON::XS will only attempt to parse the JSON text once it is sure it
+JSON::XS will only attempt to parse the JSON text once it is sure it
 has enough text to get a decisive result, using a very simple but
 truly incremental parser. This means that it sometimes won't stop as
 early as the full parser, for example, it doesn't detect mismatched
@@ -753,7 +753,7 @@ lost.
 Example: Parse some JSON arrays/objects in a given string and return
 them.
 
-   my @objs = Cpanel::JSON::XS->new->incr_parse ("[5][7][1,2]");
+   my @objs = JSON::XS->new->incr_parse ("[5][7][1,2]");
 
 =item $lvalue_string = $json->incr_text (>5.8 only)
 
@@ -803,7 +803,7 @@ for JSON numbers, however.
 
 For example, is the string C<1> a single JSON number, or is it simply the
 start of C<12>? Or is C<12> a single JSON number, or the concatenation
-of C<1> and C<2>? In neither case you can tell, and this is why Cpanel::JSON::XS
+of C<1> and C<2>? In neither case you can tell, and this is why JSON::XS
 takes the conservative route and disallows this case.
 
 =head2 EXAMPLES
@@ -814,7 +814,7 @@ the start of a string and identify the portion after the JSON object:
 
    my $text = "[1,2,3] hello";
 
-   my $json = new Cpanel::JSON::XS;
+   my $json = new JSON::XS;
 
    my $obj = $json->incr_parse ($text)
       or die "expected JSON object or array at beginning of string";
@@ -834,7 +834,7 @@ with C<telnet>...).
 Here is how you'd do it (it is trivial to write this in an event-based
 manner):
 
-   my $json = new Cpanel::JSON::XS;
+   my $json = new JSON::XS;
 
    # read some data from the socket
    while (sysread $socket, my $buf, 4096) {
@@ -851,7 +851,7 @@ or arrays, all separated by (optional) comma characters (e.g. C<[1],[2],
 and here is where the lvalue-ness of C<incr_text> comes in useful:
 
    my $text = "[1],[2], [3]";
-   my $json = new Cpanel::JSON::XS;
+   my $json = new JSON::XS;
 
    # void context, so no parsing done
    $json->incr_parse ($text);
@@ -870,13 +870,13 @@ JSON array-of-objects, many gigabytes in size, and you want to parse it,
 but you cannot load it into memory fully (this has actually happened in
 the real world :).
 
-Well, you lost, you have to implement your own JSON parser. But Cpanel::JSON::XS
+Well, you lost, you have to implement your own JSON parser. But JSON::XS
 can still help you: You implement a (very simple) array parser and let
 JSON decode the array elements, which are all full JSON objects on their
 own (this wouldn't work if the array elements could be JSON numbers, for
 example):
 
-   my $json = new Cpanel::JSON::XS;
+   my $json = new JSON::XS;
 
    # open the monster
    open my $fh, "<bigfile.json"
@@ -946,7 +946,7 @@ the above example :).
 
 =head1 MAPPING
 
-This section describes how Cpanel::JSON::XS maps Perl values to JSON values and
+This section describes how JSON::XS maps Perl values to JSON values and
 vice versa. These mappings are designed to "do the right thing" in most
 circumstances automatically, preserving round-tripping characteristics
 (what you put in comes out as something equivalent).
@@ -983,7 +983,7 @@ the Perl level, there is no difference between those as Perl handles all
 the conversion details, but an integer may take slightly less memory and
 might represent more values exactly than floating point numbers.
 
-If the number consists of digits only, Cpanel::JSON::XS will try to represent
+If the number consists of digits only, JSON::XS will try to represent
 it as an integer value. If that fails, it will try to represent it as
 a numeric (floating point) value if that is possible without loss of
 precision. Otherwise it will preserve the number as a string value (in
@@ -997,7 +997,7 @@ the JSON number will still be re-encoded as a JSON number).
 
 Note that precision is not accuracy - binary floating point values cannot
 represent most decimal fractions exactly, and when converting from and to
-floating point, Cpanel::JSON::XS only guarantees precision up to but not including
+floating point, JSON::XS only guarantees precision up to but not including
 the leats significant bit.
 
 =item true, false
@@ -1027,10 +1027,10 @@ a Perl value.
 Perl hash references become JSON objects. As there is no inherent ordering
 in hash keys (or JSON objects), they will usually be encoded in a
 pseudo-random order that can change between runs of the same program but
-stays generally the same within a single run of a program. Cpanel::JSON::XS can
+stays generally the same within a single run of a program. JSON::XS can
 optionally sort the hash keys (determined by the I<canonical> flag), so
 the same datastructure will serialise to the same JSON text (given same
-settings and version of Cpanel::JSON::XS), but this incurs a runtime overhead
+settings and version of JSON::XS), but this incurs a runtime overhead
 and is only rarely useful, e.g. when you want to compare some JSON text
 against another for equality.
 
@@ -1045,9 +1045,9 @@ exception to be thrown, except for references to the integers C<0> and
 C<1>, which get turned into C<false> and C<true> atoms in JSON. You can
 also use C<JSON::XS::false> and C<JSON::XS::true> to improve readability.
 
-   encode_json [\0, Cpanel::JSON::XS::true]      # yields [false,true]
+   encode_json [\0, JSON::XS::true]      # yields [false,true]
 
-=item Cpanel::JSON::XS::true, Cpanel::JSON::XS::false
+=item JSON::XS::true, JSON::XS::false
 
 These special values become JSON true and JSON false values,
 respectively. You can also use C<\1> and C<\0> directly if you want.
@@ -1063,7 +1063,7 @@ your own serialiser method.
 =item simple scalars
 
 Simple Perl scalars (any scalar that is not a reference) are the most
-difficult objects to encode: Cpanel::JSON::XS will encode undefined scalars as
+difficult objects to encode: JSON::XS will encode undefined scalars as
 JSON C<null> values, scalars that have last been used in a string context
 before encoding as JSON strings, and anything else as number value:
 
@@ -1223,7 +1223,7 @@ JSON strings, but are not allowed in ECMAscript string literals, so the
 following Perl fragment will not output something that can be guaranteed
 to be parsable by javascript's C<eval>:
 
-   use Cpanel::JSON::XS;
+   use JSON::XS;
 
    print encode_json [chr 0x2028];
 
@@ -1234,16 +1234,16 @@ F<json2.js> parser).
 If this is not an option, you can, as a stop-gap measure, simply encode to
 ASCII-only JSON:
 
-   use Cpanel::JSON::XS;
+   use JSON::XS;
 
-   print Cpanel::JSON::XS->new->ascii->encode ([chr 0x2028]);
+   print JSON::XS->new->ascii->encode ([chr 0x2028]);
 
 Note that this will enlarge the resulting JSON text quite a bit if you
 have many non-ASCII characters. You might be tempted to run some regexes
 to only escape U+2028 and U+2029, e.g.:
 
    # DO NOT USE THIS!
-   my $json = Cpanel::JSON::XS->new->utf8->encode ([chr 0x2028]);
+   my $json = JSON::XS->new->utf8->encode ([chr 0x2028]);
    $json =~ s/\xe2\x80\xa8/\\u2028/g; # escape U+2028
    $json =~ s/\xe2\x80\xa9/\\u2029/g; # escape U+2029
    print $json;
@@ -1277,10 +1277,10 @@ so let me state it clearly: I<in general, there is no way to configure
 JSON::XS to output a data structure as valid YAML> that works in all
 cases.
 
-If you really must use Cpanel::JSON::XS to generate YAML, you should use this
+If you really must use JSON::XS to generate YAML, you should use this
 algorithm (subject to change in future versions):
 
-   my $to_yaml = Cpanel::JSON::XS->new->utf8->space_after (1);
+   my $to_yaml = JSON::XS->new->utf8->space_after (1);
    my $yaml = $to_yaml->encode ($ref) . "\n";
 
 This will I<usually> generate JSON texts that also parse as valid
@@ -1290,7 +1290,7 @@ unicode character escape syntax, so you should make sure that your hash
 keys are noticeably shorter than the 1024 "stream characters" YAML allows
 and that you do not have characters with codepoint values outside the
 Unicode BMP (basic multilingual page). YAML also does not allow C<\/>
-sequences in strings (which Cpanel::JSON::XS does not I<currently> generate, but
+sequences in strings (which JSON::XS does not I<currently> generate, but
 other JSON generators might).
 
 There might be other incompatibilities that I am not aware of (or the YAML
@@ -1351,8 +1351,8 @@ L<http://dist.schmorp.de/misc/json/short.json>).
    1,  0]}
 
 It shows the number of encodes/decodes per second (JSON::XS uses
-the functional interface, while Cpanel::JSON::XS/2 uses the OO interface
-with pretty-printing and hashkey sorting enabled, Cpanel::JSON::XS/3 enables
+the functional interface, while JSON::XS/2 uses the OO interface
+with pretty-printing and hashkey sorting enabled, JSON::XS/3 enables
 shrink. JSON::DWIW/DS uses the deserialise function, while JSON::DWIW::FJ
 uses the from_json method). Higher is better:
 
@@ -1464,7 +1464,7 @@ Since the JSON::XS author refuses to use public bugtracker, we've
 setup a tracker at github, so you'll have to report any issues
 twice. Once in private to MLEHMANN to be fixed in JSON::XS for the
 masses and one to our the public tracker. Issues fixed by JSON::XS
-with a new release will also be backported to Cpanel::JSON::XS and
+with a new release will also be backported to JSON::XS and
 5.6.2, as long as Cpanel relies on 5.6.2 and JSON::XS as our serializer
 of choice.
 
@@ -1472,20 +1472,20 @@ Issues:   L<https://github.com/rurban/Cpanel-JSON-XS/issues>
 
 =cut
 
-our $true  = do { bless \(my $dummy = 1), "Cpanel::JSON::XS::Boolean" };
-our $false = do { bless \(my $dummy = 0), "Cpanel::JSON::XS::Boolean" };
+our $true  = do { bless \(my $dummy = 1), "JSON::XS::Boolean" };
+our $false = do { bless \(my $dummy = 0), "JSON::XS::Boolean" };
 
 sub true()  { $true  }
 sub false() { $false }
 
 sub is_bool($) {
-   UNIVERSAL::isa $_[0], "Cpanel::JSON::XS::Boolean"
+   UNIVERSAL::isa $_[0], "JSON::XS::Boolean"
 #      or UNIVERSAL::isa $_[0], "JSON::Literal"
 }
 
-XSLoader::load 'Cpanel::JSON::XS', $VERSION;
+XSLoader::load 'JSON::XS', $VERSION;
 
-package Cpanel::JSON::XS::Boolean;
+package JSON::XS::Boolean;
 
 use overload
    "0+"     => sub { ${$_[0]} },
@@ -1497,7 +1497,7 @@ use overload
 
 =head1 SEE ALSO
 
-The F<cpanel_json_xs> command line utility for quick experiments.
+The F<json_xs> command line utility for quick experiments.
 
 =head1 AUTHOR
 

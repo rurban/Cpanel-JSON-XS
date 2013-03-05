@@ -1,9 +1,9 @@
 use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 11);
-use Cpanel::JSON::XS;
+use JSON::XS;
 
 my $def = 512;
 
-my $js = Cpanel::JSON::XS->new;
+my $js = JSON::XS->new;
 
 ok (!eval { $js->decode (("[" x ($def + 1)) . ("]" x ($def + 1))) });
 ok (ref $js->decode (("[" x $def) . ("]" x $def)));

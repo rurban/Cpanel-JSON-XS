@@ -7,7 +7,7 @@ Makefile.PL
 XS.pm
 XS.xs
 XS/Boolean.pm
-bin/cpanel_json_xs
+bin/json_xs
 eg/bench
 t/00_load.t
 t/01_utf8.t

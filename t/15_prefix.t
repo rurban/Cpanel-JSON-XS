@@ -1,7 +1,7 @@
 use Test::More tests => 4;
-use Cpanel::JSON::XS;
+use JSON::XS;
 
-my $xs = Cpanel::JSON::XS->new->latin1->allow_nonref;
+my $xs = JSON::XS->new->latin1->allow_nonref;
 
 eval { $xs->decode ("[] ") };
 ok (!$@);

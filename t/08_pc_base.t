@@ -1,13 +1,13 @@
 use Test::More tests => 20;
 
-# copied over from JSON::PC and modified to use Cpanel::JSON::XS
+# copied over from JSON::PC and modified to use JSON::XS
 
 use strict;
-use Cpanel::JSON::XS;
+use JSON::XS;
 
 my ($js,$obj);
 
-my $pc = new Cpanel::JSON::XS;
+my $pc = new JSON::XS;
 
 $js  = q|{}|;
 

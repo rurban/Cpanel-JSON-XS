@@ -1,8 +1,8 @@
 use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 8);
 use utf8;
-use Cpanel::JSON::XS;
+use JSON::XS;
 
-my $json = Cpanel::JSON::XS->new->relaxed;
+my $json = JSON::XS->new->relaxed;
 
 ok ('[1,2,3]' eq encode_json $json->decode (' [1,2, 3]'));
 ok ('[1,2,4]' eq encode_json $json->decode ('[1,2, 4 , ]'));
