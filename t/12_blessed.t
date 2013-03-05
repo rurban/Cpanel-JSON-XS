@@ -1,6 +1,6 @@
 BEGIN { $| = 1; print "1..16\n"; }
 
-use Cpanel::JSON::XS;
+use JSON::XS;
 
 our $test;
 sub ok($;$) {
@@ -14,7 +14,7 @@ sub XX::TO_JSON {
    {__,""}
 }
 
-my $js = Cpanel::JSON::XS->new;
+my $js = JSON::XS->new;
 
 eval { $js->encode ($o1) }; ok ($@ =~ /allow_blessed/);
 eval { $js->encode ($o2) }; ok ($@ =~ /allow_blessed/);

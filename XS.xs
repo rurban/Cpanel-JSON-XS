@@ -100,13 +100,13 @@
 
 #ifdef USE_ITHREADS
 # define JSON_SLOW 1
-# define JSON_STASH (json_stash ? json_stash : gv_stashpv ("Cpanel::JSON::XS", 1))
+# define JSON_STASH (json_stash ? json_stash : gv_stashpv ("JSON::XS", 1))
 #else
 # define JSON_SLOW 0
 # define JSON_STASH json_stash
 #endif
 
-static HV *json_stash, *json_boolean_stash; /* Cpanel::JSON::XS:: */
+static HV *json_stash, *json_boolean_stash; /* JSON::XS:: */
 static SV *json_true, *json_false;
 
 enum {
@@ -723,7 +723,7 @@ encode_rv (enc_t *enc, SV *sv)
     {
       HV *stash = !JSON_SLOW || json_boolean_stash
                   ? json_boolean_stash
-                  : gv_stashpv ("Cpanel::JSON::XS::Boolean", 1);
+                  : gv_stashpv ("JSON::XS::Boolean", 1);
 
       if (SvSTASH (sv) == stash)
         {
@@ -1516,7 +1516,7 @@ decode_sv (dec_t *dec)
           {
             dec->cur += 4;
 #if JSON_SLOW
-            json_true = get_bool ("Cpanel::JSON::XS::true");
+            json_true = get_bool ("JSON::XS::true");
 #endif
             return newSVsv (json_true);
           }
@@ -1530,7 +1530,7 @@ decode_sv (dec_t *dec)
           {
             dec->cur += 5;
 #if JSON_SLOW
-            json_false = get_bool ("Cpanel::JSON::XS::false");
+            json_false = get_bool ("JSON::XS::false");
 #endif
             return newSVsv (json_false);
           }
@@ -1821,7 +1821,7 @@ interrupt:
 /*/////////////////////////////////////////////////////////////////////////// */
 /* XS interface functions */
 
-MODULE = Cpanel::JSON::XS		PACKAGE = Cpanel::JSON::XS
+MODULE = JSON::XS		PACKAGE = JSON::XS
 
 BOOT:
 {
@@ -1834,13 +1834,13 @@ BOOT:
             : i >= 'A' && i <= 'F' ? i - 'A' + 10
             : -1;
 
-	json_stash         = gv_stashpv ("Cpanel::JSON::XS"         , 1);
-	json_boolean_stash = gv_stashpv ("Cpanel::JSON::XS::Boolean", 1);
+	json_stash         = gv_stashpv ("JSON::XS"         , 1);
+	json_boolean_stash = gv_stashpv ("JSON::XS::Boolean", 1);
 
-        json_true  = get_bool ("Cpanel::JSON::XS::true");
-        json_false = get_bool ("Cpanel::JSON::XS::false");
+        json_true  = get_bool ("JSON::XS::true");
+        json_false = get_bool ("JSON::XS::false");
 
-        CvNODEBUG_on (get_cv ("Cpanel::JSON::XS::incr_text", 0)); /* the debugger completely breaks lvalue subs */
+        CvNODEBUG_on (get_cv ("JSON::XS::incr_text", 0)); /* the debugger completely breaks lvalue subs */
 }
 
 PROTOTYPES: DISABLE
@@ -1858,7 +1858,7 @@ void new (char *klass)
         json_init ((JSON *)SvPVX (pv));
         XPUSHs (sv_2mortal (sv_bless (
            newRV_noinc (pv),
-           strEQ (klass, "Cpanel::JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1)
+           strEQ (klass, "JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1)
         )));
 }
 

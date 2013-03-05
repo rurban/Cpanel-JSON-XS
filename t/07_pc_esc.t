@@ -2,18 +2,18 @@
 # このファイルのエンコーディングはUTF-8
 #
 
-# copied over from JSON::PC and modified to use Cpanel::JSON::XS
+# copied over from JSON::PC and modified to use JSON::XS
 
 use Test::More tests => 17;
 use strict;
 use utf8;
 #BEGIN { plan tests => 17 };
-use Cpanel::JSON::XS;
+use JSON::XS;
 
 #########################
 my ($js,$obj,$str);
 
-my $pc = new Cpanel::JSON::XS;
+my $pc = new JSON::XS;
 
 $obj = {test => qq|abc"def|};
 $str = $pc->encode($obj);

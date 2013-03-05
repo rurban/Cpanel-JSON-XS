@@ -5,23 +5,23 @@
 use strict;
 use warnings;
 
-use Cpanel::JSON::XS;
+use JSON::XS;
 use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 3);
 use Encode qw(encode decode);
 
 my ($faihu, $faihu_json, $roundtrip, $js) = "\x{10346}";
 
-$js = Cpanel::JSON::XS->new->allow_nonref->ascii;
+$js = JSON::XS->new->allow_nonref->ascii;
 $faihu_json = $js->encode($faihu);
 $roundtrip = $js->decode($faihu_json);
 is ($roundtrip, $faihu, 'JSON in ASCII roundtrips correctly');
 
-$js = Cpanel::JSON::XS->new->allow_nonref->utf8;
+$js = JSON::XS->new->allow_nonref->utf8;
 $faihu_json = $js->encode ($faihu);
 $roundtrip = $js->decode ($faihu_json);
 is ($roundtrip, $faihu, 'JSON in UTF-8 roundtrips correctly');
 
-$js = Cpanel::JSON::XS->new->allow_nonref;
+$js = JSON::XS->new->allow_nonref;
 $faihu_json = encode 'UTF-16BE', $js->encode ($faihu);
 $roundtrip = $js->decode( decode 'UTF-16BE', $faihu_json);
 is ($roundtrip, $faihu, 'JSON with external recoding roundtrips correctly' );

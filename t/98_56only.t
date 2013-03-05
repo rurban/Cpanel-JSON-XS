@@ -1,7 +1,7 @@
 use Test::More $] < 5.008 ? (tests => 3) : (skip_all => "5.6 only");
-use Cpanel::JSON::XS;
+use JSON::XS;
 
-my $json = Cpanel::JSON::XS->new;
+my $json = JSON::XS->new;
 
 {
     my $formref = {
@@ -12,7 +12,7 @@ my $json = Cpanel::JSON::XS->new;
     };
 
     ok( from_json( to_json($formref) ),
-	"Cpanel::JSON::XS :: round trip untied utf8 with int" );
+	"JSON::XS :: round trip untied utf8 with int" );
 }
 
 $js  = q|[-12.34]|;
