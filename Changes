@@ -4,6 +4,9 @@ TODO: maybe detetc and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+2.33_06 2013-03-14 02:42:39 (bdraco)
+	- make decode_utf8 hook into perl 5.6 utf8
+
 2.33_05 2013-03-14 02:42:39 (bdraco)
 	- fix a typo in decode_utf8
 

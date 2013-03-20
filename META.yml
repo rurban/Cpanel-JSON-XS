@@ -17,4 +17,4 @@ no_index:
   directory:
     - t
     - inc
-version: 2.33_05
+version: 2.33_06
