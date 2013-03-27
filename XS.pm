@@ -18,7 +18,8 @@ Cpanel::JSON::XS - JSON::XS for Cpanel, fast and correct serialising, also for 5
  $pretty_printed_unencoded = $coder->encode ($perl_scalar);
  $perl_scalar = $coder->decode ($unicode_json_text);
 
- # Note that 5.6 misses most utf8 and encoding functionalities of newer releases.
+ # Note that 5.6 misses most smart utf8 and encoding functionalities
+ # of newer releases.
 
 =head1 DESCRIPTION
 
@@ -92,7 +93,7 @@ issues:   L<https://github.com/rurban/Cpanel-JSON-XS/issues>
 
 Changes to JSON::XS
 
-- 5.6.2 support, sacrificing some utf8 features
+- 5.6.2 support, sacrificing some utf8 features (assuming byte all-over)
 
 - use ppport.h and sanify XS.xs comment styles
 
@@ -104,7 +105,7 @@ package Cpanel::JSON::XS;
 
 #use common::sense;
 
-our $VERSION = '2.33_04';
+our $VERSION = '2.3305';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
