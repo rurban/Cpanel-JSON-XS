@@ -17,7 +17,8 @@ SYNOPSIS
      $pretty_printed_unencoded = $coder->encode ($perl_scalar);
      $perl_scalar = $coder->decode ($unicode_json_text);
 
-     # Note that 5.6 misses most utf8 and encoding functionalities of newer releases.
+     # Note that 5.6 misses most smart utf8 and encoding functionalities
+     # of newer releases.
 
 DESCRIPTION
     This module converts Perl data structures to JSON and vice versa. Its
@@ -87,7 +88,7 @@ DESCRIPTION
 
     Changes to JSON::XS
 
-    - 5.6.2 support, sacrificing some utf8 features
+    - 5.6.2 support, sacrificing some utf8 features (assuming byte all-over)
 
     - use ppport.h and sanify XS.xs comment styles
 
