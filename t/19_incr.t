@@ -2,7 +2,7 @@
 
 use strict;
 no warnings;
-use Test::More $] < 5.008 ? (tests => 389) : (tests => 697);
+use Test::More $] < 5.008 ? (tests => 39) : (tests => 697);
 
 use Cpanel::JSON::XS;
 
@@ -30,6 +30,9 @@ if ($] >= 5.008) {
 splitter +Cpanel::JSON::XS->new->allow_nonref, '"test"';
 splitter +Cpanel::JSON::XS->new->allow_nonref, ' "5" ';
 
+diag "skip lvalue incr_text for 5.6" if $] < 5.008;
+exit if $] < 5.008;
+
 {
    my $text = '[5],{"":1} , [ 1,2, 3], {"3":null}';
    my $coder = new Cpanel::JSON::XS;
@@ -53,9 +56,6 @@ splitter +Cpanel::JSON::XS->new->allow_nonref, ' "5" ';
       ok (!defined $j5, "cjson5");
    }
 }
-
-diag "skip rest for 5.6" if $] < 5.008;
-exit if $] < 5.008;
 
 {
    my $text = '[x][5]';

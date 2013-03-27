@@ -93,6 +93,8 @@ issues:   L<https://github.com/rurban/Cpanel-JSON-XS/issues>
 
 Changes to JSON::XS
 
+- added binary method, allow \xNN and \NNN sequences with binary
+
 - 5.6.2 support, sacrificing some utf8 features (assuming byte all-over)
 
 - use ppport.h and sanify XS.xs comment styles

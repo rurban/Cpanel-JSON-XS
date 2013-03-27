@@ -12,7 +12,7 @@ WriteMakefile(
   VERSION_FROM => "XS.pm",
   NAME         => "Cpanel::JSON::XS",
   PREREQ_PM    => {
-    'common::sense' => '3.6',
+    'common::sense' => '3.5',
     'Pod::Text'     => '2.08',
     'Pod::Usage'    => '1.51',
   },
