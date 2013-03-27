@@ -222,11 +222,11 @@ encode_utf8 (unsigned char *s, UV ch)
 
 /* convert offset pointer to character index, sv must be string */
 static STRLEN
-ptr_to_index (SV *sv, char *offset)
+ptr_to_index (SV *sv, const U8 *offset)
 {
   return SvUTF8 (sv)
-         ? utf8_distance (offset, SvPVX (sv))
-         : offset - SvPVX (sv);
+         ? utf8_distance (offset, (U8*)SvPVX (sv))
+         : offset - (U8*)SvPVX (sv);
 }
 
 /*/////////////////////////////////////////////////////////////////////////// */
@@ -404,7 +404,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
 
                   if (is_utf8)
                     {
-                      uch = decode_utf8 (str, end - str, &clen);
+                      uch = decode_utf8 ((unsigned char *)str, end - str, &clen);
                       if (clen == (STRLEN)-1)
                         croak ("malformed or illegal unicode character in string [%.11s], cannot convert to JSON", str);
                     }
@@ -457,7 +457,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                   else
                     {
                       need (enc, len += UTF8_MAXBYTES - 1); /* never more than 11 bytes needed */
-                      enc->cur = encode_utf8 (enc->cur, uch);
+                      enc->cur = (char*)encode_utf8 ((U8*)enc->cur, uch);
                       ++str;
                     }
                 }
@@ -1046,7 +1046,7 @@ decode_str (dec_t *dec)
                         goto fail;
 
                       /* possibly a surrogate pair */
-                      if (hi >= 0xd800)
+                      if (hi >= 0xd800) {
                         if (hi < 0xdc00)
                           {
                             if (dec_cur [0] != '\\' || dec_cur [1] != 'u')
@@ -1065,14 +1065,16 @@ decode_str (dec_t *dec)
 
                             hi = (hi - 0xD800) * 0x400 + (lo - 0xDC00) + 0x10000;
                           }
-                        else if (hi < 0xe000)
+                        else if (hi < 0xe000) {
                           ERR ("missing high surrogate character in surrogate pair");
+			}
+		      }
 
                       if (hi >= 0x80)
                         {
                           utf8 = 1;
 
-                          cur = encode_utf8 (cur, hi);
+                          cur = (char*)encode_utf8 ((U8*)cur, hi);
                         }
                       else
                         *cur++ = hi;
@@ -1092,7 +1094,7 @@ decode_str (dec_t *dec)
 
               --dec_cur;
 
-              decode_utf8 (dec_cur, dec->end - dec_cur, &clen);
+              decode_utf8 ((U8*)dec_cur, dec->end - dec_cur, &clen);
               if (clen == (STRLEN)-1)
                 ERR ("malformed UTF-8 character in JSON string");
 
@@ -1357,7 +1359,7 @@ decode_hv (dec_t *dec)
           for (;;)
             {
               /* the >= 0x80 is false on most architectures */
-              if (p == e || *p < 0x20 || *p >= 0x80 || *p == '\\')
+              if (p == e || *p < 0x20 || *(U8*)p >= 0x80 || *p == '\\')
                 {
                   /* slow path, back up and use decode_str */
                   SV *key = decode_str (dec);
@@ -1560,7 +1562,7 @@ fail:
 }
 
 static SV *
-decode_json (SV *string, JSON *json, char **offset_return)
+decode_json (SV *string, JSON *json, U8 **offset_return)
 {
   dec_t dec;
   SV *sv;
@@ -1622,7 +1624,7 @@ decode_json (SV *string, JSON *json, char **offset_return)
   sv = decode_sv (&dec);
 
   if (offset_return)
-    *offset_return = dec.cur;
+    *offset_return = (U8*)dec.cur;
 
   if (!(offset_return || !sv))
     {
@@ -1648,12 +1650,12 @@ decode_json (SV *string, JSON *json, char **offset_return)
       ENTER;
       SAVEVPTR (PL_curcop);
       PL_curcop = &cop;
-      pv_uni_display (uni, dec.cur, dec.end - dec.cur, 20, UNI_DISPLAY_QQ);
+      pv_uni_display (uni, (U8*)dec.cur, dec.end - dec.cur, 20, UNI_DISPLAY_QQ);
       LEAVE;
 #endif
       croak ("%s, at character offset %d (before \"%s\")",
              dec.err,
-             (int)ptr_to_index (string, dec.cur),
+             (int)ptr_to_index (string, (U8*)dec.cur),
              dec.cur != dec.end ? SvPV_nolen (uni) : "(end of string)");
     }
 
@@ -1973,7 +1975,7 @@ void decode_prefix (JSON *self, SV *jsonstr)
 	PPCODE:
 {
 	SV *sv;
-        char *offset;
+        U8 *offset;
         PUTBACK; sv = decode_json (jsonstr, self, &offset); SPAGAIN;
         EXTEND (SP, 2);
         PUSHs (sv);
@@ -2036,7 +2038,7 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
           do
             {
               SV *sv;
-              char *offset;
+              U8 *offset;
 
               if (!INCR_DONE (self))
                 {
@@ -2062,11 +2064,11 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
               PUTBACK; sv = decode_json (self->incr_text, self, &offset); SPAGAIN;
               XPUSHs (sv);
 
-              self->incr_pos -= offset - SvPVX (self->incr_text);
+              self->incr_pos -= offset - (U8*)SvPVX (self->incr_text);
               self->incr_nest = 0;
               self->incr_mode = 0;
 
-              sv_chop (self->incr_text, offset);
+              sv_chop (self->incr_text, (const char* const)offset);
             }
           while (GIMME_V == G_ARRAY);
 }
