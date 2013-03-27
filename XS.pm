@@ -42,7 +42,7 @@ values and vice versa.
 
 =over 4
 
-=item * correct Unicode handling
+=item * smart Unicode handling
 
 This module knows how to handle Unicode with Perl version higher than 5.8.5,
 documents how and when it does so, and even documents what "correct" means.
@@ -105,7 +105,7 @@ package Cpanel::JSON::XS;
 
 #use common::sense;
 
-our $VERSION = '2.3305';
+our $VERSION = '2.3306';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);

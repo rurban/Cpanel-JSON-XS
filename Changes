@@ -4,6 +4,12 @@ TODO: maybe detect and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+2.3306 2013-03-27 12:15:20 (rurban)
+       - fix decode_utf8 for 5.6 (bdraco)
+       - use common::sense for tests
+       - fix README dependency: update earlier, not just at make dist
+       - added pod2text prereqs
+
 2.3305 2013-03-27 11:47:36 (rurban)
        - nondev version to be indexed in CPAN
        - t/99_binary.t: non-numeric test names, use is instead of ok

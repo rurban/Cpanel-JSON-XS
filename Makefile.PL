@@ -12,6 +12,9 @@ WriteMakefile(
   VERSION_FROM => "XS.pm",
   NAME         => "Cpanel::JSON::XS",
   PREREQ_PM    => {
+    'common::sense' => '3.6',
+    'Pod::Text'     => '2.08',
+    'Pod::Usage'    => '1.51',
   },
   LICENSE  => 'perl',
   ($] >= 5.005 ?
@@ -23,7 +26,7 @@ WriteMakefile(
    ('META_MERGE'  =>
     {"recommends" =>
      {
-       'Encode'   => '1.9801',
+       'Encode'        => '1.9801',
      },
      resources =>
      {
@@ -37,3 +40,22 @@ WriteMakefile(
   SIGN  => 1,
 );
 
+package MY;
+sub test {
+  local $_ = shift->SUPER::test(@_);
+  s/TEST_FILES = /TEST_FILES = -Mcommon::sense /;
+  $_
+}
+
+sub top_targets {
+  local $_ = shift->SUPER::top_targets(@_);
+  s/\$\(FIRST_MAKEFILE\) blibdirs/\$(FIRST_MAKEFILE\) blibdirs README/;
+  $_
+}
+
+sub depend {
+  "
+README : \$(VERSION_FROM)
+	pod2text \$(VERSION_FROM) > README
+"
+}

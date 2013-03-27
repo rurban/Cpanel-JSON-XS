@@ -190,8 +190,8 @@ decode_utf8 (unsigned char *s, STRLEN len, STRLEN *clen)
 #if PERL_VERSION >= 8
     return utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
 #else
-    clen = 1;
-    return s;
+    /* for perl 5.6 */
+    return utf8_to_uv(s, len, clen, UTF8_CHECK_ONLY);
 #endif
   }
 }

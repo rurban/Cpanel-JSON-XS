@@ -37,7 +37,7 @@ DESCRIPTION
     values and vice versa.
 
   FEATURES
-    *   correct Unicode handling
+    *   smart Unicode handling
 
         This module knows how to handle Unicode with Perl version higher
         than 5.8.5, documents how and when it does so, and even documents
