@@ -226,6 +226,43 @@ OBJECT-ORIENTED INTERFACE
           Cpanel::JSON::XS->new->latin1->encode (["\x{89}\x{abc}"]
           => ["\x{89}\\u0abc"]    # (perl syntax, U+abc escaped, U+89 not)
 
+    $json = $json->binary ([$enable])
+    $enabled = $json->binary
+        If $enable is true (or missing), then the "encode" method will not
+        try to detect an UTF-8 encoding in any JSON string, it will strictly
+        interpret it as byte sequence. The result might contain new \xNN
+        sequences, which were not parsable by old JSON parser. The "decode"
+        method forbids \uNNNN sequences and accepts \xNN and octal \NNN
+        sequences.
+
+        If $enable is false, then the "encode" method will smartly try to
+        detect Unicode characters unless required by the JSON syntax or
+        other flags and hex and octal sequences are forbidden.
+
+        See also the section *ENCODING/CODESET FLAG NOTES* later in this
+        document.
+
+        The main use for this flag is to avoid the smart unicode detection
+        and possible double encoding. The disadvantage is that the resulting
+        JSON text is encoded in new \xNN and in latin1 characters and must
+        correctly be treated as such when storing and transferring, a rare
+        encoding for JSON. It is therefore most useful when you want to
+        store data structures known to contain binary data efficiently in
+        files or databases, not when talking to other JSON
+        encoders/decoders.
+
+          Cpanel::JSON::XS->new->binary->encode (["\x{89}\x{abc}"])
+          Error: malformed or illegal unicode character in binary string
+
+          Cpanel::JSON::XS->new->binary->encode (["\x{89}\x{bc}"])
+          => ["\x89\xbc"]
+
+          Cpanel::JSON::XS->new->binary->decode (["\x89\ua001"])
+          Error: malformed or illegal unicode character in binary string
+
+          Cpanel::JSON::XS->new->decode (["\x89"])
+          Error: illegal hex character in non-binary string
+
     $json = $json->utf8 ([$enable])
     $enabled = $json->get_utf8
         If $enable is true (or missing), then the "encode" method will
@@ -996,8 +1033,9 @@ MAPPING
 
 ENCODING/CODESET FLAG NOTES
     The interested reader might have seen a number of flags that signify
-    encodings or codesets - "utf8", "latin1" and "ascii". There seems to be
-    some confusion on what these do, so here is a short comparison:
+    encodings or codesets - "utf8", "latin1", "binary" and "ascii". There
+    seems to be some confusion on what these do, so here is a short
+    comparison:
 
     "utf8" controls whether the JSON text created by "encode" (and expected
     by "decode") is UTF-8 encoded or not, while "latin1" and "ascii" only
@@ -1045,10 +1083,11 @@ ENCODING/CODESET FLAG NOTES
         you will get a Unicode string in Perl, enabled means you get an
         UTF-8 encoded octet/binary string in Perl.
 
-    "latin1" or "ascii" flags enabled
+    "latin1", "binary" or "ascii" flags enabled
         With "latin1" (or "ascii") enabled, "encode" will escape characters
         with ordinal values > 255 (> 127 with "ascii") and encode the
-        remaining characters as specified by the "utf8" flag.
+        remaining characters as specified by the "utf8" flag. With "binary"
+        enabled, ordinal values > 255 are illegal.
 
         If "utf8" is disabled, then the result is also correctly encoded in
         those character sets (as both are proper subsets of Unicode, meaning
@@ -1072,13 +1111,13 @@ ENCODING/CODESET FLAG NOTES
         strict subsets of Unicode. If it is enabled, you can correctly
         decode UTF-8 encoded strings.
 
-        So neither "latin1" nor "ascii" are incompatible with the "utf8"
-        flag - they only govern when the JSON output engine escapes a
+        So neither "latin1", "binary" nor "ascii" are incompatible with the
+        "utf8" flag - they only govern when the JSON output engine escapes a
         character or not.
 
-        The main use for "latin1" is to relatively efficiently store binary
-        data as JSON, at the expense of breaking compatibility with most
-        JSON decoders.
+        The main use for "latin1" or "binary" is to relatively efficiently
+        store binary data as JSON, at the expense of breaking compatibility
+        with most JSON decoders.
 
         The main use for "ascii" is to force the output to not contain
         characters with values > 127, which means you can interpret the

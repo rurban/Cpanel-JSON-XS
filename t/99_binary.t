@@ -7,7 +7,7 @@ sub test($) {
    $js = Cpanel::JSON::XS->new->allow_nonref(0)->utf8->ascii->shrink->encode ([$_[0]]);
    is ($_[0], ((decode_json $js)->[0]), "allow_nonref(0)->utf8->ascii->shrink->encode");
    $js = Cpanel::JSON::XS->new->allow_nonref(0)->utf8->ascii->encode ([$_[0]]);
-   is ($_[0], (Cpanel::JSON::XS->new->utf8->shrink->decode($js))->[0], "utf8->shrink->decode");
+   is ($_[0], (Cpanel::JSON::XS->new->utf8->shrink->decode($js))->[0], "allow_nonref(0)->utf8->shrink->decode");
 
    $js = Cpanel::JSON::XS->new->allow_nonref(0)->utf8->shrink->encode ([$_[0]]);
    is ($_[0], ((decode_json $js)->[0]), "allow_nonref(0)->utf8->shrink->encode");
@@ -20,9 +20,9 @@ sub test($) {
    is ($_[0], Cpanel::JSON::XS->new->shrink->decode ($js)->[0], "allow_nonref(0)->ascii->encode");
 
    $js = Cpanel::JSON::XS->new->allow_nonref(1)->shrink->encode ([$_[0]]);
-   is ($_[0], Cpanel::JSON::XS->new->decode ($js)->[0], "decode");
+   is ($_[0], Cpanel::JSON::XS->new->decode ($js)->[0], "allow_nonref(1)->shrink->encode");
    $js = Cpanel::JSON::XS->new->allow_nonref(0)->encode ([$_[0]]);
-   is ($_[0], Cpanel::JSON::XS->new->shrink->decode ($js)->[0], "shrink->decode");
+   is ($_[0], Cpanel::JSON::XS->new->shrink->decode ($js)->[0], "allow_nonref(0)->encode");
 }
 
 srand 0; # doesn't help too much, but its at least more deterministic

@@ -105,7 +105,7 @@ package Cpanel::JSON::XS;
 
 #use common::sense;
 
-our $VERSION = '2.3306';
+our $VERSION = '2.3307';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -280,6 +280,44 @@ in files or databases, not when talking to other JSON encoders/decoders.
 
   Cpanel::JSON::XS->new->latin1->encode (["\x{89}\x{abc}"]
   => ["\x{89}\\u0abc"]    # (perl syntax, U+abc escaped, U+89 not)
+
+=item $json = $json->binary ([$enable])
+
+=item $enabled = $json->binary
+
+If C<$enable> is true (or missing), then the C<encode> method will not
+try to detect an UTF-8 encoding in any JSON string, it will strictly
+interpret it as byte sequence.  The result might contain new \xNN
+sequences, which were not parsable by old JSON parser.  The C<decode>
+method forbids \uNNNN sequences and accepts \xNN and octal \NNN
+sequences.
+
+If C<$enable> is false, then the C<encode> method will smartly try to
+detect Unicode characters unless required by the JSON syntax or other
+flags and hex and octal sequences are forbidden.
+
+See also the section I<ENCODING/CODESET FLAG NOTES> later in this
+document.
+
+The main use for this flag is to avoid the smart unicode detection and
+possible double encoding. The disadvantage is that the resulting JSON
+text is encoded in new \xNN and in latin1 characters and must
+correctly be treated as such when storing and transferring, a rare
+encoding for JSON.  It is therefore most useful when you want to store
+data structures known to contain binary data efficiently in files or
+databases, not when talking to other JSON encoders/decoders.
+
+  Cpanel::JSON::XS->new->binary->encode (["\x{89}\x{abc}"])
+  Error: malformed or illegal unicode character in binary string
+
+  Cpanel::JSON::XS->new->binary->encode (["\x{89}\x{bc}"])
+  => ["\x89\xbc"]
+
+  Cpanel::JSON::XS->new->binary->decode (["\x89\ua001"])
+  Error: malformed or illegal unicode character in binary string
+
+  Cpanel::JSON::XS->new->decode (["\x89"])
+  Error: illegal hex character in non-binary string
 
 =item $json = $json->utf8 ([$enable])
 
@@ -1110,8 +1148,9 @@ error to pass those in.
 =head1 ENCODING/CODESET FLAG NOTES
 
 The interested reader might have seen a number of flags that signify
-encodings or codesets - C<utf8>, C<latin1> and C<ascii>. There seems to be
-some confusion on what these do, so here is a short comparison:
+encodings or codesets - C<utf8>, C<latin1>, C<binary> and
+C<ascii>. There seems to be some confusion on what these do, so here
+is a short comparison:
 
 C<utf8> controls whether the JSON text created by C<encode> (and expected
 by C<decode>) is UTF-8 encoded or not, while C<latin1> and C<ascii> only
@@ -1162,11 +1201,12 @@ The C<utf8> flag therefore switches between two modes: disabled means you
 will get a Unicode string in Perl, enabled means you get an UTF-8 encoded
 octet/binary string in Perl.
 
-=item C<latin1> or C<ascii> flags enabled
+=item C<latin1>, C<binary> or C<ascii> flags enabled
 
-With C<latin1> (or C<ascii>) enabled, C<encode> will escape characters
-with ordinal values > 255 (> 127 with C<ascii>) and encode the remaining
-characters as specified by the C<utf8> flag.
+With C<latin1> (or C<ascii>) enabled, C<encode> will escape
+characters with ordinal values > 255 (> 127 with C<ascii>) and encode
+the remaining characters as specified by the C<utf8> flag.
+With C<binary> enabled, ordinal values > 255 are illegal.
 
 If C<utf8> is disabled, then the result is also correctly encoded in those
 character sets (as both are proper subsets of Unicode, meaning that a
@@ -1188,11 +1228,13 @@ values as governed by the C<utf8> flag. If it is disabled, this allows you
 to decode ISO-8859-1- and ASCII-encoded strings, as both strict subsets of
 Unicode. If it is enabled, you can correctly decode UTF-8 encoded strings.
 
-So neither C<latin1> nor C<ascii> are incompatible with the C<utf8> flag -
-they only govern when the JSON output engine escapes a character or not.
+So neither C<latin1>, C<binary> nor C<ascii> are incompatible with the
+C<utf8> flag - they only govern when the JSON output engine escapes a
+character or not.
 
-The main use for C<latin1> is to relatively efficiently store binary data
-as JSON, at the expense of breaking compatibility with most JSON decoders.
+The main use for C<latin1> or C<binary> is to relatively efficiently
+store binary data as JSON, at the expense of breaking compatibility
+with most JSON decoders.
 
 The main use for C<ascii> is to force the output to not contain characters
 with values > 127, which means you can interpret the resulting string
