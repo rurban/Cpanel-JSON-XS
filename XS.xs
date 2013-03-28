@@ -226,7 +226,7 @@ static STRLEN
 ptr_to_index (SV *sv, const U8 *offset)
 {
   return SvUTF8 (sv)
-         ? utf8_distance (offset, (U8*)SvPVX (sv))
+         ? utf8_distance ((U8*)offset, (U8*)SvPVX (sv))
          : offset - (U8*)SvPVX (sv);
 }
 
@@ -363,6 +363,16 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
 {
   char *end = str + len;
 
+#if PERL_VERSION < 8
+  /* perl5.6 encodes to utf8 automatically, reverse it */
+  if (is_utf8 && (enc->json.flags & F_BINARY))
+    {
+      str = (char *)utf8_to_bytes((U8*)str, &len);
+      if (!str)
+	croak ("illegal unicode character in binary string", str);
+      end = str + len;
+    }
+#endif
   need (enc, len);
 
   while (str < end)

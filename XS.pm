@@ -107,7 +107,7 @@ package Cpanel::JSON::XS;
 
 #use common::sense;
 
-our $VERSION = '2.3307';
+our $VERSION = '2.3308';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -294,6 +294,15 @@ sequences, which were not parsable by old JSON parser.  The C<decode>
 method forbids \uNNNN sequences and accepts \xNN and octal \NNN
 sequences.
 
+There is also a special logic for perl 5.6 and utf8. 5.6 encodes any
+string to utf-8 automatically when seeing a codepoint >= 0x80 and <
+0x100. With the binary flag enabled decode the perl utf8 encoded
+string to the original byte encoding and encode this with \xNN
+escapes. This will result to the same encodings as with newer
+perls. But note that binary multi-byte codepoints with 5.6 will
+result in C<illegal unicode character in binary string> errors,
+unlike with newer perls.
+
 If C<$enable> is false, then the C<encode> method will smartly try to
 detect Unicode characters unless required by the JSON syntax or other
 flags and hex and octal sequences are forbidden.
@@ -308,9 +317,12 @@ correctly be treated as such when storing and transferring, a rare
 encoding for JSON.  It is therefore most useful when you want to store
 data structures known to contain binary data efficiently in files or
 databases, not when talking to other JSON encoders/decoders.
+The binary decoding method can also be used when an encoder produced a
+non-JSON conformant hex or octal encoding \xNN or \NNN.
 
   Cpanel::JSON::XS->new->binary->encode (["\x{89}\x{abc}"])
-  Error: malformed or illegal unicode character in binary string
+  5.6:   Error: malformed or illegal unicode character in binary string
+  >=5.8: ['\x89\xe0\xaa\xbc']
 
   Cpanel::JSON::XS->new->binary->encode (["\x{89}\x{bc}"])
   => ["\x89\xbc"]
