@@ -95,9 +95,9 @@ Changes to JSON::XS
 
 - added binary method, allow \xNN and \NNN sequences with binary
 
-- 5.6.2 support, sacrificing some utf8 features (assuming byte all-over)
+- 5.6.2 support, sacrificing some utf8 features (assuming bytes all-over)
 
-- use ppport.h and sanify XS.xs comment styles
+- use ppport.h, sanify XS.xs comment styles, harness C coding style
 
 - common::sense not in the published production module, just during development.
 
@@ -107,7 +107,7 @@ package Cpanel::JSON::XS;
 
 #use common::sense;
 
-our $VERSION = '2.3308';
+our $VERSION = '2.3309';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);

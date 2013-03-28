@@ -24,11 +24,11 @@ sub splitter {
 }
 
 if ($] >= 5.008) {
-  splitter +Cpanel::JSON::XS->new              , '  ["x\\"","\\u1000\\\\n\\nx",1,{"\\\\" :5 , "": "x"}]';
-  splitter +Cpanel::JSON::XS->new              , '[ "x\\"","\\u1000\\\\n\\nx" , 1,{"\\\\ " :5 , "": " x"} ] ';
+  splitter +Cpanel::JSON::XS->new->canonical   , '  ["x\\"","\\u1000\\\\n\\nx",1,{"\\\\" :5 , "": "x"}]';
+  splitter +Cpanel::JSON::XS->new->canonical   , '[ "x\\"","\\u1000\\\\n\\nx" , 1,{"\\\\ " :5 , "": " x"} ] ';
 }
-splitter +Cpanel::JSON::XS->new->allow_nonref, '"test"';
-splitter +Cpanel::JSON::XS->new->allow_nonref, ' "5" ';
+splitter +Cpanel::JSON::XS->new->allow_nonref->canonical, '"test"';
+splitter +Cpanel::JSON::XS->new->allow_nonref->canonical, ' "5" ';
 
 diag "skip lvalue incr_text for 5.6" if $] < 5.008;
 exit if $] < 5.008;
