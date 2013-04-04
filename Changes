@@ -4,6 +4,12 @@ TODO: maybe detect and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+2.3311 2013-04-04 18:41:23 (cpanel)
+       - Changed maintainer to cpan@cpanel.net
+       - Changed tracker to RT
+       - Worked on JSON integration (matching prototypes)
+       - Fixed Boolean stringify and eq overload methods to match JSON (Fixes JSON tests)
+
 2.3310 2013-03-28 12:20:11 (rurban)
        - add testcases for JSON::XS RT #84244, double-encoding with utf8
          t/01_utf8.t (use utf8), t/14_latin1.t (no utf8)

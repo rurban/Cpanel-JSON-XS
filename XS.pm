@@ -89,17 +89,19 @@ on github.
 
 src repo: L<https://github.com/rurban/Cpanel-JSON-XS>
 
-issues:   L<https://github.com/rurban/Cpanel-JSON-XS/issues>
+RT:       L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
 Changes to JSON::XS
 
-- added binary method, allow \xNN and \NNN sequences with binary
+- added C<binary> method, allow \xNN and \NNN sequences with binary
 
-- 5.6.2 support, sacrificing some utf8 features (assuming bytes all-over)
+- 5.6.2 support, sacrificing some utf8 features (assuming bytes all-over),
+  no multi-byte unicode characters.
 
 - use ppport.h, sanify XS.xs comment styles, harness C coding style
 
-- common::sense not in the published production module, just during development.
+- common::sense not in the published production module, just during development
+  and testing.
 
 =cut
 
@@ -107,26 +109,26 @@ package Cpanel::JSON::XS;
 
 #use common::sense;
 
-our $VERSION = '2.3310';
+our $VERSION = '2.3311';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
 
-sub to_json($) {
+sub to_json($@) {
    if ($] >= 5.008) {
      require Carp;
      Carp::croak ("Cpanel::JSON::XS::to_json has been renamed to encode_json, either downgrade to pre-2.0 versions of Cpanel::JSON::XS or rename the call");
    } else {
-     to_json_(shift);
+     to_json_(@_);
    }
 }
 
-sub from_json($) {
+sub from_json($@) {
    if ($] >= 5.008) {
      require Carp;
      Carp::croak ("Cpanel::JSON::XS::from_json has been renamed to decode_json, either downgrade to pre-2.0 versions of Cpanel::JSON::XS or rename the call");
    } else {
-     from_json_(shift);
+     from_json_(@_);
    }
 }
 
@@ -1517,15 +1519,15 @@ unfortunately does not mean it's bug-free, only that the author thinks
 its design is bug-free. If you keep reporting bugs they will be fixed
 swiftly, though.
 
-Since the JSON::XS author refuses to use public bugtracker, we've
-setup a tracker at github, so you'll have to report any issues
-twice. Once in private to MLEHMANN to be fixed in JSON::XS for the
-masses and one to our the public tracker. Issues fixed by JSON::XS
-with a new release will also be backported to Cpanel::JSON::XS and
-5.6.2, as long as Cpanel relies on 5.6.2 and JSON::XS as our serializer
-of choice.
+Since the JSON::XS author refuses to use a public bugtracker and
+prefers private emails, we've setup a tracker at RT, so you'll have to
+report any issues twice. Once in private to MLEHMANN to be fixed in
+JSON::XS for the masses and one to our the public tracker. Issues
+fixed by JSON::XS with a new release will also be backported to
+Cpanel::JSON::XS and 5.6.2, as long as Cpanel relies on 5.6.2 and
+JSON::XS as our serializer of choice.
 
-Issues:   L<https://github.com/rurban/Cpanel-JSON-XS/issues>
+L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
 =cut
 
@@ -1548,6 +1550,16 @@ use overload
    "0+"     => sub { ${$_[0]} },
    "++"     => sub { $_[0] = ${$_[0]} + 1 },
    "--"     => sub { $_[0] = ${$_[0]} - 1 },
+  '""'      => sub { ${$_[0]} == 1 ? 'true' : 'false' },
+  'eq'      => sub {
+    my ($obj, $op) = ref ($_[0]) ? ($_[0], $_[1]) : ($_[1], $_[0]);
+    if ($op eq 'true' or $op eq 'false') {
+      return "$obj" eq 'true' ? 'true' eq $op : 'false' eq $op;
+    }
+    else {
+      return $obj ? 1 == $op : 0 == $op;
+    }
+   },
    fallback => 1;
 
 1;
@@ -1558,12 +1570,12 @@ The F<cpanel_json_xs> command line utility for quick experiments.
 
 =head1 AUTHOR
 
- Marc Lehmann <schmorp@schmorp.de>
- http://home.schmorp.de/
+  Marc Lehmann <schmorp@schmorp.de>
+  http://home.schmorp.de/
 
 =head1 MAINTAINER
 
- Reini Urban <rurban@cpanel.net>
+  cPanel Inc. <cpan@cpanel.net>
 
 =cut
 

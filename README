@@ -84,19 +84,19 @@ DESCRIPTION
 
     src repo: <https://github.com/rurban/Cpanel-JSON-XS>
 
-    issues: <https://github.com/rurban/Cpanel-JSON-XS/issues>
+    RT: <https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
     Changes to JSON::XS
 
-    - added binary method, allow \xNN and \NNN sequences with binary
+    - added "binary" method, allow \xNN and \NNN sequences with binary
 
     - 5.6.2 support, sacrificing some utf8 features (assuming bytes
-    all-over)
+    all-over), no multi-byte unicode characters.
 
     - use ppport.h, sanify XS.xs comment styles, harness C coding style
 
     - common::sense not in the published production module, just during
-    development.
+    development and testing.
 
 FUNCTIONAL INTERFACE
     The following convenience methods are provided by this module. They are
@@ -1385,22 +1385,23 @@ BUGS
     its design is bug-free. If you keep reporting bugs they will be fixed
     swiftly, though.
 
-    Since the JSON::XS author refuses to use public bugtracker, we've setup
-    a tracker at github, so you'll have to report any issues twice. Once in
-    private to MLEHMANN to be fixed in JSON::XS for the masses and one to
-    our the public tracker. Issues fixed by JSON::XS with a new release will
-    also be backported to Cpanel::JSON::XS and 5.6.2, as long as Cpanel
-    relies on 5.6.2 and JSON::XS as our serializer of choice.
+    Since the JSON::XS author refuses to use a public bugtracker and prefers
+    private emails, we've setup a tracker at RT, so you'll have to report
+    any issues twice. Once in private to MLEHMANN to be fixed in JSON::XS
+    for the masses and one to our the public tracker. Issues fixed by
+    JSON::XS with a new release will also be backported to Cpanel::JSON::XS
+    and 5.6.2, as long as Cpanel relies on 5.6.2 and JSON::XS as our
+    serializer of choice.
 
-    Issues: <https://github.com/rurban/Cpanel-JSON-XS/issues>
+    <https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
 SEE ALSO
     The cpanel_json_xs command line utility for quick experiments.
 
 AUTHOR
-     Marc Lehmann <schmorp@schmorp.de>
-     http://home.schmorp.de/
+      Marc Lehmann <schmorp@schmorp.de>
+      http://home.schmorp.de/
 
 MAINTAINER
-     Reini Urban <rurban@cpanel.net>
+      cPanel Inc. <cpan@cpanel.net>
 
