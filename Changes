@@ -4,6 +4,9 @@ TODO: maybe detect and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+2.3312 2013-05-22 (cpanel)
+       - Made common::sense optional to get smaller FatPacker packages.
+
 2.3311 2013-04-04 18:41:23 (cpanel)
        - Changed maintainer to cpan@cpanel.net
        - Changed tracker to RT

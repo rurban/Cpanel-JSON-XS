@@ -12,7 +12,6 @@ WriteMakefile(
   VERSION_FROM => "XS.pm",
   NAME         => "Cpanel::JSON::XS",
   PREREQ_PM    => {
-    'common::sense' => '3.5',
     'Pod::Text'     => '2.08',
     'Pod::Usage'    => '1.51',
   },
@@ -26,6 +25,7 @@ WriteMakefile(
    ('META_MERGE'  =>
     {"recommends" =>
      {
+       'common::sense' => '3.5',
        'Encode'        => '1.9801',
      },
      resources =>
@@ -43,7 +43,10 @@ WriteMakefile(
 package MY;
 sub test {
   local $_ = shift->SUPER::test(@_);
-  s/TEST_FILES = /TEST_FILES = -Mcommon::sense /;
+  eval { require common::sense; };
+  unless ($@) {
+    s/TEST_FILES = /TEST_FILES = -Mcommon::sense /;
+  }
   $_
 }
 

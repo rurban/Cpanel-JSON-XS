@@ -100,16 +100,14 @@ Changes to JSON::XS
 
 - use ppport.h, sanify XS.xs comment styles, harness C coding style
 
-- common::sense not in the published production module, just during development
-  and testing.
+- common::sense is optional. When available it is not used in the published
+  production module, just during development and testing.
 
 =cut
 
 package Cpanel::JSON::XS;
 
-#use common::sense;
-
-our $VERSION = '2.3311';
+our $VERSION = '2.3312';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -1520,8 +1518,8 @@ its design is bug-free. If you keep reporting bugs they will be fixed
 swiftly, though.
 
 Since the JSON::XS author refuses to use a public bugtracker and
-prefers private emails, we've setup a tracker at RT, so you'll have to
-report any issues twice. Once in private to MLEHMANN to be fixed in
+prefers private emails, we've setup a tracker at RT, so you might want
+to report any issues twice. Once in private to MLEHMANN to be fixed in
 JSON::XS for the masses and one to our the public tracker. Issues
 fixed by JSON::XS with a new release will also be backported to
 Cpanel::JSON::XS and 5.6.2, as long as Cpanel relies on 5.6.2 and

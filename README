@@ -95,8 +95,8 @@ DESCRIPTION
 
     - use ppport.h, sanify XS.xs comment styles, harness C coding style
 
-    - common::sense not in the published production module, just during
-    development and testing.
+    - common::sense is optional. When available it is not used in the
+    published production module, just during development and testing.
 
 FUNCTIONAL INTERFACE
     The following convenience methods are provided by this module. They are
