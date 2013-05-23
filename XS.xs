@@ -74,6 +74,9 @@
 # define JSON_STASH json_stash
 #endif
 
+// the amount of HEs to allocate on the stack, when sorting keys
+#define STACK_HES 64
+
 static HV *json_stash, *json_boolean_stash; // JSON::XS::
 static SV *json_true, *json_false;
 
@@ -594,11 +597,15 @@ encode_hv (enc_t *enc, HV *hv)
       if (count)
         {
           int i, fast = 1;
-#if defined(__BORLANDC__) || defined(_MSC_VER)
-          HE **hes = _alloca (count * sizeof (HE));
-#else
-          HE *hes [count]; // if your compiler dies here, you need to enable C99 mode
-#endif
+          HE *hes_stack [STACK_HES];
+          HE **hes = hes_stack;
+          
+          // allocate larger arrays on the heap
+          if (count > STACK_HES)
+            {
+              SV *sv = sv_2mortal (NEWSV (0, count * sizeof (*hes)));
+              hes = (HE **)SvPVX (sv);
+            }
 
           i = 0;
           while ((he = hv_iternext (hv)))
@@ -1523,7 +1530,7 @@ decode_json (SV *string, JSON *json, char **offset_return)
   SV *sv;
 
   /* work around bugs in 5.10 where manipulating magic values
-   * will perl ignore the magic in subsequent accesses.
+   * makes perl ignore the magic in subsequent accesses.
    * also make a copy of non-PV values, to get them into a clean
    * state (SvPV should do that, but it's buggy, see below).
    */
@@ -1807,7 +1814,7 @@ void CLONE (...)
 void new (char *klass)
 	PPCODE:
 {
-  	SV *pv = NEWSV (0, sizeof (JSON));
+	SV *pv = NEWSV (0, sizeof (JSON));
         SvPOK_only (pv);
         json_init ((JSON *)SvPVX (pv));
         XPUSHs (sv_2mortal (sv_bless (

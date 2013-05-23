@@ -10,6 +10,9 @@ use JSON::XS;
 sub splitter {
    my ($coder, $text) = @_;
 
+   # work around hash randomisation bug introduced in 5.18
+   $coder->canonical;
+
    for (0 .. length $text) {
       my $a = substr $text, 0, $_;
       my $b = substr $text, $_;

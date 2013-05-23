@@ -4,6 +4,15 @@ TODO: maybe detetc and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+2.34 Thu May 23 11:30:34 CEST 2013
+	- work around bugs in perl 5.18 breaking more than 100
+          widely used modules, without a fix in sight because
+          p5pers don't care about CPAN anymore.
+	- when canonicalising, only allocate up to 64 hash key
+          pointers on the stack. for larger hashes, use the heap,
+          to avoid using too much stackspace.
+        - discuss the problem with setlocale (reported by a few victims).
+
 2.33 Wed Aug  1 21:03:52 CEST 2012
 	- internal encode/decode XS wrappers did not expect stack
           moves caused by callbacks (analyzed and testcase by Jesse Luehrs).

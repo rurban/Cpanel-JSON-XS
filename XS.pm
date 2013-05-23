@@ -103,7 +103,7 @@ package JSON::XS;
 
 use common::sense;
 
-our $VERSION = '2.33';
+our $VERSION = 2.34;
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -434,7 +434,8 @@ by sorting their keys. This is adding a comparatively high overhead.
 
 If C<$enable> is false, then the C<encode> method will output key-value
 pairs in the order Perl stores them (which will likely change between runs
-of the same script).
+of the same script, and can change even within the same run from 5.18
+onwards).
 
 This option is useful if you want the same data structure to be encoded as
 the same JSON text (given the same overall settings). If it is disabled,
@@ -1445,6 +1446,24 @@ horribly slow so-called "threads" which are simply slow and bloated
 process simulations - use fork, it's I<much> faster, cheaper, better).
 
 (It might actually work, but you have been warned).
+
+
+=head1 THE PERILS OF SETLOCALE
+
+Sometimes people avoid the Perl locale support and directly call the
+system's setlocale function with C<LC_ALL>.
+
+This breaks both perl and modules such as JSON::XS, as stringification of
+numbers no longer works correcly (e.g. C<$x = 0.1; print "$x"+1> might
+print C<1>, and JSON::XS might output illegal JSON as JSON::XS relies on
+perl to stringify numbers).
+
+The solution is simple: don't call C<setlocale>, or use it for only those
+categories you need, such as C<LC_MESSAGES> or C<LC_CTYPE>.
+
+If you need C<LC_NUMERIC>, you should enable it only around the code that
+actually needs it (avoiding stringification of numbers), and restore it
+afterwards.
 
 
 =head1 BUGS
