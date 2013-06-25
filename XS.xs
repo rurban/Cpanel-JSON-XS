@@ -766,15 +766,23 @@ encode_rv (enc_t *enc, SV *sv)
 #endif
           if (enc->json.flags & F_CONV_BLESSED)
             {
-              /* we re-bless the reference to get overload and other niceties right */
               GV *to_json = gv_fetchmethod_autoload (SvSTASH (sv), "TO_JSON", 0);
 
               if (to_json)
                 {
                   dSP;
+                  SV *rv;
 
                   ENTER; SAVETMPS; PUSHMARK (SP);
-                  XPUSHs (sv_bless (sv_2mortal (newRV_inc (sv)), SvSTASH (sv)));
+
+                  rv = sv_2mortal (newRV_inc (sv));
+#if PERL_VERSION < 10
+                  /* overloading flags used to be carried in the RV; fortunately that's only 5.8 and earlier */
+                  /* otherwise, avoid re-blessing; it breaks when SvREADONLY (sv), e.g. restricted hashes */
+                  if (Gv_AMG (SvSTASH (sv))
+                      SvAMAGIC_on (rv);
+#endif
+                  XPUSHs (rv);
 
                   /* calling with G_SCALAR ensures that we always get a 1 return value */
                   PUTBACK;

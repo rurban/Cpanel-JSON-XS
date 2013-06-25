@@ -10,6 +10,14 @@ sub ok($;$) {
 my $o1 = bless { a => 3 }, "XX";
 my $o2 = bless \(my $dummy = 1), "YY";
 
+if (eval 'require Hash::Util') {
+  Hash::Util::lock_ref_keys($o1);
+  print "# hash is locked\n";
+}
+else {
+  print "# locked hashes are not supported\n";
+};
+
 sub XX::TO_JSON {
    {__,""}
 }
