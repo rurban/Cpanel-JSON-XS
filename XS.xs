@@ -772,6 +772,7 @@ encode_rv (enc_t *enc, SV *sv)
                 {
                   dSP;
                   SV *rv;
+                  HV *stash;
 
                   ENTER; SAVETMPS; PUSHMARK (SP);
 
@@ -779,7 +780,8 @@ encode_rv (enc_t *enc, SV *sv)
 #if PERL_VERSION < 10
                   /* overloading flags used to be carried in the RV; fortunately that's only 5.8 and earlier */
                   /* otherwise, avoid re-blessing; it breaks when SvREADONLY (sv), e.g. restricted hashes */
-                  if (Gv_AMG (SvSTASH (sv))
+                  stash = SvSTASH (sv);
+                  if (Gv_AMG (stash))
                       SvAMAGIC_on (rv);
 #endif
                   XPUSHs (rv);

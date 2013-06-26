@@ -6,6 +6,7 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
 2.3313 2013-06-26 (cpanel)
        - Fix re-blessing of READONLY data (chip) [GH issue #7].
+       - Depend on Pod::Usage 1.36. 1.51 was added with 2.3306
 
 2.3312 2013-05-22 (cpanel)
        - Made common::sense optional to get smaller FatPacker packages.
