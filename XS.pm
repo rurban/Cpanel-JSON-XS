@@ -107,7 +107,7 @@ Changes to JSON::XS
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '2.3312';
+our $VERSION = '2.3313';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);

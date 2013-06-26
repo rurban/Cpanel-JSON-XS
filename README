@@ -1386,7 +1386,7 @@ BUGS
     swiftly, though.
 
     Since the JSON::XS author refuses to use a public bugtracker and prefers
-    private emails, we've setup a tracker at RT, so you'll have to report
+    private emails, we've setup a tracker at RT, so you might want to report
     any issues twice. Once in private to MLEHMANN to be fixed in JSON::XS
     for the masses and one to our the public tracker. Issues fixed by
     JSON::XS with a new release will also be backported to Cpanel::JSON::XS
