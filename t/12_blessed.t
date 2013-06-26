@@ -11,8 +11,14 @@ my $o1 = bless { a => 3 }, "XX";
 my $o2 = bless \(my $dummy = 1), "YY";
 
 if (eval 'require Hash::Util') {
-  Hash::Util::lock_ref_keys($o1);
-  print "# hash is locked\n";
+  if ($Hash::Util::VERSION > 0.05) {
+    Hash::Util::lock_ref_keys($o1);
+    print "# blessed hash is locked\n";
+  }
+  else {
+    Hash::Util::lock_hash($o1);
+    print "# hash is locked\n";
+  }
 }
 else {
   print "# locked hashes are not supported\n";
