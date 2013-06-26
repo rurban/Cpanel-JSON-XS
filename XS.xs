@@ -2164,8 +2164,11 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
               self->incr_pos -= offset - (U8*)SvPVX (self->incr_text);
               self->incr_nest = 0;
               self->incr_mode = 0;
-
+#if PERL_VERSION > 9
               sv_chop (self->incr_text, (const char* const)offset);
+#else
+              sv_chop (self->incr_text, (char*)offset);
+#endif
             }
           while (GIMME_V == G_ARRAY);
 }
