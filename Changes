@@ -7,6 +7,8 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 2.3313 2013-06-26 (cpanel)
        - Fix re-blessing of READONLY data (chip) [GH issue #7].
        - Depend on Pod::Usage 1.36. 1.51 was added with 2.3306
+       - t/01_utf8.t: workaround for stricter Encode versions [RT #84244]
+       - avoid <5.10 const warnings with sv_chop
 
 2.3312 2013-05-22 (cpanel)
        - Made common::sense optional to get smaller FatPacker packages.
