@@ -4,6 +4,10 @@ TODO: maybe detect and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+2.3314 2013-09-09 (cpanel)
+       - t/01_utf8.t: workaround for stricter Encode versions (syohex)
+       - autogenerate META files
+
 2.3313 2013-06-26 (cpanel)
        - Fix re-blessing of READONLY data (chip) [GH issue #7].
        - Depend on Pod::Usage 1.36. 1.51 was added with 2.3306
