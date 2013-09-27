@@ -7,7 +7,8 @@ use Cpanel::JSON::XS;
         'cpanel_apiversion' => 1,
         'utf8'       => 'אאאאאאאխ"',
         'func'       => 'phpmyadminlink',
-        'module'     => 'Cgi'
+        'module'     => 'Cgi',
+        "включен"    => "日本語"
     };
 
     ok( decode_json( encode_json($formref) ),
@@ -19,7 +20,8 @@ use Cpanel::JSON::XS;
         'cpanel_apiversion' => 1,
         'utf8'       => 'română',
         'func'       => 'phpmyadminlink',
-        'module'     => 'Cgi'
+        'module'     => 'Cgi',
+        "включен"    => "日本語"
     };
 
     ok( decode_json( encode_json($formref) ),

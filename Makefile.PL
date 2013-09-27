@@ -1,4 +1,3 @@
-#use 5.008002;
 use 5.006002;
 use ExtUtils::MakeMaker;
 
@@ -32,6 +31,7 @@ WriteMakefile(
      {
        license     => 'http://dev.perl.org/licenses/',
        bugtracker  => 'https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS',
+       # Note: https://github.com/rurban/Cpanel-JSON-XS/issues is also observed
        repository  => 'https://github.com/rurban/Cpanel-JSON-XS',
        homepage    => 'http://home.schmorp.de/',
      },

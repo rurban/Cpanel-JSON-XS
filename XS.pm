@@ -84,18 +84,22 @@ stuff). Or you can combine those features in whatever way you like.
 =head2 cPanel fork
 
 Since the original author MLEHMANN has no public
-source repo or bugtracker, this cPanel fork sits now
-on github.
+bugtracker, this cPanel fork sits now on github.
 
 src repo: L<https://github.com/rurban/Cpanel-JSON-XS>
+original: L<http://cvs.schmorp.de/JSON-XS/>
 
 RT:       L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
+or        L<https://github.com/rurban/Cpanel-JSON-XS/issues>
 
-Changes to JSON::XS
+B<Changes to JSON::XS>
 
-- added C<binary> method, allow \xNN and \NNN sequences with binary
+- public maintainance and bugtracker.
 
-- 5.6.2 support, sacrificing some utf8 features (assuming bytes all-over),
+- added C<binary> extension, non-JSON and non JSON parsable, allows
+  C<\xNN> and C<\NNN> sequences.
+
+- 5.6.2 support; sacrificing some utf8 features (assuming bytes all-over),
   no multi-byte unicode characters.
 
 - use ppport.h, sanify XS.xs comment styles, harness C coding style
@@ -103,11 +107,13 @@ Changes to JSON::XS
 - common::sense is optional. When available it is not used in the published
   production module, just during development and testing.
 
+- extended testsuite
+
 =cut
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '2.3314';
+our $VERSION = '2.3401';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -287,17 +293,17 @@ in files or databases, not when talking to other JSON encoders/decoders.
 
 =item $enabled = $json->binary
 
-If C<$enable> is true (or missing), then the C<encode> method will not
-try to detect an UTF-8 encoding in any JSON string, it will strictly
-interpret it as byte sequence.  The result might contain new \xNN
-sequences, which were not parsable by old JSON parser.  The C<decode>
-method forbids \uNNNN sequences and accepts \xNN and octal \NNN
+If the C<$enable> argument is true (or missing), then the C<encode>
+method will not try to detect an UTF-8 encoding in any JSON string, it
+will strictly interpret it as byte sequence.  The result might contain
+new C<\xNN> sequences, which is B<unparsable JSON>.  The C<decode> method
+forbids C<\uNNNN> sequences and accepts C<\xNN> and octal C<\NNN>
 sequences.
 
 There is also a special logic for perl 5.6 and utf8. 5.6 encodes any
-string to utf-8 automatically when seeing a codepoint >= 0x80 and <
-0x100. With the binary flag enabled decode the perl utf8 encoded
-string to the original byte encoding and encode this with \xNN
+string to utf-8 automatically when seeing a codepoint >= C<0x80> and
+< C<0x100>. With the binary flag enabled decode the perl utf8 encoded
+string to the original byte encoding and encode this with C<\xNN>
 escapes. This will result to the same encodings as with newer
 perls. But note that binary multi-byte codepoints with 5.6 will
 result in C<illegal unicode character in binary string> errors,
@@ -312,13 +318,14 @@ document.
 
 The main use for this flag is to avoid the smart unicode detection and
 possible double encoding. The disadvantage is that the resulting JSON
-text is encoded in new \xNN and in latin1 characters and must
+text is encoded in new C<\xNN> and in latin1 characters and must
 correctly be treated as such when storing and transferring, a rare
-encoding for JSON.  It is therefore most useful when you want to store
-data structures known to contain binary data efficiently in files or
-databases, not when talking to other JSON encoders/decoders.
-The binary decoding method can also be used when an encoder produced a
-non-JSON conformant hex or octal encoding \xNN or \NNN.
+encoding for JSON. It will produce non-readable JSON strings in the
+browser.  It is therefore most useful when you want to store data
+structures known to contain binary data efficiently in files or
+databases, not when talking to other JSON encoders/decoders.  The
+binary decoding method can also be used when an encoder produced a
+non-JSON conformant hex or octal encoding C<\xNN> or C<\NNN>.
 
   Cpanel::JSON::XS->new->binary->encode (["\x{89}\x{abc}"])
   5.6:   Error: malformed or illegal unicode character in binary string

@@ -429,6 +429,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                     {
 		      if (enc->json.flags & F_BINARY)
 			{
+                          /* MB cannot arrivehere */
                           need (enc, len += 3);
                           *enc->cur++ = '\\';
                           *enc->cur++ = 'x';

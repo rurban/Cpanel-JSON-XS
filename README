@@ -79,24 +79,31 @@ DESCRIPTION
         whatever way you like.
 
   cPanel fork
-    Since the original author MLEHMANN has no public source repo or
-    bugtracker, this cPanel fork sits now on github.
+    Since the original author MLEHMANN has no public bugtracker, this cPanel
+    fork sits now on github.
 
-    src repo: <https://github.com/rurban/Cpanel-JSON-XS>
+    src repo: <https://github.com/rurban/Cpanel-JSON-XS> original:
+    <http://cvs.schmorp.de/JSON-XS/>
 
     RT: <https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
+    or <https://github.com/rurban/Cpanel-JSON-XS/issues>
 
     Changes to JSON::XS
 
-    - added "binary" method, allow \xNN and \NNN sequences with binary
+    - public maintainance and bugtracker.
 
-    - 5.6.2 support, sacrificing some utf8 features (assuming bytes
+    - added "binary" extension, non-JSON and non JSON parsable, allows
+    "\xNN" and "\NNN" sequences.
+
+    - 5.6.2 support; sacrificing some utf8 features (assuming bytes
     all-over), no multi-byte unicode characters.
 
     - use ppport.h, sanify XS.xs comment styles, harness C coding style
 
     - common::sense is optional. When available it is not used in the
     published production module, just during development and testing.
+
+    - extended testsuite
 
 FUNCTIONAL INTERFACE
     The following convenience methods are provided by this module. They are
@@ -231,17 +238,17 @@ OBJECT-ORIENTED INTERFACE
 
     $json = $json->binary ([$enable])
     $enabled = $json->binary
-        If $enable is true (or missing), then the "encode" method will not
-        try to detect an UTF-8 encoding in any JSON string, it will strictly
-        interpret it as byte sequence. The result might contain new \xNN
-        sequences, which were not parsable by old JSON parser. The "decode"
-        method forbids \uNNNN sequences and accepts \xNN and octal \NNN
-        sequences.
+        If the $enable argument is true (or missing), then the "encode"
+        method will not try to detect an UTF-8 encoding in any JSON string,
+        it will strictly interpret it as byte sequence. The result might
+        contain new "\xNN" sequences, which is unparsable JSON. The "decode"
+        method forbids "\uNNNN" sequences and accepts "\xNN" and octal
+        "\NNN" sequences.
 
         There is also a special logic for perl 5.6 and utf8. 5.6 encodes any
         string to utf-8 automatically when seeing a codepoint >= 0x80 and <
         0x100. With the binary flag enabled decode the perl utf8 encoded
-        string to the original byte encoding and encode this with \xNN
+        string to the original byte encoding and encode this with "\xNN"
         escapes. This will result to the same encodings as with newer perls.
         But note that binary multi-byte codepoints with 5.6 will result in
         "illegal unicode character in binary string" errors, unlike with
@@ -256,14 +263,14 @@ OBJECT-ORIENTED INTERFACE
 
         The main use for this flag is to avoid the smart unicode detection
         and possible double encoding. The disadvantage is that the resulting
-        JSON text is encoded in new \xNN and in latin1 characters and must
+        JSON text is encoded in new "\xNN" and in latin1 characters and must
         correctly be treated as such when storing and transferring, a rare
-        encoding for JSON. It is therefore most useful when you want to
-        store data structures known to contain binary data efficiently in
-        files or databases, not when talking to other JSON
-        encoders/decoders. The binary decoding method can also be used when
-        an encoder produced a non-JSON conformant hex or octal encoding \xNN
-        or \NNN.
+        encoding for JSON. It will produce non-readable JSON strings in the
+        browser. It is therefore most useful when you want to store data
+        structures known to contain binary data efficiently in files or
+        databases, not when talking to other JSON encoders/decoders. The
+        binary decoding method can also be used when an encoder produced a
+        non-JSON conformant hex or octal encoding "\xNN" or "\NNN".
 
           Cpanel::JSON::XS->new->binary->encode (["\x{89}\x{abc}"])
           5.6:   Error: malformed or illegal unicode character in binary string
