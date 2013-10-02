@@ -30,8 +30,8 @@ WriteMakefile(
      resources =>
      {
        license     => 'http://dev.perl.org/licenses/',
-       bugtracker  => 'https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS',
-       # Note: https://github.com/rurban/Cpanel-JSON-XS/issues is also observed
+       bugtracker  => 'https://github.com/rurban/Cpanel-JSON-XS/issues',
+       # Note: https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS is also observed
        repository  => 'https://github.com/rurban/Cpanel-JSON-XS',
        homepage    => 'http://home.schmorp.de/',
      },

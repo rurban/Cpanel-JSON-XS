@@ -89,8 +89,8 @@ bugtracker, this cPanel fork sits now on github.
 src repo: L<https://github.com/rurban/Cpanel-JSON-XS>
 original: L<http://cvs.schmorp.de/JSON-XS/>
 
-RT:       L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
-or        L<https://github.com/rurban/Cpanel-JSON-XS/issues>
+RT:       L<https://github.com/rurban/Cpanel-JSON-XS/issues>
+or        L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
 B<Changes to JSON::XS>
 
