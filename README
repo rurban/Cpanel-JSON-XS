@@ -85,8 +85,8 @@ DESCRIPTION
     src repo: <https://github.com/rurban/Cpanel-JSON-XS> original:
     <http://cvs.schmorp.de/JSON-XS/>
 
-    RT: <https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
-    or <https://github.com/rurban/Cpanel-JSON-XS/issues>
+    RT: <https://github.com/rurban/Cpanel-JSON-XS/issues> or
+    <https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
     Changes to JSON::XS
 
