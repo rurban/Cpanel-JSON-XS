@@ -1,6 +1,7 @@
 BEGIN { $| = 1; print "1..76\n"; }
 
 use utf8;
+use Types::Serialiser;
 use JSON::XS;
 
 our $test;
@@ -14,12 +15,12 @@ ok (JSON::XS->new->allow_nonref (1)->decode ('false') == 0);
 
 my $true  = JSON::XS->new->allow_nonref (1)->decode ('true');
 ok ($true eq 1);
-ok (JSON::XS::is_bool $true);
+ok (Types::Serialiser::is_bool $true);
 my $false = JSON::XS->new->allow_nonref (1)->decode ('false');
 ok ($false == !$true);
-ok (JSON::XS::is_bool $false);
+ok (Types::Serialiser::is_bool $false);
 ok (++$false == 1);
-ok (!JSON::XS::is_bool $false);
+ok (!Types::Serialiser::is_bool $false);
 
 ok (JSON::XS->new->allow_nonref (1)->decode ('5') == 5);
 ok (JSON::XS->new->allow_nonref (1)->decode ('-5') == -5);
@@ -34,13 +35,13 @@ ok ('[{"1":[5]}]' eq encode_json [{1 => [5]}]);
 ok ('{"1":2,"3":4}' eq JSON::XS->new->canonical (1)->encode (decode_json '{ "1" : 2, "3" : 4 }'));
 ok ('{"1":2,"3":1.2}' eq JSON::XS->new->canonical (1)->encode (decode_json '{ "1" : 2, "3" : 1.2 }'));
 
-ok ('[true]'  eq encode_json [JSON::XS::true]);
-ok ('[false]' eq encode_json [JSON::XS::false]);
+ok ('[true]'  eq encode_json [Types::Serialiser::true]);
+ok ('[false]' eq encode_json [Types::Serialiser::false]);
 ok ('[true]'  eq encode_json [\1]);
 ok ('[false]' eq encode_json [\0]);
 ok ('[null]'  eq encode_json [undef]);
-ok ('[true]'  eq encode_json [JSON::XS::true]);
-ok ('[false]' eq encode_json [JSON::XS::false]);
+ok ('[true]'  eq encode_json [Types::Serialiser::true]);
+ok ('[false]' eq encode_json [Types::Serialiser::false]);
 
 for $v (1, 2, 3, 5, -1, -2, -3, -4, 100, 1000, 10000, -999, -88, -7, 7, 88, 999, -1e5, 1e6, 1e7, 1e8) {
    ok ($v == ((decode_json "[$v]")->[0]));

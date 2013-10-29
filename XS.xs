@@ -35,6 +35,7 @@
 #define F_CONV_BLESSED   0x00000800UL
 #define F_RELAXED        0x00001000UL
 #define F_ALLOW_UNKNOWN  0x00002000UL
+#define F_ALLOW_TAGS     0x00004000UL
 #define F_HOOK           0x00080000UL // some hooks exist, so slow-path processing
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
@@ -77,8 +78,8 @@
 // the amount of HEs to allocate on the stack, when sorting keys
 #define STACK_HES 64
 
-static HV *json_stash, *json_boolean_stash; // JSON::XS::
-static SV *json_true, *json_false;
+static HV *json_stash, *types_boolean_stash; // JSON::XS::
+static SV *types_true, *types_false, *sv_json;
 
 enum {
   INCR_M_WS = 0, // initial whitespace skipping, must be 0
@@ -485,7 +486,7 @@ encode_av (enc_t *enc, AV *av)
     croak (ERR_NESTING_EXCEEDED);
 
   encode_ch (enc, '[');
-  
+
   if (len >= 0)
     {
       encode_nl (enc); ++enc->indent;
@@ -507,7 +508,7 @@ encode_av (enc_t *enc, AV *av)
 
       encode_nl (enc); --enc->indent; encode_indent (enc);
     }
-  
+
   encode_ch (enc, ']');
 }
 
@@ -521,7 +522,7 @@ encode_hk (enc_t *enc, HE *he)
       SV *sv = HeSVKEY (he);
       STRLEN len;
       char *str;
-      
+
       SvGETMAGIC (sv);
       str = SvPV (sv, len);
 
@@ -599,7 +600,7 @@ encode_hv (enc_t *enc, HV *hv)
           int i, fast = 1;
           HE *hes_stack [STACK_HES];
           HE **hes = hes_stack;
-          
+
           // allocate larger arrays on the heap
           if (count > STACK_HES)
             {
@@ -684,71 +685,94 @@ static void
 encode_rv (enc_t *enc, SV *sv)
 {
   svtype svt;
+  GV *method;
 
   SvGETMAGIC (sv);
   svt = SvTYPE (sv);
 
   if (expect_false (SvOBJECT (sv)))
     {
-      HV *stash = !JSON_SLOW || json_boolean_stash
-                  ? json_boolean_stash
-                  : gv_stashpv ("JSON::XS::Boolean", 1);
+      HV *boolean_stash = !JSON_SLOW || types_boolean_stash
+                          ? types_boolean_stash
+                          : gv_stashpv ("Types::Serialiser::Boolean", 1);
+      HV *stash = SvSTASH (sv);
 
-      if (SvSTASH (sv) == stash)
+      if (stash == boolean_stash)
         {
           if (SvIV (sv))
             encode_str (enc, "true", 4, 0);
           else
             encode_str (enc, "false", 5, 0);
         }
-      else
+      else if ((enc->json.flags & F_ALLOW_TAGS) && (method = gv_fetchmethod_autoload (stash, "FREEZE", 0)))
         {
-#if 0
-          if (0 && sv_derived_from (rv, "JSON::Literal"))
+          int count;
+          dSP;
+
+          ENTER; SAVETMPS; PUSHMARK (SP);
+          EXTEND (SP, 2);
+          // we re-bless the reference to get overload and other niceties right
+          PUSHs (sv_bless (sv_2mortal (newRV_inc (sv)), stash));
+          PUSHs (sv_json);
+
+          PUTBACK;
+          count = call_sv ((SV *)GvCV (method), G_ARRAY);
+          SPAGAIN;
+
+          // catch this surprisingly common error
+          if (SvROK (TOPs) && SvRV (TOPs) == sv)
+            croak ("%s::TO_JSON method returned same object as was passed instead of a new one", HvNAME (SvSTASH (sv)));
+
+          encode_ch (enc, '(');
+          encode_ch (enc, '"');
+          encode_str (enc, HvNAME (stash), HvNAMELEN (stash), HvNAMEUTF8 (stash));
+          encode_ch (enc, '"');
+          encode_ch (enc, ')');
+          encode_ch (enc, '[');
+
+          while (count)
             {
-              // not yet
+              encode_sv (enc, SP[1 - count--]);
+
+              if (count)
+                encode_ch (enc, ',');
             }
-#endif
-          if (enc->json.flags & F_CONV_BLESSED)
-            {
-              // we re-bless the reference to get overload and other niceties right
-              GV *to_json = gv_fetchmethod_autoload (SvSTASH (sv), "TO_JSON", 0);
 
-              if (to_json)
-                {
-                  dSP;
+          encode_ch (enc, ']');
 
-                  ENTER; SAVETMPS; PUSHMARK (SP);
-                  XPUSHs (sv_bless (sv_2mortal (newRV_inc (sv)), SvSTASH (sv)));
+          PUTBACK;
 
-                  // calling with G_SCALAR ensures that we always get a 1 return value
-                  PUTBACK;
-                  call_sv ((SV *)GvCV (to_json), G_SCALAR);
-                  SPAGAIN;
-
-                  // catch this surprisingly common error
-                  if (SvROK (TOPs) && SvRV (TOPs) == sv)
-                    croak ("%s::TO_JSON method returned same object as was passed instead of a new one", HvNAME (SvSTASH (sv)));
-
-                  sv = POPs;
-                  PUTBACK;
-
-                  encode_sv (enc, sv);
-
-                  FREETMPS; LEAVE;
-                }
-              else if (enc->json.flags & F_ALLOW_BLESSED)
-                encode_str (enc, "null", 4, 0);
-              else
-                croak ("encountered object '%s', but neither allow_blessed enabled nor TO_JSON method available on it",
-                       SvPV_nolen (sv_2mortal (newRV_inc (sv))));
-            }
-          else if (enc->json.flags & F_ALLOW_BLESSED)
-            encode_str (enc, "null", 4, 0);
-          else
-            croak ("encountered object '%s', but neither allow_blessed nor convert_blessed settings are enabled",
-                   SvPV_nolen (sv_2mortal (newRV_inc (sv))));
+          FREETMPS; LEAVE;
         }
+      else if ((enc->json.flags & F_CONV_BLESSED) && (method = gv_fetchmethod_autoload (stash, "TO_JSON", 0)))
+        {
+          dSP;
+
+          ENTER; SAVETMPS; PUSHMARK (SP);
+          // we re-bless the reference to get overload and other niceties right
+          XPUSHs (sv_bless (sv_2mortal (newRV_inc (sv)), stash));
+
+          // calling with G_SCALAR ensures that we always get a 1 return value
+          PUTBACK;
+          call_sv ((SV *)GvCV (method), G_SCALAR);
+          SPAGAIN;
+
+          // catch this surprisingly common error
+          if (SvROK (TOPs) && SvRV (TOPs) == sv)
+            croak ("%s::TO_JSON method returned same object as was passed instead of a new one", HvNAME (SvSTASH (sv)));
+
+          sv = POPs;
+          PUTBACK;
+
+          encode_sv (enc, sv);
+
+          FREETMPS; LEAVE;
+        }
+      else if (enc->json.flags & F_ALLOW_BLESSED)
+        encode_str (enc, "null", 4, 0);
+      else
+        croak ("encountered object '%s', but neither allow_blessed, convert_blessed nor allow_tags settings are enabled (or TO_JSON/FREEZE method missing)",
+               SvPV_nolen (sv_2mortal (newRV_inc (sv))));
     }
   else if (svt == SVt_PVHV)
     encode_hv (enc, (HV *)sv);
@@ -845,7 +869,7 @@ encode_sv (enc_t *enc, SV *sv)
   else if (!SvOK (sv) || enc->json.flags & F_ALLOW_UNKNOWN)
     encode_str (enc, "null", 4, 0);
   else
-    croak ("encountered perl type (%s,0x%x) that JSON cannot handle, you might want to report this",
+    croak ("encountered perl type (%s,0x%x) that JSON cannot handle, check your input data",
            SvPV_nolen (sv), (unsigned int)SvFLAGS (sv));
 }
 
@@ -1268,7 +1292,7 @@ decode_av (dec_t *dec)
             ++dec->cur;
             break;
           }
-        
+
         if (*dec->cur != ',')
           ERR (", or ] expected while parsing array");
 
@@ -1460,15 +1484,98 @@ fail:
 }
 
 static SV *
+decode_tag (dec_t *dec)
+{
+  SV *tag = 0;
+  SV *val = 0;
+
+  if (!(dec->json.flags & F_ALLOW_TAGS))
+    ERR ("malformed JSON string, neither array, object, number, string or atom");
+
+  ++dec->cur;
+
+  decode_ws (dec);
+
+  tag = decode_sv (dec);
+  if (!tag)
+    goto fail;
+
+  if (!SvPOK (tag))
+    ERR ("malformed JSON string, (tag) must be a string");
+
+  decode_ws (dec);
+
+  if (*dec->cur != ')')
+    ERR (") expected after tag");
+
+  ++dec->cur;
+
+  decode_ws (dec);
+
+  val = decode_sv (dec);
+  if (!val)
+    goto fail;
+
+  if (!SvROK (val) || SvTYPE (SvRV (val)) != SVt_PVAV)
+    ERR ("malformed JSON string, tag value must be an array");
+
+  {
+    AV *av = (AV *)SvRV (val);
+    int i, len = av_len (av) + 1;
+    HV *stash = gv_stashsv (tag, 0);
+    SV *sv;
+
+    if (!stash)
+      ERR ("cannot decode perl-object (package does not exist)");
+
+    GV *method = gv_fetchmethod_autoload (stash, "THAW", 0);
+    
+    if (!method)
+      ERR ("cannot decode perl-object (package does not have a THAW method)");
+    
+    dSP;
+
+    ENTER; SAVETMPS; PUSHMARK (SP);
+    EXTEND (SP, len + 2);
+    // we re-bless the reference to get overload and other niceties right
+    PUSHs (tag);
+    PUSHs (sv_json);
+
+    for (i = 0; i < len; ++i)
+      PUSHs (*av_fetch (av, i, 1));
+
+    PUTBACK;
+    call_sv ((SV *)GvCV (method), G_SCALAR);
+    SPAGAIN;
+
+    SvREFCNT_dec (tag);
+    SvREFCNT_dec (val);
+    sv = SvREFCNT_inc (POPs);
+
+    PUTBACK;
+
+    FREETMPS; LEAVE;
+
+    return sv;
+  }
+
+fail:
+  SvREFCNT_dec (tag);
+  SvREFCNT_dec (val);
+  return 0;
+}
+
+static SV *
 decode_sv (dec_t *dec)
 {
   // the beauty of JSON: you need exactly one character lookahead
   // to parse everything.
   switch (*dec->cur)
     {
-      case '"': ++dec->cur; return decode_str (dec); 
-      case '[': ++dec->cur; return decode_av  (dec); 
+      case '"': ++dec->cur; return decode_str (dec);
+      case '[': ++dec->cur; return decode_av  (dec);
       case '{': ++dec->cur; return decode_hv  (dec);
+      case '(':             return decode_tag (dec);
 
       case '-':
       case '0': case '1': case '2': case '3': case '4':
@@ -1480,9 +1587,9 @@ decode_sv (dec_t *dec)
           {
             dec->cur += 4;
 #if JSON_SLOW
-            json_true = get_bool ("JSON::XS::true");
+            types_true = get_bool ("Types::Serialiser::true");
 #endif
-            return newSVsv (json_true);
+            return newSVsv (types_true);
           }
         else
           ERR ("'true' expected");
@@ -1494,9 +1601,9 @@ decode_sv (dec_t *dec)
           {
             dec->cur += 5;
 #if JSON_SLOW
-            json_false = get_bool ("JSON::XS::false");
+            types_false = get_bool ("Types::Serialiser::false");
 #endif
-            return newSVsv (json_false);
+            return newSVsv (types_false);
           }
         else
           ERR ("'false' expected");
@@ -1515,7 +1622,7 @@ decode_sv (dec_t *dec)
         break;
 
       default:
-        ERR ("malformed JSON string, neither array, object, number, string or atom");
+        ERR ("malformed JSON string, neither tag, array, object, number, string or atom");
         break;
     }
 
@@ -1752,6 +1859,7 @@ incr_parse (JSON *self)
 
                     case '[':
                     case '{':
+                    case '(':
                       if (++self->incr_nest > self->max_depth)
                         croak (ERR_NESTING_EXCEEDED);
                       break;
@@ -1760,6 +1868,10 @@ incr_parse (JSON *self)
                     case '}':
                       if (--self->incr_nest <= 0)
                         goto interrupt;
+                      break;
+
+                    case ')':
+                      --self->incr_nest;
                       break;
 
                     case '#':
@@ -1795,11 +1907,14 @@ BOOT:
             : i >= 'A' && i <= 'F' ? i - 'A' + 10
             : -1;
 
-	json_stash         = gv_stashpv ("JSON::XS"         , 1);
-	json_boolean_stash = gv_stashpv ("JSON::XS::Boolean", 1);
+	json_stash          = gv_stashpv ("JSON::XS"                  , 1);
+	types_boolean_stash = gv_stashpv ("Types::Serialiser::Boolean", 1);
 
-        json_true  = get_bool ("JSON::XS::true");
-        json_false = get_bool ("JSON::XS::false");
+        types_true  = get_bool ("Types::Serialiser::true");
+        types_false = get_bool ("Types::Serialiser::false");
+
+        sv_json = newSVpv ("JSON", 0);
+        SvREADONLY_on (sv_json);
 
         CvNODEBUG_on (get_cv ("JSON::XS::incr_text", 0)); /* the debugger completely breaks lvalue subs */
 }
@@ -1808,8 +1923,8 @@ PROTOTYPES: DISABLE
 
 void CLONE (...)
 	CODE:
-        json_stash         = 0;
-        json_boolean_stash = 0;
+        json_stash          = 0;
+        types_boolean_stash = 0;
 
 void new (char *klass)
 	PPCODE:
@@ -1839,6 +1954,7 @@ void ascii (JSON *self, int enable = 1)
         convert_blessed = F_CONV_BLESSED
         relaxed         = F_RELAXED
         allow_unknown   = F_ALLOW_UNKNOWN
+        allow_tags      = F_ALLOW_TAGS
 	PPCODE:
 {
         if (enable)
@@ -1864,6 +1980,7 @@ void get_ascii (JSON *self)
         get_convert_blessed = F_CONV_BLESSED
         get_relaxed         = F_RELAXED
         get_allow_unknown   = F_ALLOW_UNKNOWN
+        get_allow_tags      = F_ALLOW_TAGS
 	PPCODE:
         XPUSHs (boolSV (self->flags & ix));
 
@@ -2073,27 +2190,21 @@ void DESTROY (JSON *self)
 PROTOTYPES: ENABLE
 
 void encode_json (SV *scalar)
-	ALIAS:
-        to_json_    = 0
-        encode_json = F_UTF8
 	PPCODE:
 {
         JSON json;
         json_init (&json);
-        json.flags |= ix;
+        json.flags |= F_UTF8;
         PUTBACK; scalar = encode_json (scalar, &json); SPAGAIN;
         XPUSHs (scalar);
 }
 
 void decode_json (SV *jsonstr)
-	ALIAS:
-        from_json_  = 0
-        decode_json = F_UTF8
 	PPCODE:
 {
         JSON json;
         json_init (&json);
-        json.flags |= ix;
+        json.flags |= F_UTF8;
         PUTBACK; jsonstr = decode_json (jsonstr, &json, 0); SPAGAIN;
         XPUSHs (jsonstr);
 }

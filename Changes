@@ -4,6 +4,17 @@ TODO: maybe detetc and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0  Tue Oct 29 01:35:37 CET 2013
+        - implemented an object tagging extension (using the
+          Types::Serialiser serialisation protocol).
+        - reworked the documentation regarding object serialisation,
+          add a new OBJECT SERIALISATION section that explains the
+          whole process.
+        - new setting: allow_tags.
+	- switch to Types::Serialiser booleans.
+	- remove to_json/from_json.
+        - other minor improvements to the documentation.
+
 2.34 Thu May 23 11:30:34 CEST 2013
 	- work around bugs in perl 5.18 breaking more than 100
           widely used modules, without a fix in sight because

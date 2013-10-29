@@ -34,19 +34,21 @@ C<fromformat> can be one of:
 
 =item json - a json text encoded, either utf-8, utf16-be/le, utf32-be/le
 
-=item storable - a Storable frozen value
+=item cbor - CBOR (RFC 7049, L<CBOR::XS>), a kind of binary JSON
 
-=item storable-file - a Storable file (Storable has two incompatible formats)
+=item storable - a L<Storable> frozen value
 
-=item bencode - use Convert::Bencode, if available (used by torrent files, among others)
+=item storable-file - a L<Storable> file (Storable has two incompatible formats)
 
-=item clzf - Compress::LZF format (requires that module to be installed)
+=item bencode - use L<Convert::Bencode>, if available (used by torrent files, among others)
+
+=item clzf - L<Compress::LZF> format (requires that module to be installed)
 
 =item eval - evaluate the given code as (non-utf-8) Perl, basically the reverse of "-t dump"
 
-=item yaml - YAML (avoid at all costs, requires the YAML module :)
+=item yaml - L<YAML> (avoid at all costs, requires the YAML module :)
 
-=item string - do not attempt to decode te file data
+=item string - do not attempt to decode the file data
 
 =item none - nothing is read, creates an C<undef> scalar - mainly useful with C<-e>
 
@@ -68,19 +70,21 @@ C<toformat> can be one of:
 
 =item json-utf-32le, json-utf-32be - little endian/big endian utf-32
 
-=item storable - a Storable frozen value in network format
+=item cbor - CBOR (RFC 7049, L<CBOR::XS>), a kind of binary JSON
 
-=item storable-file - a Storable file in network format (Storable has two incompatible formats)
+=item storable - a L<Storable> frozen value in network format
 
-=item bencode - use Convert::Bencode, if available (used by torrent files, among others)
+=item storable-file - a L<Storable> file in network format (Storable has two incompatible formats)
 
-=item clzf - Compress::LZF format
+=item bencode - use L<Convert::Bencode>, if available (used by torrent files, among others)
 
-=item yaml - YAML
+=item clzf - L<Compress::LZF> format
 
-=item dump - Data::Dump
+=item yaml - L<YAML>
 
-=item dumper - Data::Dumper
+=item dump - L<Data::Dump>
+
+=item dumper - L<Data::Dumper>
 
 =item string - writes the data out as if it were a string
 
@@ -173,6 +177,7 @@ my %F = (
       warn "input text encoding is $enc\n" if $opt_verbose;
       JSON::XS->new->decode (decode $enc, $_)
    },
+   "cbor"          => sub { require CBOR::XS; CBOR::XS::decode_cbor ($_) },
    "storable"      => sub { Storable::thaw $_ },
    "storable-file" => sub { open my $fh, "<", \$_; Storable::fd_retrieve $fh },
    "bencode"       => sub { require Convert::Bencode; Convert::Bencode::bdecode ($_) },
@@ -191,10 +196,9 @@ my %T = (
    "json-utf-16be" => sub { encode "utf-16be", JSON::XS->new->encode ($_) },
    "json-utf-32le" => sub { encode "utf-32le", JSON::XS->new->encode ($_) },
    "json-utf-32be" => sub { encode "utf-32be", JSON::XS->new->encode ($_) },
-
+   "cbor"          => sub { require CBOR::XS; CBOR::XS::encode_cbor ($_) },
    "storable"      => sub { Storable::nfreeze $_ },
    "storable-file" => sub { open my $fh, ">", \my $buf; Storable::nstore_fd $_, $fh; $buf },
-
    "bencode"       => sub { require Convert::Bencode; Convert::Bencode::bencode ($_) },
    "clzf"          => sub { require Compress::LZF; Compress::LZF::sfreeze_cr ($_) },
    "yaml"          => sub { require YAML; YAML::Dump ($_) },

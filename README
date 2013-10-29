@@ -79,7 +79,7 @@ DESCRIPTION
     *   simple to use
 
         This module has both a simple functional interface as well as an
-        object oriented interface interface.
+        object oriented interface.
 
     *   reasonably versatile output formats
 
@@ -114,15 +114,6 @@ FUNCTIONAL INTERFACE
            $perl_scalar = JSON::XS->new->utf8->decode ($json_text)
 
         Except being faster.
-
-    $is_boolean = JSON::XS::is_bool $scalar
-        Returns true if the passed scalar represents either JSON::XS::true
-        or JSON::XS::false, two constants that act like 1 and 0,
-        respectively and are used to represent JSON "true" and "false"
-        values in Perl.
-
-        See MAPPING, below, for more information on how JSON values are
-        mapped to Perl.
 
 A FEW NOTES ON UNICODE AND PERL
     Since this often leads to confusion, here are a few very clear words on
@@ -419,24 +410,28 @@ OBJECT-ORIENTED INTERFACE
 
     $json = $json->allow_blessed ([$enable])
     $enabled = $json->get_allow_blessed
+        See "OBJECT SERIALISATION" for details.
+
         If $enable is true (or missing), then the "encode" method will not
-        barf when it encounters a blessed reference. Instead, the value of
-        the convert_blessed option will decide whether "null"
-        ("convert_blessed" disabled or no "TO_JSON" method found) or a
-        representation of the object ("convert_blessed" enabled and
-        "TO_JSON" method found) is being encoded. Has no effect on "decode".
+        barf when it encounters a blessed reference that it cannot convert
+        otherwise. Instead, a JSON "null" value is encoded instead of the
+        object.
 
         If $enable is false (the default), then "encode" will throw an
-        exception when it encounters a blessed object.
+        exception when it encounters a blessed object that it cannot convert
+        otherwise.
+
+        This setting has no effect on "decode".
 
     $json = $json->convert_blessed ([$enable])
     $enabled = $json->get_convert_blessed
+        See "OBJECT SERIALISATION" for details.
+
         If $enable is true (or missing), then "encode", upon encountering a
         blessed object, will check for the availability of the "TO_JSON"
         method on the object's class. If found, it will be called in scalar
         context and the resulting scalar will be encoded instead of the
-        object. If no "TO_JSON" method is found, the value of
-        "allow_blessed" will decide what to do.
+        object.
 
         The "TO_JSON" method may safely call die if it wants. If "TO_JSON"
         returns other blessed objects, those will be handled in the same
@@ -446,12 +441,27 @@ OBJECT-ORIENTED INTERFACE
         the object) are usually in upper case letters and to avoid
         collisions with any "to_json" function or method.
 
-        This setting does not yet influence "decode" in any way, but in the
-        future, global hooks might get installed that influence "decode" and
-        are enabled by this setting.
+        If $enable is false (the default), then "encode" will not consider
+        this type of conversion.
 
-        If $enable is false, then the "allow_blessed" setting will decide
-        what to do when a blessed object is found.
+        This setting has no effect on "decode".
+
+    $json = $json->allow_tags ([$enable])
+    $enabled = $json->allow_tags
+        See "OBJECT SERIALISATION" for details.
+
+        If $enable is true (or missing), then "encode", upon encountering a
+        blessed object, will check for the availability of the "FREEZE"
+        method on the object's class. If found, it will be used to serialise
+        the object into a nonstandard tagged JSON value (that JSON decoders
+        cannot decode).
+
+        It also causes "decode" to parse such tagged JSON values and
+        deserialise them via a call to the "THAW" method.
+
+        If $enable is false (the default), then "encode" will not consider
+        this type of conversion, and tagged JSON values will cause a parse
+        error in "decode", as if tags were not part of the grammar.
 
     $json = $json->filter_json_object ([$coderef->($hashref)])
         When $coderef is specified, it will be called from "decode" each
@@ -597,21 +607,12 @@ OBJECT-ORIENTED INTERFACE
         useful.
 
     $json_text = $json->encode ($perl_scalar)
-        Converts the given Perl data structure (a simple scalar or a
-        reference to a hash or array) to its JSON representation. Simple
-        scalars will be converted into JSON string or number sequences,
-        while references to arrays become JSON arrays and references to
-        hashes become JSON objects. Undefined Perl values (e.g. "undef")
-        become JSON "null" values. Neither "true" nor "false" values will be
-        generated.
+        Converts the given Perl value or data structure to its JSON
+        representation. Croaks on error.
 
     $perl_scalar = $json->decode ($json_text)
         The opposite of "encode": expects a JSON text and tries to parse it,
         returning the resulting simple scalar or reference. Croaks on error.
-
-        JSON numbers and strings become simple Perl scalars. JSON arrays
-        become Perl arrayrefs and JSON objects become Perl hashrefs. "true"
-        becomes 1, "false" becomes 0 and "null" becomes "undef".
 
     ($perl_scalar, $characters) = $json->decode_prefix ($json_text)
         This works like the "decode" method, but instead of raising an
@@ -620,8 +621,7 @@ OBJECT-ORIENTED INTERFACE
         characters consumed so far.
 
         This is useful if your JSON texts are not delimited by an outer
-        protocol (which is not the brightest thing to do in the first place)
-        and you need to know where the JSON text ends.
+        protocol and you need to know where the JSON text ends.
 
            JSON::XS->new->decode_prefix ("[1] the tail")
            => ([], 3)
@@ -663,7 +663,7 @@ INCREMENTAL PARSING
         extract exactly *one* JSON object. If that is successful, it will
         return this object, otherwise it will return "undef". If there is a
         parse error, this method will croak just as "decode" would do (one
-        can then use "incr_skip" to skip the errornous part). This is the
+        can then use "incr_skip" to skip the erroneous part). This is the
         most common way of using the method.
 
         And finally, in list context, it will try to extract as many objects
@@ -701,7 +701,7 @@ INCREMENTAL PARSING
         to reset the parse state.
 
         The difference to "incr_reset" is that only text until the parse
-        error occured is removed.
+        error occurred is removed.
 
     $json->incr_reset
         This completely resets the incremental parser, that is, after this
@@ -895,7 +895,7 @@ MAPPING
         represent it as a numeric (floating point) value if that is possible
         without loss of precision. Otherwise it will preserve the number as
         a string value (in which case you lose roundtripping ability, as the
-        JSON number will be re-encoded toa JSON string).
+        JSON number will be re-encoded to a JSON string).
 
         Numbers containing a fractional or exponential part will always be
         represented as numeric (floating point) values, possibly at a loss
@@ -906,16 +906,31 @@ MAPPING
         Note that precision is not accuracy - binary floating point values
         cannot represent most decimal fractions exactly, and when converting
         from and to floating point, JSON::XS only guarantees precision up to
-        but not including the leats significant bit.
+        but not including the least significant bit.
 
     true, false
-        These JSON atoms become "JSON::XS::true" and "JSON::XS::false",
-        respectively. They are overloaded to act almost exactly like the
-        numbers 1 and 0. You can check whether a scalar is a JSON boolean by
-        using the "JSON::XS::is_bool" function.
+        These JSON atoms become "Types::Serialiser::true" and
+        "Types::Serialiser::false", respectively. They are overloaded to act
+        almost exactly like the numbers 1 and 0. You can check whether a
+        scalar is a JSON boolean by using the "Types::Serialiser::is_bool"
+        function (after "use Types::Serialier", of course).
 
     null
         A JSON null atom becomes "undef" in Perl.
+
+    shell-style comments ("# *text*")
+        As a nonstandard extension to the JSON syntax that is enabled by the
+        "relaxed" setting, shell-style comments are allowed. They can start
+        anywhere outside strings and go till the end of the line.
+
+    tagged values ("(*tag*)*value*").
+        Another nonstandard extension to the JSON syntax, enabled with the
+        "allow_tags" setting, are tagged values. In this implementation, the
+        *tag* must be a perl package/class name encoded as a JSON string,
+        and the *value* must be a JSON array encoding optional constructor
+        arguments.
+
+        See "OBJECT SERIALISATION", below, for details.
 
   PERL -> JSON
     The mapping from Perl to JSON is slightly more difficult, as Perl is a
@@ -925,14 +940,12 @@ MAPPING
     hash references
         Perl hash references become JSON objects. As there is no inherent
         ordering in hash keys (or JSON objects), they will usually be
-        encoded in a pseudo-random order that can change between runs of the
-        same program but stays generally the same within a single run of a
-        program. JSON::XS can optionally sort the hash keys (determined by
-        the *canonical* flag), so the same datastructure will serialise to
-        the same JSON text (given same settings and version of JSON::XS),
-        but this incurs a runtime overhead and is only rarely useful, e.g.
-        when you want to compare some JSON text against another for
-        equality.
+        encoded in a pseudo-random order. JSON::XS can optionally sort the
+        hash keys (determined by the *canonical* flag), so the same
+        datastructure will serialise to the same JSON text (given same
+        settings and version of JSON::XS), but this incurs a runtime
+        overhead and is only rarely useful, e.g. when you want to compare
+        some JSON text against another for equality.
 
     array references
         Perl array references become JSON arrays.
@@ -940,22 +953,25 @@ MAPPING
     other references
         Other unblessed references are generally not allowed and will cause
         an exception to be thrown, except for references to the integers 0
-        and 1, which get turned into "false" and "true" atoms in JSON. You
-        can also use "JSON::XS::false" and "JSON::XS::true" to improve
+        and 1, which get turned into "false" and "true" atoms in JSON.
+
+        Since "JSON::XS" uses the boolean model from Types::Serialiser, you
+        can also "use Types::Serialiser" and then use
+        "Types::Serialiser::false" and "Types::Serialiser::true" to improve
         readability.
 
-           encode_json [\0, JSON::XS::true]      # yields [false,true]
+           use Types::Serialiser;
+           encode_json [\0, Types::Serialiser::true]      # yields [false,true]
 
-    JSON::XS::true, JSON::XS::false
-        These special values become JSON true and JSON false values,
-        respectively. You can also use "\1" and "\0" directly if you want.
+    Types::Serialiser::true, Types::Serialiser::false
+        These special values from the Types::Serialiser module become JSON
+        true and JSON false values, respectively. You can also use "\1" and
+        "\0" directly if you want.
 
     blessed objects
-        Blessed objects are not directly representable in JSON. See the
-        "allow_blessed" and "convert_blessed" methods on various options on
-        how to deal with this: basically, you can choose between throwing an
-        exception, encoding the reference as if it weren't blessed, or
-        provide your own serialiser method.
+        Blessed objects are not directly representable in JSON, but
+        "JSON::XS" allows various ways of handling objects. See "OBJECT
+        SERIALISATION", below, for details.
 
     simple scalars
         Simple Perl scalars (any scalar that is not a reference) are the
@@ -1000,6 +1016,100 @@ MAPPING
         platform, such as infinities or NaN's - these cannot be represented
         in JSON, and it is an error to pass those in.
 
+  OBJECT SERIALISATION
+    As JSON cannot directly represent Perl objects, you have to choose
+    between a pure JSON representation (without the ability to deserialise
+    the object automatically again), and a nonstandard extension to the JSON
+    syntax, tagged values.
+
+   SERIALISATION
+    What happens when "JSON::XS" encounters a Perl object depends on the
+    "allow_blessed", "convert_blessed" and "allow_tags" settings, which are
+    used in this order:
+
+    1. "allow_tags" is enabled and the object has a "FREEZE" method.
+        In this case, "JSON::XS" uses the Types::Serialiser object
+        serialisation protocol to create a tagged JSON value, using a
+        nonstandard extension to the JSON syntax.
+
+        This works by invoking the "FREEZE" method on the object, with the
+        first argument being the object to serialise, and the second
+        argument being the constant string "JSON" to distinguish it from
+        other serialisers.
+
+        The "FREEZE" method can return any number of values (i.e. zero or
+        more). These values and the paclkage/classname of the object will
+        then be encoded as a tagged JSON value in the following format:
+
+           ("classname")[FREEZE return values...]
+
+        For example, the hypothetical "My::Object" "FREEZE" method might use
+        the objects "type" and "id" members to encode the object:
+
+           sub My::Object::FREEZE {
+              my ($self, $serialiser) = @_;
+
+              ($self->{type}, $self->{id})
+           }
+
+    2. "convert_blessed" is enabled and the object has a "TO_JSON" method.
+        In this case, the "TO_JSON" method of the object is invoked in
+        scalar context. It must return a single scalar that can be directly
+        encoded into JSON. This scalar replaces the object in the JSON text.
+
+        For example, the following "TO_JSON" method will convert all URI
+        objects to JSON strings when serialised. The fatc that these values
+        originally were URI objects is lost.
+
+           sub URI::TO_JSON {
+              my ($uri) = @_;
+              $uri->as_string
+           }
+
+    3. "allow_blessed" is enabled.
+        The object will be serialised as a JSON null value.
+
+    4. none of the above
+        If none of the settings are enabled or the respective methods are
+        missing, "JSON::XS" throws an exception.
+
+   DESERIALISATION
+    For deserialisation there are only two cases to consider: either
+    nonstandard tagging was used, in which case "allow_tags" decides, or
+    objects cannot be automatically be deserialised, in which case you can
+    use postprocessing or the "filter_json_object" or
+    "filter_json_single_key_object" callbacks to get some real objects our
+    of your JSON.
+
+    This section only considers the tagged value case: I a tagged JSON
+    object is encountered during decoding and "allow_tags" is disabled, a
+    parse error will result (as if tagged values were not part of the
+    grammar).
+
+    If "allow_tags" is enabled, "JSON::XS" will look up the "THAW" method of
+    the package/classname used during serialisation (it will not attempt to
+    load the package as a Perl module). If there is no such method, the
+    decoding will fail with an error.
+
+    Otherwise, the "THAW" method is invoked with the classname as first
+    argument, the constant string "JSON" as second argument, and all the
+    values from the JSON array (the values originally returned by the
+    "FREEZE" method) as remaining arguments.
+
+    The method must then return the object. While technically you can return
+    any Perl scalar, you might have to enable the "enable_nonref" setting to
+    make that work in all cases, so better return an actual blessed
+    reference.
+
+    As an example, let's implement a "THAW" function that regenerates the
+    "My::Object" from the "FREEZE" example earlier:
+
+       sub My::Object::THAW {
+          my ($class, $serialiser, $type, $id) = @_;
+
+          $class->new (type => $type, id => $id)
+       }
+
 ENCODING/CODESET FLAG NOTES
     The interested reader might have seen a number of flags that signify
     encodings or codesets - "utf8", "latin1" and "ascii". There seems to be
@@ -1028,7 +1138,7 @@ ENCODING/CODESET FLAG NOTES
         When "utf8" is disabled (the default), then "encode"/"decode"
         generate and expect Unicode strings, that is, characters with high
         ordinal Unicode values (> 255) will be encoded as such characters,
-        and likewise such characters are decoded as-is, no canges to them
+        and likewise such characters are decoded as-is, no changes to them
         will be done, except "(re-)interpreting" them as Unicode codepoints
         or Unicode characters, respectively (to Perl, these are the same
         thing in strings unless you do funny/weird/dumb stuff).
@@ -1154,7 +1264,7 @@ ENCODING/CODESET FLAG NOTES
        $json =~ s/"__proto__"\s*:/"__proto__renamed":/g;
 
     This works because "__proto__" is not valid outside of strings, so every
-    occurence of ""__proto__"\s*:" must be a string used as property name.
+    occurrence of ""__proto__"\s*:" must be a string used as property name.
 
     If you know of other incompatibilities, please let me know.
 
@@ -1315,6 +1425,12 @@ SECURITY CONSIDERATIONS
     deal with it, as major browser developers care only for features, not
     about getting security right).
 
+INTEROPERABILITY WITH OTHER MODULES
+    "JSON::XS" uses the Types::Serialiser module to provide boolean
+    constants. That means that the JSON true and false values will be
+    comaptible to true and false values of iother modules that do the same,
+    such as JSON::PP and CBOR::XS.
+
 THREADS
     This module is *not* guaranteed to be thread safe and there are no plans
     to change this until Perl gets thread support (as opposed to the
@@ -1328,9 +1444,9 @@ THE PERILS OF SETLOCALE
     system's setlocale function with "LC_ALL".
 
     This breaks both perl and modules such as JSON::XS, as stringification
-    of numbers no longer works correcly (e.g. "$x = 0.1; print "$x"+1" might
-    print 1, and JSON::XS might output illegal JSON as JSON::XS relies on
-    perl to stringify numbers).
+    of numbers no longer works correctly (e.g. "$x = 0.1; print "$x"+1"
+    might print 1, and JSON::XS might output illegal JSON as JSON::XS relies
+    on perl to stringify numbers).
 
     The solution is simple: don't call "setlocale", or use it for only those
     categories you need, such as "LC_MESSAGES" or "LC_CTYPE".

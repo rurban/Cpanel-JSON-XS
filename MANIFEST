@@ -31,6 +31,7 @@ t/19_incr.t
 t/20_faihu.t
 t/21_evans.t
 t/22_comment_at_eof.t
+t/52_object.t
 t/99_binary.t
 typemap
 META.yml                                 Module YAML meta-data (added by MakeMaker)
