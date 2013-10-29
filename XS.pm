@@ -103,7 +103,7 @@ package JSON::XS;
 
 use common::sense;
 
-our $VERSION = '3.0';
+our $VERSION = 3.01;
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json);
@@ -1146,6 +1146,12 @@ more). These values and the paclkage/classname of the object will then be
 encoded as a tagged JSON value in the following format:
 
    ("classname")[FREEZE return values...]
+
+e.g.:
+
+   ("URI")["http://www.google.com/"]
+   ("MyDate")[2013,10,29]
+   ("ImageData::JPEG")["Z3...VlCg=="]
 
 For example, the hypothetical C<My::Object> C<FREEZE> method might use the
 objects C<type> and C<id> members to encode the object:

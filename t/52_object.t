@@ -1,4 +1,5 @@
 BEGIN { $| = 1; print "1..20\n"; }
+BEGIN { $^W = 0 } # hate
 
 use JSON::XS;
 

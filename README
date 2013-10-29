@@ -1043,6 +1043,12 @@ MAPPING
 
            ("classname")[FREEZE return values...]
 
+        e.g.:
+
+           ("URI")["http://www.google.com/"]
+           ("MyDate")[2013,10,29]
+           ("ImageData::JPEG")["Z3...VlCg=="]
+
         For example, the hypothetical "My::Object" "FREEZE" method might use
         the objects "type" and "id" members to encode the object:
 

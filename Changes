@@ -4,6 +4,9 @@ TODO: maybe detetc and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.01 Tue Oct 29 16:55:15 CET 2013
+	- backport to perls < 5.18 (reported by Paul Howarth).
+
 3.0  Tue Oct 29 01:35:37 CET 2013
         - implemented an object tagging extension (using the
           Types::Serialiser serialisation protocol).

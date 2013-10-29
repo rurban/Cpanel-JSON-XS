@@ -19,6 +19,17 @@
 # define UTF8_MAXBYTES 13
 #endif
 
+// compatibility with perl <5.18
+#ifndef HvNAMELEN_get
+# define HvNAMELEN_get(hv) strlen (HvNAME (hv))
+#endif
+#ifndef HvNAMELEN
+# define HvNAMELEN(hv) HvNAMELEN_get (hv)
+#endif
+#ifndef HvNAMEUTF8
+# define HvNAMEUTF8(hv) 0
+#endif
+
 // three extra for rounding, sign, and end of string
 #define IVUV_MAXCHARS (sizeof (UV) * CHAR_BIT * 28 / 93 + 3)
 
