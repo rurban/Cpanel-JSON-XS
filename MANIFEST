@@ -32,5 +32,7 @@ t/19_incr.t
 t/20_faihu.t
 t/21_evans.t
 t/22_comment_at_eof.t
+t/97_unshare_hek.t
+t/98_56only.t
 t/99_binary.t
 typemap
