@@ -113,7 +113,7 @@ B<Changes to JSON::XS>
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '2.3401';
+our $VERSION = '2.3402';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -123,7 +123,7 @@ sub to_json($@) {
      require Carp;
      Carp::croak ("Cpanel::JSON::XS::to_json has been renamed to encode_json, either downgrade to pre-2.0 versions of Cpanel::JSON::XS or rename the call");
    } else {
-     to_json_(@_);
+     _to_json(@_);
    }
 }
 
@@ -132,7 +132,7 @@ sub from_json($@) {
      require Carp;
      Carp::croak ("Cpanel::JSON::XS::from_json has been renamed to decode_json, either downgrade to pre-2.0 versions of Cpanel::JSON::XS or rename the call");
    } else {
-     from_json_(@_);
+     _from_json(@_);
    }
 }
 
@@ -291,7 +291,7 @@ in files or databases, not when talking to other JSON encoders/decoders.
 
 =item $json = $json->binary ([$enable])
 
-=item $enabled = $json->binary
+=item $enabled = $json = $json->get_binary
 
 If the C<$enable> argument is true (or missing), then the C<encode>
 method will not try to detect an UTF-8 encoding in any JSON string, it
@@ -754,6 +754,14 @@ to know where the JSON text ends.
 
    Cpanel::JSON::XS->new->decode_prefix ("[1] the tail")
    => ([], 3)
+
+=item $json->to_json ($perl_hash_or_arrayref)
+
+Deprecated method for perl 5.8 and newer. Use L<encode_json> instead.
+
+=item $json->from_json ($utf8_encoded_json_text)
+
+Deprecated method for perl 5.8 and newer. Use L<decode_json> instead.
 
 =back
 

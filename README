@@ -237,7 +237,7 @@ OBJECT-ORIENTED INTERFACE
           => ["\x{89}\\u0abc"]    # (perl syntax, U+abc escaped, U+89 not)
 
     $json = $json->binary ([$enable])
-    $enabled = $json->binary
+    $enabled = $json = $json->get_binary
         If the $enable argument is true (or missing), then the "encode"
         method will not try to detect an UTF-8 encoding in any JSON string,
         it will strictly interpret it as byte sequence. The result might
@@ -677,6 +677,12 @@ OBJECT-ORIENTED INTERFACE
 
            Cpanel::JSON::XS->new->decode_prefix ("[1] the tail")
            => ([], 3)
+
+    $json->to_json ($perl_hash_or_arrayref)
+        Deprecated method for perl 5.8 and newer. Use encode_json instead.
+
+    $json->from_json ($utf8_encoded_json_text)
+        Deprecated method for perl 5.8 and newer. Use decode_json instead.
 
 INCREMENTAL PARSING
     In some cases, there is the need for incremental parsing of JSON texts.
