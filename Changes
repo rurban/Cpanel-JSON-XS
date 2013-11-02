@@ -4,6 +4,10 @@ TODO: maybe detect and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+2.3403 2013-11-02 (cpanel)
+       - fix json_atof on AIX without HAS_LONG_DOUBLE (powl in libm)
+         [cpan #88061] (Ulisse Monari, Reini Urban)
+
 2.3402 2013-11-02 (cpanel)
        - t/97_unshare_hek.t: fix issue #10, unshare hek assertion resp. valgrind error
        - Rename internal 5.6 methods {from|to}_json_ to _{from|to}_json

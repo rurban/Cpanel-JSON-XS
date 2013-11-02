@@ -109,11 +109,19 @@ B<Changes to JSON::XS>
 
 - extended testsuite
 
+- additional fixes for:
+
+  - [cpan #88061] AIX atof without USE_LONG_DOUBLE
+
+  - #10 unshare_hek crash
+
+  - #7 avoid re-blessing where possible (e.g. SvREADONLY restricted hashes)
+
 =cut
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '2.3402';
+our $VERSION = '2.3403';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);

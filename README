@@ -105,6 +105,14 @@ DESCRIPTION
 
     - extended testsuite
 
+    - additional fixes for:
+
+      - [cpan #88061] AIX atof without USE_LONG_DOUBLE
+
+      - #10 unshare_hek crash
+
+      - #7 avoid re-blessing where possible (e.g. SvREADONLY restricted hashes)
+
 FUNCTIONAL INTERFACE
     The following convenience methods are provided by this module. They are
     exported by default:

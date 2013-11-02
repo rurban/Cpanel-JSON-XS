@@ -237,6 +237,32 @@ ptr_to_index (SV *sv, const U8 *offset)
 /*/////////////////////////////////////////////////////////////////////////// */
 /* fp hell */
 
+#if defined(_AIX) && (!defined(HAS_LONG_DOUBLE) || AIX_WORKAROUND)
+/* Ulisse Monari: this is a patch for AIX 5.3, perl 5.8.8 without USE_LONG_DOUBLE
+  core dumps at Perl_pow(...)
+
+  base code is from http://bytes.com/topic/c/answers/748317-replacement-pow-function
+  this is my change to fs_pow that goes into libc/libm for calling fmod/exp/log.
+  NEED TO MODIFY Makefile, after perl Makefile.PL by adding "-lm" onto the LDDLFLAGS line */
+static double fs_powEx(double x, double y)
+{
+    double p = 0;
+
+    if (0 > x && fmod(y, 1) == 0) {
+        if (fmod(y, 2) == 0) {
+            p =  exp(log(-x) * y);
+        } else {
+            p = -exp(log(-x) * y);
+        }
+    } else {
+        if (x != 0 || 0 >= y) {
+            p =  exp(log( x) * y);
+        }
+    }
+    return p;
+}
+#endif
+
 /* scan a group of digits, and a trailing exponent */
 static void
 json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
@@ -307,7 +333,14 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
   /* implementation is hard to beat. */
   /* (IEEE 754 conformant ones are required to be exact) */
   if (postdp) *expo -= eaccum;
+#if defined(_AIX) && (!defined(HAS_LONG_DOUBLE) || AIX_WORKAROUND)
+  /* powf() unfortunately is not accurate enough */
+  *accum += uaccum * fs_powEx(10., *expo );
+#else
+  /* from perl.h on this AIX/perl588 box i have that USE_LONG_DOUBLE IS NOT defined */
+  /* then Perl_pow maps to pow(...) - NOT TO powl(...) */
   *accum += uaccum * Perl_pow (10., *expo);
+#endif
   *expo += eaccum;
 }
 
