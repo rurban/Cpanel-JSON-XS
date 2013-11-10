@@ -94,7 +94,7 @@ or        L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
 B<Changes to JSON::XS>
 
-- public maintainance and bugtracker.
+- public maintenance and bugtracker.
 
 - added C<binary> extension, non-JSON and non JSON parsable, allows
   C<\xNN> and C<\NNN> sequences.
