@@ -69,7 +69,7 @@ this module usually compares favourably in terms of speed, too.
 =item * simple to use
 
 This module has both a simple functional interface as well as an object
-oriented interface interface.
+oriented interface.
 
 =item * reasonably versatile output formats
 
@@ -94,7 +94,7 @@ or        L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
 B<Changes to JSON::XS>
 
-- public maintainance and bugtracker.
+- public maintenance and bugtracker.
 
 - added C<binary> extension, non-JSON and non JSON parsable, allows
   C<\xNN> and C<\NNN> sequences.
@@ -807,7 +807,7 @@ If the method is called in scalar context, then it will try to extract
 exactly I<one> JSON object. If that is successful, it will return this
 object, otherwise it will return C<undef>. If there is a parse error,
 this method will croak just as C<decode> would do (one can then use
-C<incr_skip> to skip the errornous part). This is the most common way of
+C<incr_skip> to skip the erroneous part). This is the most common way of
 using the method.
 
 And finally, in list context, it will try to extract as many objects
@@ -848,7 +848,7 @@ state is left unchanged, to skip the text parsed so far and to reset the
 parse state.
 
 The difference to C<incr_reset> is that only text until the parse error
-occured is removed.
+occurred is removed.
 
 =item $json->incr_reset
 
@@ -1056,7 +1056,7 @@ it as an integer value. If that fails, it will try to represent it as
 a numeric (floating point) value if that is possible without loss of
 precision. Otherwise it will preserve the number as a string value (in
 which case you lose roundtripping ability, as the JSON number will be
-re-encoded toa JSON string).
+re-encoded to a JSON string).
 
 Numbers containing a fractional or exponential part will always be
 represented as numeric (floating point) values, possibly at a loss of
@@ -1066,7 +1066,7 @@ the JSON number will still be re-encoded as a JSON number).
 Note that precision is not accuracy - binary floating point values cannot
 represent most decimal fractions exactly, and when converting from and to
 floating point, Cpanel::JSON::XS only guarantees precision up to but not including
-the leats significant bit.
+the least significant bit.
 
 =item true, false
 
@@ -1207,7 +1207,7 @@ the same time, which can be confusing.
 When C<utf8> is disabled (the default), then C<encode>/C<decode> generate
 and expect Unicode strings, that is, characters with high ordinal Unicode
 values (> 255) will be encoded as such characters, and likewise such
-characters are decoded as-is, no canges to them will be done, except
+characters are decoded as-is, no changes to them will be done, except
 "(re-)interpreting" them as Unicode codepoints or Unicode characters,
 respectively (to Perl, these are the same thing in strings unless you do
 funny/weird/dumb stuff).
@@ -1336,7 +1336,7 @@ output for these property strings, e.g.:
    $json =~ s/"__proto__"\s*:/"__proto__renamed":/g;
 
 This works because C<__proto__> is not valid outside of strings, so every
-occurence of C<"__proto__"\s*:> must be a string used as property name.
+occurrence of C<"__proto__"\s*:> must be a string used as property name.
 
 If you know of other incompatibilities, please let me know.
 

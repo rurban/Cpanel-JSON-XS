@@ -46,7 +46,7 @@ C<fromformat> can be one of:
 
 =item yaml - YAML (avoid at all costs, requires the YAML module :)
 
-=item string - do not attempt to decode te file data
+=item string - do not attempt to decode the file data
 
 =item none - nothing is read, creates an C<undef> scalar - mainly useful with C<-e>
 
