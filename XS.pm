@@ -109,6 +109,9 @@ B<Changes to JSON::XS>
 
 - extended testsuite
 
+- interop for true/false overloading. JSON::XS representations are
+  accepted and JSON::XS accepts Cpanel::JSON::XS booleans [#13]
+
 - additional fixes for:
 
   - [cpan #88061] AIX atof without USE_LONG_DOUBLE
@@ -121,7 +124,7 @@ B<Changes to JSON::XS>
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '2.3403';
+our $VERSION = '2.3404';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -1071,17 +1074,17 @@ represented as numeric (floating point) values, possibly at a loss of
 precision (in which case you might lose perfect roundtripping ability, but
 the JSON number will still be re-encoded as a JSON number).
 
-Note that precision is not accuracy - binary floating point values cannot
-represent most decimal fractions exactly, and when converting from and to
-floating point, Cpanel::JSON::XS only guarantees precision up to but not including
-the least significant bit.
+Note that precision is not accuracy - binary floating point values
+cannot represent most decimal fractions exactly, and when converting
+from and to floating point, Cpanel::JSON::XS only guarantees precision
+up to but not including the least significant bit.
 
 =item true, false
 
 These JSON atoms become C<JSON::XS::true> and C<JSON::XS::false>,
 respectively. They are overloaded to act almost exactly like the numbers
 C<1> and C<0>. You can check whether a scalar is a JSON boolean by using
-the C<JSON::XS::is_bool> function.
+the C<Cpanel::JSON::XS::is_bool> function.
 
 =item null
 
@@ -1550,22 +1553,28 @@ JSON::XS as our serializer of choice.
 
 L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
+=head1 LICENSE
+
+This module is available under the same licences as perl, the Artistic
+license and the GPL.
+
 =cut
 
-our $true  = do { bless \(my $dummy = 1), "Cpanel::JSON::XS::Boolean" };
-our $false = do { bless \(my $dummy = 0), "Cpanel::JSON::XS::Boolean" };
+our $true  = do { bless \(my $dummy = 1), "JSON::XS::Boolean" };
+our $false = do { bless \(my $dummy = 0), "JSON::XS::Boolean" };
 
 sub true()  { $true  }
 sub false() { $false }
 
 sub is_bool($) {
-   UNIVERSAL::isa $_[0], "Cpanel::JSON::XS::Boolean"
-#      or UNIVERSAL::isa $_[0], "JSON::Literal"
+  UNIVERSAL::isa $_[0], "JSON::XS::Boolean"
+   or UNIVERSAL::isa $_[0], "Cpanel::JSON::XS::Boolean"
 }
 
 XSLoader::load 'Cpanel::JSON::XS', $VERSION;
 
-package Cpanel::JSON::XS::Boolean;
+package
+  JSON::XS::Boolean;
 
 use overload
    "0+"     => sub { ${$_[0]} },

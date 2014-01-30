@@ -4,6 +4,14 @@ TODO: maybe detect and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+2.3404 2014-01-30 (rurban)
+       - fix interop with JSON::XS booleans,
+         the internal boolean objects are now blessed into JSON::XS::Boolean
+         #13 and [cpan #92548] (samuel.c.kaufman)
+       - t/96_interop.t: added
+       - LICENSE section to pod added for t/z_kwalitee.t
+       - README: fixed some pod spelling errors in (David Steinbrunner)
+
 2.3403 2013-11-02 (cpanel)
        - fix json_atof on AIX without HAS_LONG_DOUBLE (powl in libm)
          [cpan #88061] (Ulisse Monari, Reini Urban)

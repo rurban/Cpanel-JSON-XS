@@ -67,7 +67,7 @@ DESCRIPTION
     *   simple to use
 
         This module has both a simple functional interface as well as an
-        object oriented interface interface.
+        object oriented interface.
 
     *   reasonably versatile output formats
 
@@ -90,7 +90,7 @@ DESCRIPTION
 
     Changes to JSON::XS
 
-    - public maintainance and bugtracker.
+    - public maintenance and bugtracker.
 
     - added "binary" extension, non-JSON and non JSON parsable, allows
     "\xNN" and "\NNN" sequences.
@@ -104,6 +104,9 @@ DESCRIPTION
     published production module, just during development and testing.
 
     - extended testsuite
+
+    - interop for true/false overloading. JSON::XS representations are
+    accepted and JSON::XS accepts Cpanel::JSON::XS booleans [#13]
 
     - additional fixes for:
 
@@ -729,7 +732,7 @@ INCREMENTAL PARSING
         extract exactly *one* JSON object. If that is successful, it will
         return this object, otherwise it will return "undef". If there is a
         parse error, this method will croak just as "decode" would do (one
-        can then use "incr_skip" to skip the errornous part). This is the
+        can then use "incr_skip" to skip the erroneous part). This is the
         most common way of using the method.
 
         And finally, in list context, it will try to extract as many objects
@@ -768,7 +771,7 @@ INCREMENTAL PARSING
         to reset the parse state.
 
         The difference to "incr_reset" is that only text until the parse
-        error occured is removed.
+        error occurred is removed.
 
     $json->incr_reset
         This completely resets the incremental parser, that is, after this
@@ -962,7 +965,7 @@ MAPPING
         represent it as a numeric (floating point) value if that is possible
         without loss of precision. Otherwise it will preserve the number as
         a string value (in which case you lose roundtripping ability, as the
-        JSON number will be re-encoded toa JSON string).
+        JSON number will be re-encoded to a JSON string).
 
         Numbers containing a fractional or exponential part will always be
         represented as numeric (floating point) values, possibly at a loss
@@ -973,13 +976,13 @@ MAPPING
         Note that precision is not accuracy - binary floating point values
         cannot represent most decimal fractions exactly, and when converting
         from and to floating point, Cpanel::JSON::XS only guarantees
-        precision up to but not including the leats significant bit.
+        precision up to but not including the least significant bit.
 
     true, false
         These JSON atoms become "JSON::XS::true" and "JSON::XS::false",
         respectively. They are overloaded to act almost exactly like the
         numbers 1 and 0. You can check whether a scalar is a JSON boolean by
-        using the "JSON::XS::is_bool" function.
+        using the "Cpanel::JSON::XS::is_bool" function.
 
     null
         A JSON null atom becomes "undef" in Perl.
@@ -1096,7 +1099,7 @@ ENCODING/CODESET FLAG NOTES
         When "utf8" is disabled (the default), then "encode"/"decode"
         generate and expect Unicode strings, that is, characters with high
         ordinal Unicode values (> 255) will be encoded as such characters,
-        and likewise such characters are decoded as-is, no canges to them
+        and likewise such characters are decoded as-is, no changes to them
         will be done, except "(re-)interpreting" them as Unicode codepoints
         or Unicode characters, respectively (to Perl, these are the same
         thing in strings unless you do funny/weird/dumb stuff).
@@ -1223,7 +1226,7 @@ ENCODING/CODESET FLAG NOTES
        $json =~ s/"__proto__"\s*:/"__proto__renamed":/g;
 
     This works because "__proto__" is not valid outside of strings, so every
-    occurence of ""__proto__"\s*:" must be a string used as property name.
+    occurrence of ""__proto__"\s*:" must be a string used as property name.
 
     If you know of other incompatibilities, please let me know.
 
@@ -1415,6 +1418,10 @@ BUGS
     serializer of choice.
 
     <https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
+
+LICENSE
+    This module is available under the same licences as perl, the Artistic
+    license and the GPL.
 
 SEE ALSO
     The cpanel_json_xs command line utility for quick experiments.

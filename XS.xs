@@ -787,7 +787,7 @@ encode_rv (enc_t *enc, SV *sv)
     {
       HV *stash = !JSON_SLOW || json_boolean_stash
                   ? json_boolean_stash
-                  : gv_stashpv ("Cpanel::JSON::XS::Boolean", 1);
+                  : gv_stashpv ("JSON::XS::Boolean", 1);
 
       if (SvSTASH (sv) == stash)
         {
@@ -1972,7 +1972,7 @@ BOOT:
             : -1;
 
 	json_stash         = gv_stashpv ("Cpanel::JSON::XS"         , 1);
-	json_boolean_stash = gv_stashpv ("Cpanel::JSON::XS::Boolean", 1);
+	json_boolean_stash = gv_stashpv ("JSON::XS::Boolean", 1);
 
         json_true  = get_bool ("Cpanel::JSON::XS::true");
         json_false = get_bool ("Cpanel::JSON::XS::false");
