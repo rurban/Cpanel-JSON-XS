@@ -4,6 +4,10 @@ TODO: maybe detect and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+2.340? 2014-??-?? (?)
+       - Added ithreads support
+       - const'ed a translation table for memory savings
+
 2.3404 2014-01-30 (rurban)
        - fix interop with JSON::XS booleans,
          the internal boolean objects are now blessed into JSON::XS::Boolean

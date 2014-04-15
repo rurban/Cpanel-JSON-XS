@@ -112,6 +112,8 @@ B<Changes to JSON::XS>
 - interop for true/false overloading. JSON::XS representations are
   accepted and JSON::XS accepts Cpanel::JSON::XS booleans [#13]
 
+- ithread support
+
 - additional fixes for:
 
   - [cpan #88061] AIX atof without USE_LONG_DOUBLE
@@ -1527,14 +1529,8 @@ security right).
 
 =head1 THREADS
 
-This module is I<not> guaranteed to be thread safe and there are no
-plans to change this until Perl gets thread support (as opposed to the
-horribly slow so-called "threads" which are simply slow and bloated
-process simulations - use fork, it's I<much> faster, cheaper, better).
-
-(It might actually work, but you have been warned).
-
-L<Data::MessagePack> in comparison is thread-safe.
+Cpanel::JSON::XS has experimental ithreads support, unlike JSON::XS. If you
+encouter any bugs with thread support please report them.
 
 =head1 BUGS
 
