@@ -126,7 +126,7 @@ B<Changes to JSON::XS>
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '2.3404';
+our $VERSION = '3.0101';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -1482,6 +1482,20 @@ will be broken due to missing (or wrong) Unicode handling. Others refuse
 to decode or encode properly, so it was impossible to prepare a fair
 comparison table for that case.
 
+=head1 INTEROP with JSON and JSON::XS
+
+JSON-XS-3.01 broke interoperability with JSON-2.90 with booleans. See L<JSON>.
+
+Cpanel::JSON::XS needs to know the JSON and JSON::XS versions to be able work
+with those objects, especially when encoding a booleans like C<{"is_true":true}>.
+So you need to load these modules before.
+
+true/false overloading is supported.
+
+JSON::XS and JSON::PP representations are accepted and older JSON::XS accepts
+Cpanel::JSON::XS booleans.
+
+I cannot think of any reason to still use JSON::XS anymore.
 
 =head1 SECURITY CONSIDERATIONS
 
@@ -1556,15 +1570,21 @@ license and the GPL.
 
 =cut
 
-our $true  = do { bless \(my $dummy = 1), "JSON::XS::Boolean" };
-our $false = do { bless \(my $dummy = 0), "JSON::XS::Boolean" };
+our ($true, $false);
+if ($INC{'JSON.pm'} and $JSON::VERSION ge "2.54") {
+  $true  = do { bless {'is_true' => 1}, "JSON::PP::Boolean" };
+  $false = do { bless {'is_true' => 0}, "JSON::PP::Boolean" };
+} else {
+  $true  = do { bless \(my $dummy = 1), "JSON::XS::Boolean" };
+  $false = do { bless \(my $dummy = 0), "JSON::XS::Boolean" };
+}
 
 sub true()  { $true  }
 sub false() { $false }
 
 sub is_bool($) {
-  UNIVERSAL::isa $_[0], "JSON::XS::Boolean"
-   or UNIVERSAL::isa $_[0], "Cpanel::JSON::XS::Boolean"
+  UNIVERSAL::isa($_[0], "JSON::XS::Boolean")
+   or UNIVERSAL::isa($_[0], "JSON::PP::Boolean");
 }
 
 XSLoader::load 'Cpanel::JSON::XS', $VERSION;
@@ -1598,6 +1618,8 @@ The F<cpanel_json_xs> command line utility for quick experiments.
 
   Marc Lehmann <schmorp@schmorp.de>
   http://home.schmorp.de/
+
+  cPanel Inc. <cpan@cpanel.net>
 
 =head1 MAINTAINER
 

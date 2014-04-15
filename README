@@ -1352,6 +1352,21 @@ ENCODING/CODESET FLAG NOTES
     refuse to decode or encode properly, so it was impossible to prepare a
     fair comparison table for that case.
 
+INTEROP with JSON and JSON::XS
+    JSON-XS-3.01 broke interoperability with JSON-2.90 with booleans. See
+    JSON.
+
+    Cpanel::JSON::XS needs to know the JSON and JSON::XS versions to be able
+    work with those objects, especially when encoding a booleans like
+    "{"is_true":true}". So you need to load these modules before.
+
+    true/false overloading is supported.
+
+    JSON::XS and JSON::PP representations are accepted and older JSON::XS
+    accepts Cpanel::JSON::XS booleans.
+
+    I cannot think of any reason to still use JSON::XS anymore.
+
 SECURITY CONSIDERATIONS
     When you are using JSON in a protocol, talking to untrusted potentially
     hostile creatures requires relatively few measures.
@@ -1425,6 +1440,8 @@ SEE ALSO
 AUTHOR
       Marc Lehmann <schmorp@schmorp.de>
       http://home.schmorp.de/
+
+      cPanel Inc. <cpan@cpanel.net>
 
 MAINTAINER
       cPanel Inc. <cpan@cpanel.net>

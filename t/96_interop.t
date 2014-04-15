@@ -4,28 +4,39 @@ if ($@) {
   plan skip_all => "JSON::XS and JSON required for testing interop";
   exit 0;
 } else {
-  plan tests => 2;
+  plan tests => 3;
 }
 
+use JSON (); # limitation: for interop with JSON load JSON before Cpanel::JSON::XS
 use Cpanel::JSON::XS ();
 
 my $boolstring = q({"is_true":true});
-my $xs_string;
+my $js;
 {
     require JSON::XS;
     my $json = JSON::XS->new;
-    $xs_string = $json->decode( $boolstring );
+    $js = $json->decode( $boolstring );
+    # bless { is_true => 1}, "JSON::PP::Boolean"
 }
 my $cjson = Cpanel::JSON::XS->new->allow_blessed;
 
-is($cjson->encode( $xs_string ), $boolstring) or diag "\$JSON::XS::VERSION=$JSON::XS::VERSION";
+is($cjson->encode( $js ), $boolstring) or diag "\$JSON::XS::VERSION=$JSON::XS::VERSION";
 
 {
-    require JSON;
-    local $ENV{PERL_JSON_BACKEND} = 0;
+    local $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
     my $json = JSON->new;
-    $xs_string = $json->decode( $boolstring );
+    $js = $json->decode( $boolstring );
+    # bless { is_true => 1}, "JSON::PP::Boolean"
 }
 
-is($cjson->encode( $xs_string ), $boolstring) or diag "\$JSON::VERSION=$JSON::VERSION";
+is($cjson->encode( $js ), $boolstring) or diag "\$JSON::VERSION=$JSON::VERSION";
+
+{
+    local $ENV{PERL_JSON_BACKEND} = 'JSON::XS';
+    my $json = JSON->new;
+    $js = $json->decode( $boolstring );
+    # bless { is_true => 1}, "JSON::PP::Boolean"
+}
+
+is($cjson->encode( $js ), $boolstring) or diag "\$JSON::VERSION=$JSON::VERSION";
 
