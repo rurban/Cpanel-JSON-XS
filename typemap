@@ -3,6 +3,7 @@ JSON *		T_JSON
 INPUT
 
 T_JSON
+        dMY_CXT;
 	if (!(
            SvROK ($arg)
            && SvOBJECT (SvRV ($arg))
