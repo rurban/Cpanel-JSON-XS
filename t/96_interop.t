@@ -1,10 +1,10 @@
 use Test::More;
-eval "use JSON::XS ();";
+eval "use JSON::XS (); require JSON;";
 if ($@) {
-  plan skip_all => "JSON::XS required for testing interop";
+  plan skip_all => "JSON::XS and JSON required for testing interop";
   exit 0;
 } else {
-  plan tests => 1;
+  plan tests => 2;
 }
 
 use Cpanel::JSON::XS ();
@@ -19,4 +19,13 @@ my $xs_string;
 my $cjson = Cpanel::JSON::XS->new->allow_blessed;
 
 is($cjson->encode( $xs_string ), $boolstring) or diag "\$JSON::XS::VERSION=$JSON::XS::VERSION";
+
+{
+    require JSON;
+    local $ENV{PERL_JSON_BACKEND} = 0;
+    my $json = JSON->new;
+    $xs_string = $json->decode( $boolstring );
+}
+
+is($cjson->encode( $xs_string ), $boolstring) or diag "\$JSON::VERSION=$JSON::VERSION";
 
