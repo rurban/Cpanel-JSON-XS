@@ -112,6 +112,8 @@ B<Changes to JSON::XS>
 - interop for true/false overloading. JSON::XS representations are
   accepted and JSON::XS accepts Cpanel::JSON::XS booleans [#13]
 
+- performance optimizations for threaded Perls
+
 - ithread support
 
 - additional fixes for:
