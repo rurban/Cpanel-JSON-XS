@@ -1,3 +1,4 @@
+#define PERL_NO_GET_CONTEXT
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
@@ -118,7 +119,7 @@ SV *json_true, *json_false;
 
 START_MY_CXT
 
-INLINE SV * get_bool (const char *name);
+INLINE SV * get_bool (pTHX_ const char *name);
 
 enum {
   INCR_M_WS = 0, /* initial whitespace skipping, must be 0 */
@@ -157,13 +158,13 @@ json_init (JSON *json)
 /* END dtor call not needed, all of these *s refcnts are owned by the stash
   treem not C code */
 static void
-init_MY_CXT(my_cxt_t * cxt)
+init_MY_CXT(pTHX_ my_cxt_t * cxt)
 {
   cxt->json_stash         = gv_stashpv ("Cpanel::JSON::XS", 1);
   cxt->json_boolean_stash = gv_stashpv ("JSON::XS::Boolean", 1);
 
-  cxt->json_true  = get_bool ("Cpanel::JSON::XS::true");
-  cxt->json_false = get_bool ("Cpanel::JSON::XS::false");
+  cxt->json_true  = get_bool (aTHX_ "Cpanel::JSON::XS::true");
+  cxt->json_false = get_bool (aTHX_ "Cpanel::JSON::XS::false");
 }
 
 
@@ -171,7 +172,7 @@ init_MY_CXT(my_cxt_t * cxt)
 /* utility functions */
 
 INLINE SV *
-get_bool (const char *name)
+get_bool (pTHX_ const char *name)
 {
   SV *sv = get_sv (name, 1);
 
@@ -182,7 +183,7 @@ get_bool (const char *name)
 }
 
 INLINE void
-shrink (SV *sv)
+shrink (pTHX_ SV *sv)
 {
   sv_utf8_downgrade (sv, 1);
 
@@ -202,7 +203,7 @@ shrink (SV *sv)
 /* but use the very good perl function to parse anything else. */
 /* note that we never call this function for a ascii codepoints */
 INLINE UV
-decode_utf8 (unsigned char *s, STRLEN len, STRLEN *clen)
+decode_utf8 (pTHX_ unsigned char *s, STRLEN len, STRLEN *clen)
 {
   if (expect_true (len >= 2
                    && IN_RANGE_INC (char, s[0], 0xc2, 0xdf)
@@ -247,7 +248,7 @@ encode_utf8 (unsigned char *s, UV ch)
 
 /* convert offset pointer to character index, sv must be string */
 static STRLEN
-ptr_to_index (SV *sv, const U8 *offset)
+ptr_to_index (pTHX_ SV *sv, const U8 *offset)
 {
   return SvUTF8 (sv)
          ? utf8_distance ((U8*)offset, (U8*)SvPVX (sv))
@@ -395,7 +396,7 @@ typedef struct
 } enc_t;
 
 INLINE void
-need (enc_t *enc, STRLEN len)
+need (pTHX_ enc_t *enc, STRLEN len)
 {
   if (expect_false (enc->cur + len >= enc->end))
     {
@@ -407,14 +408,14 @@ need (enc_t *enc, STRLEN len)
 }
 
 INLINE void
-encode_ch (enc_t *enc, char ch)
+encode_ch (pTHX_ enc_t *enc, char ch)
 {
-  need (enc, 1);
+  need (aTHX_ enc, 1);
   *enc->cur++ = ch;
 }
 
 static void
-encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
+encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
 {
   char *end = str + len;
 
@@ -428,7 +429,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
       end = str + len;
     }
 #endif
-  need (enc, len);
+  need (aTHX_ enc, len);
 
   while (str < end)
     {
@@ -438,13 +439,13 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
         {
           if (expect_false (ch == '"')) /* but with slow exceptions */
             {
-              need (enc, len += 1);
+              need (aTHX_ enc, len += 1);
               *enc->cur++ = '\\';
               *enc->cur++ = '"';
             }
           else if (expect_false (ch == '\\'))
             {
-              need (enc, len += 1);
+              need (aTHX_ enc, len += 1);
               *enc->cur++ = '\\';
               *enc->cur++ = '\\';
             }
@@ -457,11 +458,11 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
         {
           switch (ch)
             {
-              case '\010': need (enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'b'; ++str; break;
-              case '\011': need (enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 't'; ++str; break;
-              case '\012': need (enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'n'; ++str; break;
-              case '\014': need (enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'f'; ++str; break;
-              case '\015': need (enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'r'; ++str; break;
+              case '\010': need (aTHX_ enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'b'; ++str; break;
+              case '\011': need (aTHX_ enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 't'; ++str; break;
+              case '\012': need (aTHX_ enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'n'; ++str; break;
+              case '\014': need (aTHX_ enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'f'; ++str; break;
+              case '\015': need (aTHX_ enc, len += 1); *enc->cur++ = '\\'; *enc->cur++ = 'r'; ++str; break;
 
               default:
                 {
@@ -470,7 +471,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
 
                   if (is_utf8 && !(enc->json.flags & F_BINARY))
                     {
-                      uch = decode_utf8 ((unsigned char *)str, end - str, &clen);
+                      uch = decode_utf8 (aTHX_ (unsigned char *)str, end - str, &clen);
                       if (clen == (STRLEN)-1)
                         croak ("malformed or illegal unicode character in string [%.11s], cannot convert to JSON", str);
                     }
@@ -485,7 +486,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
 		      if (enc->json.flags & F_BINARY)
 			{
                           /* MB cannot arrivehere */
-                          need (enc, len += 3);
+                          need (aTHX_ enc, len += 3);
                           *enc->cur++ = '\\';
                           *enc->cur++ = 'x';
                           *enc->cur++ = PL_hexdigit [(uch >>  4) & 15];
@@ -496,7 +497,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                           if (uch >= 0x110000UL)
                             croak ("out of range codepoint (0x%lx) encountered, unrepresentable in JSON", (unsigned long)uch);
 
-                          need (enc, len += 11);
+                          need (aTHX_ enc, len += 11);
                           sprintf (enc->cur, "\\u%04x\\u%04x",
                                    (int)((uch - 0x10000) / 0x400 + 0xD800),
                                    (int)((uch - 0x10000) % 0x400 + 0xDC00));
@@ -504,7 +505,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                         }
 		      else
                         {
-                          need (enc, len += 5);
+                          need (aTHX_ enc, len += 5);
                           *enc->cur++ = '\\';
                           *enc->cur++ = 'u';
                           *enc->cur++ = PL_hexdigit [ uch >> 12      ];
@@ -527,7 +528,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                     }
                   else if (is_utf8)
                     {
-                      need (enc, len += clen);
+                      need (aTHX_ enc, len += clen);
                       do
                         {
                           *enc->cur++ = *str++;
@@ -536,7 +537,7 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
                     }
                   else
                     {
-                      need (enc, len += UTF8_MAXBYTES - 1); /* never more than 11 bytes needed */
+                      need (aTHX_ enc, len += UTF8_MAXBYTES - 1); /* never more than 11 bytes needed */
                       enc->cur = (char*)encode_utf8 ((U8*)enc->cur, uch);
                       ++str;
                     }
@@ -549,87 +550,87 @@ encode_str (enc_t *enc, char *str, STRLEN len, int is_utf8)
 }
 
 INLINE void
-encode_indent (enc_t *enc)
+encode_indent (pTHX_ enc_t *enc)
 {
   if (enc->json.flags & F_INDENT)
     {
       int spaces = enc->indent * INDENT_STEP;
 
-      need (enc, spaces);
+      need (aTHX_ enc, spaces);
       memset (enc->cur, ' ', spaces);
       enc->cur += spaces;
     }
 }
 
 INLINE void
-encode_space (enc_t *enc)
+encode_space (pTHX_ enc_t *enc)
 {
-  need (enc, 1);
-  encode_ch (enc, ' ');
+  need (aTHX_ enc, 1);
+  encode_ch (aTHX_ enc, ' ');
 }
 
 INLINE void
-encode_nl (enc_t *enc)
+encode_nl (pTHX_ enc_t *enc)
 {
   if (enc->json.flags & F_INDENT)
     {
-      need (enc, 1);
-      encode_ch (enc, '\n');
+      need (aTHX_ enc, 1);
+      encode_ch (aTHX_ enc, '\n');
     }
 }
 
 INLINE void
-encode_comma (enc_t *enc)
+encode_comma (pTHX_ enc_t *enc)
 {
-  encode_ch (enc, ',');
+  encode_ch (aTHX_ enc, ',');
 
   if (enc->json.flags & F_INDENT)
-    encode_nl (enc);
+    encode_nl (aTHX_ enc);
   else if (enc->json.flags & F_SPACE_AFTER)
-    encode_space (enc);
+    encode_space (aTHX_ enc);
 }
 
-static void encode_sv (enc_t *enc, SV *sv);
+static void encode_sv (pTHX_ enc_t *enc, SV *sv);
 
 static void
-encode_av (enc_t *enc, AV *av)
+encode_av (pTHX_ enc_t *enc, AV *av)
 {
   int i, len = av_len (av);
 
   if (enc->indent >= enc->json.max_depth)
     croak (ERR_NESTING_EXCEEDED);
 
-  encode_ch (enc, '[');
+  encode_ch (aTHX_ enc, '[');
   
   if (len >= 0)
     {
-      encode_nl (enc); ++enc->indent;
+      encode_nl (aTHX_ enc); ++enc->indent;
 
       for (i = 0; i <= len; ++i)
         {
           SV **svp = av_fetch (av, i, 0);
 
-          encode_indent (enc);
+          encode_indent (aTHX_ enc);
 
           if (svp)
-            encode_sv (enc, *svp);
+            encode_sv (aTHX_ enc, *svp);
           else
-            encode_str (enc, "null", 4, 0);
+            encode_str (aTHX_ enc, "null", 4, 0);
 
           if (i < len)
-            encode_comma (enc);
+            encode_comma (aTHX_ enc);
         }
 
-      encode_nl (enc); --enc->indent; encode_indent (enc);
+      encode_nl (aTHX_ enc); --enc->indent; encode_indent (aTHX_ enc);
     }
   
-  encode_ch (enc, ']');
+  encode_ch (aTHX_ enc, ']');
 }
 
 static void
-encode_hk (enc_t *enc, HE *he)
+encode_hk (pTHX_ enc_t *enc, HE *he)
 {
-  encode_ch (enc, '"');
+  encode_ch (aTHX_ enc, '"');
 
   if (HeKLEN (he) == HEf_SVKEY)
     {
@@ -640,16 +641,16 @@ encode_hk (enc_t *enc, HE *he)
       SvGETMAGIC (sv);
       str = SvPV (sv, len);
 
-      encode_str (enc, str, len, SvUTF8 (sv));
+      encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
     }
   else
-    encode_str (enc, HeKEY (he), HeKLEN (he), HeKUTF8 (he));
+    encode_str (aTHX_ enc, HeKEY (he), HeKLEN (he), HeKUTF8 (he));
 
-  encode_ch (enc, '"');
+  encode_ch (aTHX_ enc, '"');
 
-  if (enc->json.flags & F_SPACE_BEFORE) encode_space (enc);
-  encode_ch (enc, ':');
-  if (enc->json.flags & F_SPACE_AFTER ) encode_space (enc);
+  if (enc->json.flags & F_SPACE_BEFORE) encode_space (aTHX_ enc);
+  encode_ch (aTHX_ enc, ':');
+  if (enc->json.flags & F_SPACE_AFTER ) encode_space (aTHX_ enc);
 }
 
 /* compare hash entries, used when all keys are bytestrings */
@@ -674,18 +675,19 @@ he_cmp_fast (const void *a_, const void *b_)
 static int
 he_cmp_slow (const void *a, const void *b)
 {
+  dTHX;
   return sv_cmp (HeSVKEY_force (*(HE **)b), HeSVKEY_force (*(HE **)a));
 }
 
 static void
-encode_hv (enc_t *enc, HV *hv)
+encode_hv (pTHX_ enc_t *enc, HV *hv)
 {
   HE *he;
 
   if (enc->indent >= enc->json.max_depth)
     croak (ERR_NESTING_EXCEEDED);
 
-  encode_ch (enc, '{');
+  encode_ch (aTHX_ enc, '{');
 
   /* for canonical output we have to sort by keys first */
   /* actually, this is mostly due to the stupid so-called */
@@ -748,20 +750,20 @@ encode_hv (enc_t *enc, HV *hv)
               LEAVE;
             }
 
-          encode_nl (enc); ++enc->indent;
+          encode_nl (aTHX_ enc); ++enc->indent;
 
           while (count--)
             {
-              encode_indent (enc);
+              encode_indent (aTHX_ enc);
               he = hes [count];
-              encode_hk (enc, he);
-              encode_sv (enc, expect_false (SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
+              encode_hk (aTHX_ enc, he);
+              encode_sv (aTHX_ enc, expect_false (SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
 
               if (count)
-                encode_comma (enc);
+                encode_comma (aTHX_ enc);
             }
 
-          encode_nl (enc); --enc->indent; encode_indent (enc);
+          encode_nl (aTHX_ enc); --enc->indent; encode_indent (aTHX_ enc);
         }
     }
   else
@@ -769,30 +771,30 @@ encode_hv (enc_t *enc, HV *hv)
       if (hv_iterinit (hv) || SvMAGICAL (hv))
         if ((he = hv_iternext (hv)))
           {
-            encode_nl (enc); ++enc->indent;
+            encode_nl (aTHX_ enc); ++enc->indent;
 
             for (;;)
               {
-                encode_indent (enc);
-                encode_hk (enc, he);
-                encode_sv (enc, expect_false (SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
+                encode_indent (aTHX_ enc);
+                encode_hk (aTHX_ enc, he);
+                encode_sv (aTHX_ enc, expect_false (SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
 
                 if (!(he = hv_iternext (hv)))
                   break;
 
-                encode_comma (enc);
+                encode_comma (aTHX_ enc);
               }
 
-            encode_nl (enc); --enc->indent; encode_indent (enc);
+            encode_nl (aTHX_ enc); --enc->indent; encode_indent (aTHX_ enc);
           }
     }
 
-  encode_ch (enc, '}');
+  encode_ch (aTHX_ enc, '}');
 }
 
 /* encode objects, arrays and special \0=false and \1=true values. */
 static void
-encode_rv (enc_t *enc, SV *sv)
+encode_rv (pTHX_ enc_t *enc, SV *sv)
 {
   svtype svt;
 
@@ -807,9 +809,9 @@ encode_rv (enc_t *enc, SV *sv)
       if (SvSTASH (sv) == stash)
         {
           if (SvIV (sv))
-            encode_str (enc, "true", 4, 0);
+            encode_str (aTHX_ enc, "true", 4, 0);
           else
-            encode_str (enc, "false", 5, 0);
+            encode_str (aTHX_ enc, "false", 5, 0);
         }
       else
         {
@@ -827,7 +829,9 @@ encode_rv (enc_t *enc, SV *sv)
                 {
                   dSP;
                   SV *rv;
+#if PERL_VERSION < 10
                   HV *stash;
+#endif
 
                   ENTER; SAVETMPS; PUSHMARK (SP);
 
@@ -853,51 +857,51 @@ encode_rv (enc_t *enc, SV *sv)
                   sv = POPs;
                   PUTBACK;
 
-                  encode_sv (enc, sv);
+                  encode_sv (aTHX_ enc, sv);
 
                   FREETMPS; LEAVE;
                 }
               else if (enc->json.flags & F_ALLOW_BLESSED)
-                encode_str (enc, "null", 4, 0);
+                encode_str (aTHX_ enc, "null", 4, 0);
               else
                 croak ("encountered object '%s', but neither allow_blessed enabled nor TO_JSON method available on it",
                        SvPV_nolen (sv_2mortal (newRV_inc (sv))));
             }
           else if (enc->json.flags & F_ALLOW_BLESSED)
-            encode_str (enc, "null", 4, 0);
+            encode_str (aTHX_ enc, "null", 4, 0);
           else
             croak ("encountered object '%s', but neither allow_blessed nor convert_blessed settings are enabled",
                    SvPV_nolen (sv_2mortal (newRV_inc (sv))));
         }
     }
   else if (svt == SVt_PVHV)
-    encode_hv (enc, (HV *)sv);
+    encode_hv (aTHX_ enc, (HV *)sv);
   else if (svt == SVt_PVAV)
-    encode_av (enc, (AV *)sv);
+    encode_av (aTHX_ enc, (AV *)sv);
   else if (svt < SVt_PVAV)
     {
       STRLEN len = 0;
       char *pv = svt ? SvPV (sv, len) : 0;
 
       if (len == 1 && *pv == '1')
-        encode_str (enc, "true", 4, 0);
+        encode_str (aTHX_ enc, "true", 4, 0);
       else if (len == 1 && *pv == '0')
-        encode_str (enc, "false", 5, 0);
+        encode_str (aTHX_ enc, "false", 5, 0);
       else if (enc->json.flags & F_ALLOW_UNKNOWN)
-        encode_str (enc, "null", 4, 0);
+        encode_str (aTHX_ enc, "null", 4, 0);
       else
         croak ("cannot encode reference to scalar '%s' unless the scalar is 0 or 1",
                SvPV_nolen (sv_2mortal (newRV_inc (sv))));
     }
   else if (enc->json.flags & F_ALLOW_UNKNOWN)
-    encode_str (enc, "null", 4, 0);
+    encode_str (aTHX_ enc, "null", 4, 0);
   else
     croak ("encountered %s, but JSON can only represent references to arrays or hashes",
            SvPV_nolen (sv_2mortal (newRV_inc (sv))));
 }
 
 static void
-encode_sv (enc_t *enc, SV *sv)
+encode_sv (pTHX_ enc_t *enc, SV *sv)
 {
   SvGETMAGIC (sv);
 
@@ -905,14 +909,14 @@ encode_sv (enc_t *enc, SV *sv)
     {
       STRLEN len;
       char *str = SvPV (sv, len);
-      encode_ch (enc, '"');
-      encode_str (enc, str, len, SvUTF8 (sv));
-      encode_ch (enc, '"');
+      encode_ch (aTHX_ enc, '"');
+      encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
+      encode_ch (aTHX_ enc, '"');
     }
   else if (SvNOKp (sv))
     {
       /* trust that perl will do the right thing w.r.t. JSON syntax. */
-      need (enc, NV_DIG + 32);
+      need (aTHX_ enc, NV_DIG + 32);
       Gconvert (SvNVX (sv), NV_DIG, 0, enc->cur);
       enc->cur += strlen (enc->cur);
     }
@@ -931,7 +935,7 @@ encode_sv (enc_t *enc, SV *sv)
           U32 u;
           char digit, nz = 0;
 
-          need (enc, 6);
+          need (aTHX_ enc, 6);
 
           *enc->cur = '-'; enc->cur += i < 0 ? 1 : 0;
           u = i < 0 ? -i : i;
@@ -953,7 +957,7 @@ encode_sv (enc_t *enc, SV *sv)
       else
         {
           /* large integer, use the (rather slow) snprintf way. */
-          need (enc, IVUV_MAXCHARS);
+          need (aTHX_ enc, IVUV_MAXCHARS);
           enc->cur +=
              SvIsUV(sv)
                 ? snprintf (enc->cur, IVUV_MAXCHARS, "%"UVuf, (UV)SvUVX (sv))
@@ -961,16 +965,16 @@ encode_sv (enc_t *enc, SV *sv)
         }
     }
   else if (SvROK (sv))
-    encode_rv (enc, SvRV (sv));
+    encode_rv (aTHX_ enc, SvRV (sv));
   else if (!SvOK (sv) || enc->json.flags & F_ALLOW_UNKNOWN)
-    encode_str (enc, "null", 4, 0);
+    encode_str (aTHX_ enc, "null", 4, 0);
   else
     croak ("encountered perl type (%s,0x%x) that JSON cannot handle, you might want to report this",
            SvPV_nolen (sv), (unsigned int)SvFLAGS (sv));
 }
 
 static SV *
-encode_json (SV *scalar, JSON *json)
+encode_json (pTHX_ SV *scalar, JSON *json)
 {
   enc_t enc;
 
@@ -988,8 +992,8 @@ encode_json (SV *scalar, JSON *json)
                                             : 0x110000UL;
 
   SvPOK_only (enc.sv);
-  encode_sv (&enc, scalar);
-  encode_nl (&enc);
+  encode_sv (aTHX_ &enc, scalar);
+  encode_nl (aTHX_ &enc);
 
   SvCUR_set (enc.sv, enc.cur - SvPVX (enc.sv));
   *SvEND (enc.sv) = 0; /* many xs functions expect a trailing 0 for text strings */
@@ -998,7 +1002,7 @@ encode_json (SV *scalar, JSON *json)
     SvUTF8_on (enc.sv);
 
   if (enc.json.flags & F_SHRINK)
-    shrink (enc.sv);
+    shrink (aTHX_ enc.sv);
 
   return enc.sv;
 }
@@ -1063,7 +1067,7 @@ decode_ws (dec_t *dec)
 #define DEC_INC_DEPTH if (++dec->depth > dec->json.max_depth) ERR (ERR_NESTING_EXCEEDED)
 #define DEC_DEC_DEPTH --dec->depth
 
-static SV *decode_sv (dec_t *dec);
+static SV *decode_sv (pTHX_ dec_t *dec);
 
 /* #regen code
  my $i;
@@ -1642,7 +1646,7 @@ fail:
 }
 
 static SV *
-decode_str (dec_t *dec)
+decode_str (pTHX_ dec_t *dec)
 {
   SV *sv = 0;
   int utf8 = 0;
@@ -1766,7 +1770,7 @@ decode_str (dec_t *dec)
 
               --dec_cur;
 
-              decode_utf8 ((U8*)dec_cur, dec->end - dec_cur, &clen);
+              decode_utf8 (aTHX_ (U8*)dec_cur, dec->end - dec_cur, &clen);
               if (clen == (STRLEN)-1)
                 ERR ("malformed UTF-8 character in JSON string");
 
@@ -1829,7 +1833,7 @@ fail:
 }
 
 static SV *
-decode_num (dec_t *dec)
+decode_num (pTHX_ dec_t *dec)
 {
   int is_nv = 0;
   char *start = dec->cur;
@@ -1951,7 +1955,7 @@ fail:
 }
 
 static SV *
-decode_av (dec_t *dec)
+decode_av (pTHX_ dec_t *dec)
 {
   AV *av = newAV ();
 
@@ -1965,7 +1969,7 @@ decode_av (dec_t *dec)
       {
         SV *value;
 
-        value = decode_sv (dec);
+        value = decode_sv (aTHX_ dec);
         if (!value)
           goto fail;
 
@@ -2003,7 +2007,7 @@ fail:
 }
 
 static SV *
-decode_hv (dec_t *dec)
+decode_hv (pTHX_ dec_t *dec)
 {
   SV *sv;
   HV *hv = newHV ();
@@ -2034,14 +2038,14 @@ decode_hv (dec_t *dec)
               if (p == e || *p < 0x20 || *(U8*)p >= 0x80 || *p == '\\')
                 {
                   /* slow path, back up and use decode_str */
-                  SV *key = decode_str (dec);
+                  SV *key = decode_str (aTHX_ dec);
                   if (!key)
                     goto fail;
 
                   decode_ws (dec); EXPECT_CH (':');
 
                   decode_ws (dec);
-                  value = decode_sv (dec);
+                  value = decode_sv (aTHX_ dec);
                   if (!value)
                     {
                       SvREFCNT_dec (key);
@@ -2063,7 +2067,7 @@ decode_hv (dec_t *dec)
                   decode_ws (dec); EXPECT_CH (':');
 
                   decode_ws (dec);
-                  value = decode_sv (dec);
+                  value = decode_sv (aTHX_ dec);
                   if (!value)
                     goto fail;
 
@@ -2170,20 +2174,20 @@ fail:
 }
 
 static SV *
-decode_sv (dec_t *dec)
+decode_sv (pTHX_ dec_t *dec)
 {
   /* the beauty of JSON: you need exactly one character lookahead */
   /* to parse everything. */
   switch (*dec->cur)
     {
-      case '"': ++dec->cur; return decode_str (dec); 
-      case '[': ++dec->cur; return decode_av  (dec); 
-      case '{': ++dec->cur; return decode_hv  (dec);
+      case '"': ++dec->cur; return decode_str (aTHX_ dec);
+      case '[': ++dec->cur; return decode_av  (aTHX_ dec);
+      case '{': ++dec->cur; return decode_hv  (aTHX_ dec);
 
       case '-':
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-        return decode_num (dec);
+        return decode_num (aTHX_ dec);
 
       case 't':
         if (dec->end - dec->cur >= 4 && !memcmp (dec->cur, "true", 4))
@@ -2234,7 +2238,7 @@ fail:
 }
 
 static SV *
-decode_json (SV *string, JSON *json, U8 **offset_return)
+decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
 {
   dec_t dec;
   SV *sv;
@@ -2293,7 +2297,7 @@ decode_json (SV *string, JSON *json, U8 **offset_return)
   *dec.end = 0; /* this should basically be a nop, too, but make sure it's there */
 
   decode_ws (&dec);
-  sv = decode_sv (&dec);
+  sv = decode_sv (aTHX_ &dec);
 
   if (offset_return)
     *offset_return = (U8*)dec.cur;
@@ -2327,7 +2331,7 @@ decode_json (SV *string, JSON *json, U8 **offset_return)
 #endif
       croak ("%s, at character offset %d (before \"%s\")",
              dec.err,
-             (int)ptr_to_index (string, (U8*)dec.cur),
+             (int)ptr_to_index (aTHX_ string, (U8*)dec.cur),
              dec.cur != dec.end ? SvPV_nolen (uni) : "(end of string)");
     }
 
@@ -2500,7 +2504,7 @@ MODULE = Cpanel::JSON::XS		PACKAGE = Cpanel::JSON::XS
 BOOT:
 {
         MY_CXT_INIT;
-        init_MY_CXT(&MY_CXT);
+        init_MY_CXT(aTHX_ &MY_CXT);
 
         CvNODEBUG_on (get_cv ("Cpanel::JSON::XS::incr_text", 0)); /* the debugger completely breaks lvalue subs */
 }
@@ -2517,7 +2521,7 @@ void CLONE (...)
 	CODE:
 {
         MY_CXT_CLONE; /* possible declaration */
-        init_MY_CXT(&MY_CXT);
+        init_MY_CXT(aTHX_ &MY_CXT);
         return; /* skip implicit PUTBACK, returning @_ to caller, more efficient*/
 }
 
@@ -2637,12 +2641,12 @@ void filter_json_single_key_object (JSON *self, SV *key, SV *cb = &PL_sv_undef)
 
 void encode (JSON *self, SV *scalar)
 	PPCODE:
-        PUTBACK; scalar = encode_json (scalar, self); SPAGAIN;
+        PUTBACK; scalar = encode_json (aTHX_ scalar, self); SPAGAIN;
         XPUSHs (scalar);
 
 void decode (JSON *self, SV *jsonstr)
 	PPCODE:
-        PUTBACK; jsonstr = decode_json (jsonstr, self, 0); SPAGAIN;
+        PUTBACK; jsonstr = decode_json (aTHX_ jsonstr, self, 0); SPAGAIN;
         XPUSHs (jsonstr);
 
 void decode_prefix (JSON *self, SV *jsonstr)
@@ -2650,10 +2654,10 @@ void decode_prefix (JSON *self, SV *jsonstr)
 {
 	SV *sv;
         U8 *offset;
-        PUTBACK; sv = decode_json (jsonstr, self, &offset); SPAGAIN;
+        PUTBACK; sv = decode_json (aTHX_ jsonstr, self, &offset); SPAGAIN;
         EXTEND (SP, 2);
         PUSHs (sv);
-        PUSHs (sv_2mortal (newSVuv (ptr_to_index (jsonstr, offset))));
+        PUSHs (sv_2mortal (newSVuv (ptr_to_index (aTHX_ jsonstr, offset))));
 }
 
 void incr_parse (JSON *self, SV *jsonstr = 0)
@@ -2735,7 +2739,7 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
                     }
                 }
 
-              PUTBACK; sv = decode_json (self->incr_text, self, &offset); SPAGAIN;
+              PUTBACK; sv = decode_json (aTHX_ self->incr_text, self, &offset); SPAGAIN;
               XPUSHs (sv);
 
               self->incr_pos -= offset - (U8*)SvPVX (self->incr_text);
@@ -2818,7 +2822,7 @@ void encode_json (SV *scalar)
         JSON json;
         json_init (&json);
         json.flags |= ix;
-        PUTBACK; scalar = encode_json (scalar, &json); SPAGAIN;
+        PUTBACK; scalar = encode_json (aTHX_ scalar, &json); SPAGAIN;
         XPUSHs (scalar);
 }
 
@@ -2831,7 +2835,7 @@ void decode_json (SV *jsonstr)
         JSON json;
         json_init (&json);
         json.flags |= ix;
-        PUTBACK; jsonstr = decode_json (jsonstr, &json, 0); SPAGAIN;
+        PUTBACK; jsonstr = decode_json (aTHX_ jsonstr, &json, 0); SPAGAIN;
         XPUSHs (jsonstr);
 }
 
