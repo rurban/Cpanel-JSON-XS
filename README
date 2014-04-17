@@ -90,27 +90,19 @@ DESCRIPTION
 
     Changes to JSON::XS
 
-    - public maintenance and bugtracker.
-
     - added "binary" extension, non-JSON and non JSON parsable, allows
     "\xNN" and "\NNN" sequences.
 
     - 5.6.2 support; sacrificing some utf8 features (assuming bytes
     all-over), no multi-byte unicode characters.
 
-    - use ppport.h, sanify XS.xs comment styles, harness C coding style
+    - interop for true/false overloading. JSON::XS and JSON::PP
+    representations are accepted and JSON::XS accepts Cpanel::JSON::XS
+    booleans [#13]
 
-    - common::sense is optional. When available it is not used in the
-    published production module, just during development and testing.
-
-    - extended testsuite
-
-    - interop for true/false overloading. JSON::XS representations are
-    accepted and JSON::XS accepts Cpanel::JSON::XS booleans [#13]
+    - ithread support. Cpanel::JSON::XS is thread-safe, JSON::XS not
 
     - performance optimizations for threaded Perls
-
-    - ithread support
 
     - additional fixes for:
 
@@ -119,6 +111,15 @@ DESCRIPTION
       - #10 unshare_hek crash
 
       - #7 avoid re-blessing where possible (e.g. SvREADONLY restricted hashes)
+
+    - public maintenance and bugtracker
+
+    - use ppport.h, sanify XS.xs comment styles, harness C coding style
+
+    - common::sense is optional. When available it is not used in the
+    published production module, just during development and testing.
+
+    - extended testsuite
 
 FUNCTIONAL INTERFACE
     The following convenience methods are provided by this module. They are
@@ -153,6 +154,13 @@ FUNCTIONAL INTERFACE
 
         See MAPPING, below, for more information on how JSON values are
         mapped to Perl.
+
+DEPRECATED FUNCTIONS
+    from_json
+        from_json has been renamed to encode_json
+
+    to_json
+        to_json has been renamed to encode_json
 
 A FEW NOTES ON UNICODE AND PERL
     Since this often leads to confusion, here are a few very clear words on

@@ -94,27 +94,18 @@ or        L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
 B<Changes to JSON::XS>
 
-- public maintenance and bugtracker.
-
 - added C<binary> extension, non-JSON and non JSON parsable, allows
   C<\xNN> and C<\NNN> sequences.
 
 - 5.6.2 support; sacrificing some utf8 features (assuming bytes all-over),
   no multi-byte unicode characters.
 
-- use ppport.h, sanify XS.xs comment styles, harness C coding style
+- interop for true/false overloading. JSON::XS and JSON::PP representations
+  are accepted and JSON::XS accepts Cpanel::JSON::XS booleans [#13]
 
-- common::sense is optional. When available it is not used in the published
-  production module, just during development and testing.
-
-- extended testsuite
-
-- interop for true/false overloading. JSON::XS representations are
-  accepted and JSON::XS accepts Cpanel::JSON::XS booleans [#13]
+- ithread support. Cpanel::JSON::XS is thread-safe, JSON::XS not
 
 - performance optimizations for threaded Perls
-
-- ithread support
 
 - additional fixes for:
 
@@ -124,11 +115,21 @@ B<Changes to JSON::XS>
 
   - #7 avoid re-blessing where possible (e.g. SvREADONLY restricted hashes)
 
+- public maintenance and bugtracker
+
+- use ppport.h, sanify XS.xs comment styles, harness C coding style
+
+- common::sense is optional. When available it is not used in the published
+  production module, just during development and testing.
+
+- extended testsuite
+
+
 =cut
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '3.0101';
+our $VERSION = '3.0102';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -192,6 +193,20 @@ and are used to represent JSON C<true> and C<false> values in Perl.
 
 See MAPPING, below, for more information on how JSON values are mapped to
 Perl.
+
+=back
+
+=head1 DEPRECATED FUNCTIONS
+
+=over
+
+=item from_json
+
+from_json has been renamed to encode_json
+
+=item to_json
+
+to_json has been renamed to encode_json
 
 =back
 
@@ -1573,9 +1588,16 @@ license and the GPL.
 =cut
 
 our ($true, $false);
-if ($INC{'JSON.pm'} and $JSON::VERSION ge "2.54") {
-  $true  = do { bless {'is_true' => 1}, "JSON::PP::Boolean" };
-  $false = do { bless {'is_true' => 0}, "JSON::PP::Boolean" };
+#if ($INC{'JSON.pm'} and $JSON::VERSION ge "2.54") {
+#  $true  = do { bless {'is_true' => 1}, "JSON::PP::Boolean" };
+#  $false = do { bless {'is_true' => 0}, "JSON::PP::Boolean" };
+#} else {
+#  $true  = do { bless \(my $dummy = 1), "JSON::XS::Boolean" };
+#  $false = do { bless \(my $dummy = 0), "JSON::XS::Boolean" };
+#}
+if ($INC{'JSON/XS.pm'} and $JSON::XS::VERSION ge "3.00") {
+  $true  = do { bless {my $dummy => 1}, "Types::Serialiser" };
+  $false = do { bless {my $dummy => 0}, "Types::Serialiser" };
 } else {
   $true  = do { bless \(my $dummy = 1), "JSON::XS::Boolean" };
   $false = do { bless \(my $dummy = 0), "JSON::XS::Boolean" };
@@ -1586,7 +1608,8 @@ sub false() { $false }
 
 sub is_bool($) {
   UNIVERSAL::isa($_[0], "JSON::XS::Boolean")
-   or UNIVERSAL::isa($_[0], "JSON::PP::Boolean");
+   or UNIVERSAL::isa($_[0], "JSON::PP::Boolean")
+   or UNIVERSAL::isa($_[0], "Types::Serialiser");
 }
 
 XSLoader::load 'Cpanel::JSON::XS', $VERSION;
