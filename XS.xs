@@ -55,6 +55,10 @@
 #ifndef SvIsCOW_shared_hash
 #define SvIsCOW_shared_hash(pv) 0
 #endif
+/* only since 5.18 */
+#ifndef aTHXa
+#define aTHXa(a) aTHX = (tTHX)a
+#endif
 
 /* three extra for rounding, sign, and end of string */
 #define IVUV_MAXCHARS (sizeof (UV) * CHAR_BIT * 28 / 93 + 3)
