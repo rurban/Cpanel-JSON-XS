@@ -4,6 +4,12 @@ TODO: maybe detect and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0103 2014-04-21 (rurban)
+       - Change booleans interop logic (again) for JSON-XS-3.01
+         Check now for Types::Serialiser::Boolean refs (#18 clintongormley)
+         to avoid allow_blessed for JSON-XS-3.01 booleans.
+       - add t/52_object.t from JSON::XS
+
 3.0102 2014-04-17 (rurban + bulk88)
        - Added PERL_NO_GET_CONTEXT for better performance on threaded Perls (bulk88)
        - MANIFEST: added t/96_interop.t

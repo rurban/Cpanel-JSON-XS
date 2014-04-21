@@ -129,7 +129,7 @@ B<Changes to JSON::XS>
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '3.0102';
+our $VERSION = '3.0103';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -1596,8 +1596,8 @@ our ($true, $false);
 #  $false = do { bless \(my $dummy = 0), "JSON::XS::Boolean" };
 #}
 if ($INC{'JSON/XS.pm'} and $JSON::XS::VERSION ge "3.00") {
-  $true  = do { bless {my $dummy => 1}, "Types::Serialiser" };
-  $false = do { bless {my $dummy => 0}, "Types::Serialiser" };
+  $true  = do { bless {my $dummy => 1}, "Types::Serialiser::Boolean" };
+  $false = do { bless {my $dummy => 0}, "Types::Serialiser::Boolean" };
 } else {
   $true  = do { bless \(my $dummy = 1), "JSON::XS::Boolean" };
   $false = do { bless \(my $dummy = 0), "JSON::XS::Boolean" };
@@ -1609,7 +1609,7 @@ sub false() { $false }
 sub is_bool($) {
   UNIVERSAL::isa($_[0], "JSON::XS::Boolean")
    or UNIVERSAL::isa($_[0], "JSON::PP::Boolean")
-   or UNIVERSAL::isa($_[0], "Types::Serialiser");
+   or UNIVERSAL::isa($_[0], "Types::Serialiser::Boolean");
 }
 
 XSLoader::load 'Cpanel::JSON::XS', $VERSION;
