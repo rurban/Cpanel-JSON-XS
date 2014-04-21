@@ -528,6 +528,23 @@ OBJECT-ORIENTED INTERFACE
         If $enable is false, then the "allow_blessed" setting will decide
         what to do when a blessed object is found.
 
+    $json = $json->allow_tags ([$enable])
+    $enabled = $json->get_allow_tags
+        See "OBJECT SERIALISATION" for details.
+
+        If $enable is true (or missing), then "encode", upon encountering a
+        blessed object, will check for the availability of the "FREEZE"
+        method on the object's class. If found, it will be used to serialise
+        the object into a nonstandard tagged JSON value (that JSON decoders
+        cannot decode).
+
+        It also causes "decode" to parse such tagged JSON values and
+        deserialise them via a call to the "THAW" method.
+
+        If $enable is false (the default), then "encode" will not consider
+        this type of conversion, and tagged JSON values will cause a parse
+        error in "decode", as if tags were not part of the grammar.
+
     $json = $json->filter_json_object ([$coderef->($hashref)])
         When $coderef is specified, it will be called from "decode" each
         time it decodes a JSON object. The only argument is a reference to
@@ -999,6 +1016,20 @@ MAPPING
     null
         A JSON null atom becomes "undef" in Perl.
 
+    shell-style comments ("# *text*")
+        As a nonstandard extension to the JSON syntax that is enabled by the
+        "relaxed" setting, shell-style comments are allowed. They can start
+        anywhere outside strings and go till the end of the line.
+
+    tagged values ("(*tag*)*value*").
+        Another nonstandard extension to the JSON syntax, enabled with the
+        "allow_tags" setting, are tagged values. In this implementation, the
+        *tag* must be a perl package/class name encoded as a JSON string,
+        and the *value* must be a JSON array encoding optional constructor
+        arguments.
+
+        See "OBJECT SERIALISATION", below, for details.
+
   PERL -> JSON
     The mapping from Perl to JSON is slightly more difficult, as Perl is a
     truly typeless language, so we can only guess which JSON type is meant
@@ -1033,11 +1064,14 @@ MAPPING
         respectively. You can also use "\1" and "\0" directly if you want.
 
     blessed objects
-        Blessed objects are not directly representable in JSON. See the
-        "allow_blessed" and "convert_blessed" methods on various options on
-        how to deal with this: basically, you can choose between throwing an
-        exception, encoding the reference as if it weren't blessed, or
-        provide your own serialiser method.
+        Blessed objects are not directly representable in JSON, but
+        "Cpanel::JSON::XS" allows various ways of handling objects. See
+        "OBJECT SERIALISATION", below, for details.
+
+        See the "allow_blessed" and "convert_blessed" methods on various
+        options on how to deal with this: basically, you can choose between
+        throwing an exception, encoding the reference as if it weren't
+        blessed, or provide your own serialiser method.
 
     simple scalars
         Simple Perl scalars (any scalar that is not a reference) are the
@@ -1081,6 +1115,106 @@ MAPPING
         might expose extensions to the floating point numbers of your
         platform, such as infinities or NaN's - these cannot be represented
         in JSON, and it is an error to pass those in.
+
+  OBJECT SERIALISATION
+    As JSON cannot directly represent Perl objects, you have to choose
+    between a pure JSON representation (without the ability to deserialise
+    the object automatically again), and a nonstandard extension to the JSON
+    syntax, tagged values.
+
+   SERIALISATION
+    What happens when "JSON::XS" encounters a Perl object depends on the
+    "allow_blessed", "convert_blessed" and "allow_tags" settings, which are
+    used in this order:
+
+    1. "allow_tags" is enabled and the object has a "FREEZE" method.
+        In this case, "JSON::XS" uses the Types::Serialiser object
+        serialisation protocol to create a tagged JSON value, using a
+        nonstandard extension to the JSON syntax.
+
+        This works by invoking the "FREEZE" method on the object, with the
+        first argument being the object to serialise, and the second
+        argument being the constant string "JSON" to distinguish it from
+        other serialisers.
+
+        The "FREEZE" method can return any number of values (i.e. zero or
+        more). These values and the paclkage/classname of the object will
+        then be encoded as a tagged JSON value in the following format:
+
+           ("classname")[FREEZE return values...]
+
+        e.g.:
+
+           ("URI")["http://www.google.com/"]
+           ("MyDate")[2013,10,29]
+           ("ImageData::JPEG")["Z3...VlCg=="]
+
+        For example, the hypothetical "My::Object" "FREEZE" method might use
+        the objects "type" and "id" members to encode the object:
+
+           sub My::Object::FREEZE {
+              my ($self, $serialiser) = @_;
+
+              ($self->{type}, $self->{id})
+           }
+
+    2. "convert_blessed" is enabled and the object has a "TO_JSON" method.
+        In this case, the "TO_JSON" method of the object is invoked in
+        scalar context. It must return a single scalar that can be directly
+        encoded into JSON. This scalar replaces the object in the JSON text.
+
+        For example, the following "TO_JSON" method will convert all URI
+        objects to JSON strings when serialised. The fatc that these values
+        originally were URI objects is lost.
+
+           sub URI::TO_JSON {
+              my ($uri) = @_;
+              $uri->as_string
+           }
+
+    3. "allow_blessed" is enabled.
+        The object will be serialised as a JSON null value.
+
+    4. none of the above
+        If none of the settings are enabled or the respective methods are
+        missing, "JSON::XS" throws an exception.
+
+   DESERIALISATION
+    For deserialisation there are only two cases to consider: either
+    nonstandard tagging was used, in which case "allow_tags" decides, or
+    objects cannot be automatically be deserialised, in which case you can
+    use postprocessing or the "filter_json_object" or
+    "filter_json_single_key_object" callbacks to get some real objects our
+    of your JSON.
+
+    This section only considers the tagged value case: I a tagged JSON
+    object is encountered during decoding and "allow_tags" is disabled, a
+    parse error will result (as if tagged values were not part of the
+    grammar).
+
+    If "allow_tags" is enabled, "JSON::XS" will look up the "THAW" method of
+    the package/classname used during serialisation (it will not attempt to
+    load the package as a Perl module). If there is no such method, the
+    decoding will fail with an error.
+
+    Otherwise, the "THAW" method is invoked with the classname as first
+    argument, the constant string "JSON" as second argument, and all the
+    values from the JSON array (the values originally returned by the
+    "FREEZE" method) as remaining arguments.
+
+    The method must then return the object. While technically you can return
+    any Perl scalar, you might have to enable the "enable_nonref" setting to
+    make that work in all cases, so better return an actual blessed
+    reference.
+
+    As an example, let's implement a "THAW" function that regenerates the
+    "My::Object" from the "FREEZE" example earlier:
+
+       sub My::Object::THAW {
+          my ($class, $serialiser, $type, $id) = @_;
+
+          $class->new (type => $type, id => $id)
+       }
 
 ENCODING/CODESET FLAG NOTES
     The interested reader might have seen a number of flags that signify

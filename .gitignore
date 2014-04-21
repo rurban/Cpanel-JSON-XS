@@ -9,6 +9,7 @@
 /MYMETA.yml
 /Makefile
 /Makefile.old
+/MANIFEST.files
 *.bs
 *.o
 XS.bs

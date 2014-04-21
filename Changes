@@ -6,9 +6,15 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
 3.0103 2014-04-21 (rurban)
        - Change booleans interop logic (again) for JSON-XS-3.01
-         Check now for Types::Serialiser::Boolean refs (#18 clintongormley)
+         Check now for Types::Serialiser::Boolean ie JSON::PP::Boolean refs (#18 clintongormley)
          to avoid allow_blessed for JSON-XS-3.01 booleans.
+       - fix boolean representation for JSON-XS-3.01/Types::Serialiser::Boolean interop
+         (arrayref, not hashref)
        - add t/52_object.t from JSON::XS
+       - backport encode_hv HE sort on stack < 64 or heap to avoid stack
+         overflows from JSON-XS-3.01. do not use alloca.
+       - backport allow_tags, decode_tag, FREEZE/THAW callbacks from JSON-XS-3.01
+       - added pod for OBJECT SERIALISATION (allow_tags, FREEZE/THAW)
 
 3.0102 2014-04-17 (rurban + bulk88)
        - Added PERL_NO_GET_CONTEXT for better performance on threaded Perls (bulk88)
