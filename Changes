@@ -7,6 +7,7 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 3.0104 2014-?? (rurban)
        - add t/z_leaktrace.t for #19
        - restore build on C89 (bulk88)
+       - fix small leak on interp exit (bulk88)
 
 3.0103 2014-04-21 (rurban)
        - Change booleans interop logic (again) for JSON-XS-3.01

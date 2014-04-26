@@ -2663,6 +2663,17 @@ void CLONE (...)
 
 #endif
 
+void END(...)
+	PREINIT:
+        dMY_CXT;
+        SV * sv;
+	PPCODE:
+        sv = MY_CXT.sv_json;
+        MY_CXT.sv_json = NULL;
+        /* todo use SvREFCNT_dec_NN once ppport is fixed */
+        SvREFCNT_dec(sv);
+        return; /* skip implicit PUTBACK, returning @_ to caller, more efficient*/
+
 void new (char *klass)
 	PPCODE:
 {
