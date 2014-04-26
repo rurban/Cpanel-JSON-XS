@@ -2262,12 +2262,13 @@ decode_tag (pTHX_ dec_t *dec)
     int i, len = av_len (av) + 1;
     HV *stash = gv_stashsv (tag, 0);
     SV *sv;
+    GV *method;
     dSP;
 
     if (!stash)
       ERR ("cannot decode perl-object (package does not exist)");
 
-    GV *method = gv_fetchmethod_autoload (stash, "THAW", 0);
+    method = gv_fetchmethod_autoload (stash, "THAW", 0);
 
     if (!method)
       ERR ("cannot decode perl-object (package does not have a THAW method)");
