@@ -2262,12 +2262,13 @@ decode_tag (pTHX_ dec_t *dec)
     int i, len = av_len (av) + 1;
     HV *stash = gv_stashsv (tag, 0);
     SV *sv;
+    GV *method;
     dSP;
 
     if (!stash)
       ERR ("cannot decode perl-object (package does not exist)");
 
-    GV *method = gv_fetchmethod_autoload (stash, "THAW", 0);
+    method = gv_fetchmethod_autoload (stash, "THAW", 0);
 
     if (!method)
       ERR ("cannot decode perl-object (package does not have a THAW method)");
@@ -2661,6 +2662,17 @@ void CLONE (...)
 }
 
 #endif
+
+void END(...)
+	PREINIT:
+        dMY_CXT;
+        SV * sv;
+	PPCODE:
+        sv = MY_CXT.sv_json;
+        MY_CXT.sv_json = NULL;
+        /* todo use SvREFCNT_dec_NN once ppport is fixed */
+        SvREFCNT_dec(sv);
+        return; /* skip implicit PUTBACK, returning @_ to caller, more efficient*/
 
 void new (char *klass)
 	PPCODE:
