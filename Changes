@@ -4,10 +4,10 @@ TODO: maybe detect and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-3.0104 2014-?? (rurban)
-       - add t/z_leaktrace.t for #19
+3.0104 2014-04-26 (rurban)
+       - add t/z_leaktrace.t
        - restore build on C89 (bulk88)
-       - fix small leak on interp exit (bulk88)
+       - fix small cxt->sv_json leak on interp exit (bulk88)
 
 3.0103 2014-04-21 (rurban)
        - Change booleans interop logic (again) for JSON-XS-3.01
