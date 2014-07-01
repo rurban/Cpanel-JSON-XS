@@ -816,10 +816,11 @@ encode_hv (pTHX_ enc_t *enc, HV *hv)
 
 /* encode objects, arrays and special \0=false and \1=true values. */
 static void
-encode_rv (pTHX_ enc_t *enc, SV *sv)
+encode_rv (pTHX_ enc_t *enc, SV *rv)
 {
   svtype svt;
   GV *method;
+  SV *sv = SvRV(rv);
 
   SvGETMAGIC (sv);
   svt = SvTYPE (sv);
@@ -846,8 +847,7 @@ encode_rv (pTHX_ enc_t *enc, SV *sv)
 
           ENTER; SAVETMPS; PUSHMARK (SP);
           EXTEND (SP, 2);
-          /* we re-bless the reference to get overload and other niceties right */
-          PUSHs (sv_bless (sv_2mortal (newRV_inc (sv)), stash));
+          PUSHs (rv);
           PUSHs (MY_CXT.sv_json);
 
           PUTBACK;
@@ -882,21 +882,9 @@ encode_rv (pTHX_ enc_t *enc, SV *sv)
       else if ((enc->json.flags & F_CONV_BLESSED) && (method = gv_fetchmethod_autoload (stash, "TO_JSON", 0)))
         {
           dSP;
-          SV *rv;
-#if PERL_VERSION < 10
-          HV *stash;
-#endif
 
           ENTER; SAVETMPS; PUSHMARK (SP);
 
-          rv = sv_2mortal (newRV_inc (sv));
-#if PERL_VERSION < 10
-          /* overloading flags used to be carried in the RV; fortunately that's only 5.8 and earlier */
-          /* otherwise, avoid re-blessing; it breaks when SvREADONLY (sv), e.g. restricted hashes */
-          stash = SvSTASH (sv);
-          if (Gv_AMG (stash))
-            SvAMAGIC_on (rv);
-#endif
           XPUSHs (rv);
 
           /* calling with G_SCALAR ensures that we always get a 1 return value */
@@ -1012,7 +1000,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         }
     }
   else if (SvROK (sv))
-    encode_rv (aTHX_ enc, SvRV (sv));
+    encode_rv (aTHX_ enc, sv);
   else if (!SvOK (sv) || enc->json.flags & F_ALLOW_UNKNOWN)
     encode_str (aTHX_ enc, "null", 4, 0);
   else
