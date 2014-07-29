@@ -521,7 +521,8 @@ character, after which more white-space and comments are allowed.
 =item * literal ASCII TAB characters in strings
 
 Literal ASCII TAB characters are now allowed in strings (and treated as
-C<\t>).
+C<\t>) in relaxed mode. Despite JSON mandates, that TAB character is
+substituted for "\t" sequence.
 
   [
      "Hello\tWorld",

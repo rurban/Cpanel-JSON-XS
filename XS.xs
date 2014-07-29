@@ -1829,7 +1829,9 @@ decode_str (pTHX_ dec_t *dec)
 
               utf8 = 1;
             }
-          else
+          else if (dec->json.flags & F_RELAXED && ch == '\t') {
+            *cur++ = ch;
+          } else
             {
               --dec_cur;
 
