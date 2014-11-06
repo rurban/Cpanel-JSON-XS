@@ -129,7 +129,7 @@ B<Changes to JSON::XS>
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '3.0104';
+our $VERSION = '3.0105';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -187,8 +187,8 @@ Except being faster.
 
 =item $is_boolean = Cpanel::JSON::XS::is_bool $scalar
 
-Returns true if the passed scalar represents either Cpanel::JSON::XS::true or
-Cpanel::JSON::XS::false, two constants that act like C<1> and C<0>, respectively
+Returns true if the passed scalar represents either C<JSON::XS::true> or
+C<JSON::XS::false>, two constants that act like C<1> and C<0>, respectively
 and are used to represent JSON C<true> and C<false> values in Perl.
 
 See MAPPING, below, for more information on how JSON values are mapped to
@@ -272,7 +272,7 @@ be chained:
 If C<$enable> is true (or missing), then the C<encode> method will not
 generate characters outside the code range C<0..127> (which is ASCII). Any
 Unicode characters outside that range will be escaped using either a
-single \uXXXX (BMP characters) or a double \uHHHH\uLLLLL escape sequence,
+single C<\uXXXX> (BMP characters) or a double C<\uHHHH\uLLLLL> escape sequence,
 as per RFC4627. The resulting encoded JSON text can be treated as a native
 Unicode string, an ascii-encoded, latin1-encoded or UTF-8 encoded string,
 or any other superset of ASCII.
@@ -1113,12 +1113,12 @@ the JSON number will still be re-encoded as a JSON number).
 
 Note that precision is not accuracy - binary floating point values
 cannot represent most decimal fractions exactly, and when converting
-from and to floating point, Cpanel::JSON::XS only guarantees precision
+from and to floating point, C<Cpanel::JSON::XS> only guarantees precision
 up to but not including the least significant bit.
 
 =item true, false
 
-These JSON atoms become C<JSON::XS::true> and C<JSON::XS::false>,
+These JSON atoms become C<Cpanel::JSON::XS::true> and C<Cpanel::JSON::XS::false>,
 respectively. They are overloaded to act almost exactly like the numbers
 C<1> and C<0>. You can check whether a scalar is a JSON boolean by using
 the C<Cpanel::JSON::XS::is_bool> function.
@@ -1174,7 +1174,8 @@ Perl array references become JSON arrays.
 Other unblessed references are generally not allowed and will cause an
 exception to be thrown, except for references to the integers C<0> and
 C<1>, which get turned into C<false> and C<true> atoms in JSON. You can
-also use C<JSON::XS::false> and C<JSON::XS::true> to improve readability.
+also use C<Cpanel::JSON::XS::false> and C<Cpanel::JSON::XS::true> to improve
+readability.
 
    encode_json [\0, Cpanel::JSON::XS::true]      # yields [false,true]
 
@@ -1248,7 +1249,7 @@ tagged values.
 
 =head3 SERIALISATION
 
-What happens when C<JSON::XS> encounters a Perl object depends on the
+What happens when C<Cpanel::JSON::XS> encounters a Perl object depends on the
 C<allow_blessed>, C<convert_blessed> and C<allow_tags> settings, which are
 used in this order:
 
@@ -1256,7 +1257,7 @@ used in this order:
 
 =item 1. C<allow_tags> is enabled and the object has a C<FREEZE> method.
 
-In this case, C<JSON::XS> uses the L<Types::Serialiser> object
+In this case, C<Cpanel::JSON::XS> uses the L<Types::Serialiser> object
 serialisation protocol to create a tagged JSON value, using a nonstandard
 extension to the JSON syntax.
 
@@ -1307,7 +1308,7 @@ The object will be serialised as a JSON null value.
 =item 4. none of the above
 
 If none of the settings are enabled or the respective methods are missing,
-C<JSON::XS> throws an exception.
+C<Cpanel::JSON::XS> throws an exception.
 
 =back
 
@@ -1324,7 +1325,7 @@ This section only considers the tagged value case: I a tagged JSON object
 is encountered during decoding and C<allow_tags> is disabled, a parse
 error will result (as if tagged values were not part of the grammar).
 
-If C<allow_tags> is enabled, C<JSON::XS> will look up the C<THAW> method
+If C<allow_tags> is enabled, C<Cpanel::JSON::XS> will look up the C<THAW> method
 of the package/classname used during serialisation (it will not attempt
 to load the package as a Perl module). If there is no such method, the
 decoding will fail with an error.
@@ -1676,7 +1677,7 @@ it into a Perl structure. While JSON::XS can check the size of the JSON
 text, it might be too late when you already have it in memory, so you
 might want to check the size before you accept the string.
 
-Third, JSON::XS recurses using the C stack when decoding objects and
+Third, Cpanel::JSON::XS recurses using the C stack when decoding objects and
 arrays. The C stack is a limited resource: for instance, on my amd64
 machine with 8MB of stack size I can decode around 180k nested arrays but
 only 14k nested JSON objects (due to perl itself recursing deeply on croak
@@ -1688,12 +1689,12 @@ C<max_depth> method.
 Something else could bomb you, too, that I forgot to think of. In that
 case, you get to keep the pieces. I am always open for hints, though...
 
-Also keep in mind that JSON::XS might leak contents of your Perl data
+Also keep in mind that Cpanel::JSON::XS might leak contents of your Perl data
 structures in its error messages, so when you serialise sensitive
 information you might want to make sure that exceptions thrown by JSON::XS
 will not end up in front of untrusted eyes.
 
-If you are using JSON::XS to return packets to consumption
+If you are using Cpanel::JSON::XS to return packets to consumption
 by JavaScript scripts in a browser you should have a look at
 L<http://blog.archive.jpsykes.com/47/practical-csrf-and-json-security/> to
 see whether you are vulnerable to some common attack vectors (which really
@@ -1705,11 +1706,11 @@ security right).
 =head1 THREADS
 
 Cpanel::JSON::XS has experimental ithreads support, unlike JSON::XS. If you
-encouter any bugs with thread support please report them.
+encounter any bugs with thread support please report them.
 
 =head1 BUGS
 
-While the goal of the JSON::XS module is to be correct, that
+While the goal of the Cpanel::JSON::XS module is to be correct, that
 unfortunately does not mean it's bug-free, only that the author thinks
 its design is bug-free. If you keep reporting bugs they will be fixed
 swiftly, though.

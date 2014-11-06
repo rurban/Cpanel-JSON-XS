@@ -147,10 +147,10 @@ FUNCTIONAL INTERFACE
         Except being faster.
 
     $is_boolean = Cpanel::JSON::XS::is_bool $scalar
-        Returns true if the passed scalar represents either
-        Cpanel::JSON::XS::true or Cpanel::JSON::XS::false, two constants
-        that act like 1 and 0, respectively and are used to represent JSON
-        "true" and "false" values in Perl.
+        Returns true if the passed scalar represents either "JSON::XS::true"
+        or "JSON::XS::false", two constants that act like 1 and 0,
+        respectively and are used to represent JSON "true" and "false"
+        values in Perl.
 
         See MAPPING, below, for more information on how JSON values are
         mapped to Perl.
@@ -210,11 +210,11 @@ OBJECT-ORIENTED INTERFACE
         If $enable is true (or missing), then the "encode" method will not
         generate characters outside the code range 0..127 (which is ASCII).
         Any Unicode characters outside that range will be escaped using
-        either a single \uXXXX (BMP characters) or a double \uHHHH\uLLLLL
-        escape sequence, as per RFC4627. The resulting encoded JSON text can
-        be treated as a native Unicode string, an ascii-encoded,
-        latin1-encoded or UTF-8 encoded string, or any other superset of
-        ASCII.
+        either a single "\uXXXX" (BMP characters) or a double
+        "\uHHHH\uLLLLL" escape sequence, as per RFC4627. The resulting
+        encoded JSON text can be treated as a native Unicode string, an
+        ascii-encoded, latin1-encoded or UTF-8 encoded string, or any other
+        superset of ASCII.
 
         If $enable is false, then the "encode" method will not escape
         Unicode characters unless required by the JSON syntax or other
@@ -1004,14 +1004,15 @@ MAPPING
 
         Note that precision is not accuracy - binary floating point values
         cannot represent most decimal fractions exactly, and when converting
-        from and to floating point, Cpanel::JSON::XS only guarantees
+        from and to floating point, "Cpanel::JSON::XS" only guarantees
         precision up to but not including the least significant bit.
 
     true, false
-        These JSON atoms become "JSON::XS::true" and "JSON::XS::false",
-        respectively. They are overloaded to act almost exactly like the
-        numbers 1 and 0. You can check whether a scalar is a JSON boolean by
-        using the "Cpanel::JSON::XS::is_bool" function.
+        These JSON atoms become "Cpanel::JSON::XS::true" and
+        "Cpanel::JSON::XS::false", respectively. They are overloaded to act
+        almost exactly like the numbers 1 and 0. You can check whether a
+        scalar is a JSON boolean by using the "Cpanel::JSON::XS::is_bool"
+        function.
 
     null
         A JSON null atom becomes "undef" in Perl.
@@ -1054,8 +1055,8 @@ MAPPING
         Other unblessed references are generally not allowed and will cause
         an exception to be thrown, except for references to the integers 0
         and 1, which get turned into "false" and "true" atoms in JSON. You
-        can also use "JSON::XS::false" and "JSON::XS::true" to improve
-        readability.
+        can also use "Cpanel::JSON::XS::false" and "Cpanel::JSON::XS::true"
+        to improve readability.
 
            encode_json [\0, Cpanel::JSON::XS::true]      # yields [false,true]
 
@@ -1123,12 +1124,12 @@ MAPPING
     syntax, tagged values.
 
    SERIALISATION
-    What happens when "JSON::XS" encounters a Perl object depends on the
-    "allow_blessed", "convert_blessed" and "allow_tags" settings, which are
-    used in this order:
+    What happens when "Cpanel::JSON::XS" encounters a Perl object depends on
+    the "allow_blessed", "convert_blessed" and "allow_tags" settings, which
+    are used in this order:
 
     1. "allow_tags" is enabled and the object has a "FREEZE" method.
-        In this case, "JSON::XS" uses the Types::Serialiser object
+        In this case, "Cpanel::JSON::XS" uses the Types::Serialiser object
         serialisation protocol to create a tagged JSON value, using a
         nonstandard extension to the JSON syntax.
 
@@ -1177,7 +1178,7 @@ MAPPING
 
     4. none of the above
         If none of the settings are enabled or the respective methods are
-        missing, "JSON::XS" throws an exception.
+        missing, "Cpanel::JSON::XS" throws an exception.
 
    DESERIALISATION
     For deserialisation there are only two cases to consider: either
@@ -1192,10 +1193,10 @@ MAPPING
     parse error will result (as if tagged values were not part of the
     grammar).
 
-    If "allow_tags" is enabled, "JSON::XS" will look up the "THAW" method of
-    the package/classname used during serialisation (it will not attempt to
-    load the package as a Perl module). If there is no such method, the
-    decoding will fail with an error.
+    If "allow_tags" is enabled, "Cpanel::JSON::XS" will look up the "THAW"
+    method of the package/classname used during serialisation (it will not
+    attempt to load the package as a Perl module). If there is no such
+    method, the decoding will fail with an error.
 
     Otherwise, the "THAW" method is invoked with the classname as first
     argument, the constant string "JSON" as second argument, and all the
@@ -1529,8 +1530,8 @@ SECURITY CONSIDERATIONS
     in memory, so you might want to check the size before you accept the
     string.
 
-    Third, JSON::XS recurses using the C stack when decoding objects and
-    arrays. The C stack is a limited resource: for instance, on my amd64
+    Third, Cpanel::JSON::XS recurses using the C stack when decoding objects
+    and arrays. The C stack is a limited resource: for instance, on my amd64
     machine with 8MB of stack size I can decode around 180k nested arrays
     but only 14k nested JSON objects (due to perl itself recursing deeply on
     croak to free the temporary). If that is exceeded, the program crashes.
@@ -1541,13 +1542,13 @@ SECURITY CONSIDERATIONS
     Something else could bomb you, too, that I forgot to think of. In that
     case, you get to keep the pieces. I am always open for hints, though...
 
-    Also keep in mind that JSON::XS might leak contents of your Perl data
-    structures in its error messages, so when you serialise sensitive
+    Also keep in mind that Cpanel::JSON::XS might leak contents of your Perl
+    data structures in its error messages, so when you serialise sensitive
     information you might want to make sure that exceptions thrown by
     JSON::XS will not end up in front of untrusted eyes.
 
-    If you are using JSON::XS to return packets to consumption by JavaScript
-    scripts in a browser you should have a look at
+    If you are using Cpanel::JSON::XS to return packets to consumption by
+    JavaScript scripts in a browser you should have a look at
     <http://blog.archive.jpsykes.com/47/practical-csrf-and-json-security/>
     to see whether you are vulnerable to some common attack vectors (which
     really are browser design bugs, but it is still you who will have to
@@ -1556,10 +1557,10 @@ SECURITY CONSIDERATIONS
 
 THREADS
     Cpanel::JSON::XS has experimental ithreads support, unlike JSON::XS. If
-    you encouter any bugs with thread support please report them.
+    you encounter any bugs with thread support please report them.
 
 BUGS
-    While the goal of the JSON::XS module is to be correct, that
+    While the goal of the Cpanel::JSON::XS module is to be correct, that
     unfortunately does not mean it's bug-free, only that the author thinks
     its design is bug-free. If you keep reporting bugs they will be fixed
     swiftly, though.
