@@ -6,6 +6,7 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
 3.0105 2014-11-05 (rurban)
        - minor doc improvements #25 (ether)
+       - fix d_Gconvert test in t/11_pc_expo.t for 5.6
 
 3.0104 2014-04-26 (rurban)
        - add t/z_leaktrace.t
