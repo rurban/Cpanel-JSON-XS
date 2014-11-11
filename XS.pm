@@ -1518,62 +1518,17 @@ If you know of other incompatibilities, please let me know.
 
 =head2 JSON and YAML
 
-You often hear that JSON is a subset of YAML. This is, however, a mass
-hysteria(*) and very far from the truth (as of the time of this writing),
-so let me state it clearly: I<in general, there is no way to configure
-JSON::XS to output a data structure as valid YAML> that works in all
-cases.
-
-If you really must use Cpanel::JSON::XS to generate YAML, you should use this
-algorithm (subject to change in future versions):
+You often hear that JSON is a subset of YAML.  I<in general, there is
+no way to configure JSON::XS to output a data structure as valid YAML>
+that works in all cases.  If you really must use Cpanel::JSON::XS to
+generate YAML, you should use this algorithm (subject to change in
+future versions):
 
    my $to_yaml = Cpanel::JSON::XS->new->utf8->space_after (1);
    my $yaml = $to_yaml->encode ($ref) . "\n";
 
 This will I<usually> generate JSON texts that also parse as valid
-YAML. Please note that YAML has hardcoded limits on (simple) object key
-lengths that JSON doesn't have and also has different and incompatible
-unicode character escape syntax, so you should make sure that your hash
-keys are noticeably shorter than the 1024 "stream characters" YAML allows
-and that you do not have characters with codepoint values outside the
-Unicode BMP (basic multilingual page). YAML also does not allow C<\/>
-sequences in strings (which Cpanel::JSON::XS does not I<currently> generate, but
-other JSON generators might).
-
-There might be other incompatibilities that I am not aware of (or the YAML
-specification has been changed yet again - it does so quite often). In
-general you should not try to generate YAML with a JSON generator or vice
-versa, or try to parse JSON with a YAML parser or vice versa: chances are
-high that you will run into severe interoperability problems when you
-least expect it.
-
-=over 4
-
-=item (*)
-
-I have been pressured multiple times by Brian Ingerson (one of the
-authors of the YAML specification) to remove this paragraph, despite him
-acknowledging that the actual incompatibilities exist. As I was personally
-bitten by this "JSON is YAML" lie, I refused and said I will continue to
-educate people about these issues, so others do not run into the same
-problem again and again. After this, Brian called me a (quote)I<complete
-and worthless idiot>(unquote).
-
-In my opinion, instead of pressuring and insulting people who actually
-clarify issues with YAML and the wrong statements of some of its
-proponents, I would kindly suggest reading the JSON spec (which is not
-that difficult or long) and finally make YAML compatible to it, and
-educating users about the changes, instead of spreading lies about the
-real compatibility for many I<years> and trying to silence people who
-point out that it isn't true.
-
-Addendum/2009: the YAML 1.2 spec is still incompatible with JSON, even
-though the incompatibilities have been documented (and are known to Brian)
-for many years and the spec makes explicit claims that YAML is a superset
-of JSON. It would be so easy to fix, but apparently, bullying people and
-corrupting userdata is so much easier.
-
-=back
+YAML.
 
 
 =head2 SPEED
