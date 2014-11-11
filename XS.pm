@@ -1620,8 +1620,7 @@ When you are using JSON in a protocol, talking to untrusted potentially
 hostile creatures requires relatively few measures.
 
 First of all, your JSON decoder should be secure, that is, should not have
-any buffer overflows. Obviously, this module should ensure that and I am
-trying hard on making that true, but you never know.
+any buffer overflows. Obviously, this module should ensure that.
 
 Second, you need to avoid resource-starving attacks. That means you should
 limit the size of JSON texts you accept, or make sure then when your
