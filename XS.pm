@@ -1640,9 +1640,6 @@ conservative, the default nesting limit is set to 512. If your process
 has a smaller stack, you should adjust this setting accordingly with the
 C<max_depth> method.
 
-Something else could bomb you, too, that I forgot to think of. In that
-case, you get to keep the pieces. I am always open for hints, though...
-
 Also keep in mind that Cpanel::JSON::XS might leak contents of your Perl data
 structures in its error messages, so when you serialise sensitive
 information you might want to make sure that exceptions thrown by JSON::XS
