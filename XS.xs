@@ -852,6 +852,7 @@ encode_rv (pTHX_ enc_t *enc, SV *sv)
 
           PUTBACK;
           count = call_sv ((SV *)GvCV (method), G_ARRAY);
+          const int items = count;
           SPAGAIN;
 
           /* catch this surprisingly common error */
@@ -875,6 +876,7 @@ encode_rv (pTHX_ enc_t *enc, SV *sv)
 
           encode_ch (aTHX_ enc, ']');
 
+          SP -= items;
           PUTBACK;
 
           FREETMPS; LEAVE;
@@ -2181,12 +2183,13 @@ decode_hv (pTHX_ dec_t *dec)
               if (count == 1)
                 {
                   sv = newSVsv (POPs);
-                  FREETMPS; LEAVE;
+                  PUTBACK; FREETMPS; LEAVE;
                   return sv;
                 }
 
               SvREFCNT_inc (sv);
-              FREETMPS; LEAVE;
+              SP -= count;
+              PUTBACK; FREETMPS; LEAVE;
             }
         }
 
@@ -2203,12 +2206,13 @@ decode_hv (pTHX_ dec_t *dec)
           if (count == 1)
             {
               sv = newSVsv (POPs);
-              FREETMPS; LEAVE;
+              PUTBACK; FREETMPS; LEAVE;
               return sv;
             }
 
           SvREFCNT_inc (sv);
-          FREETMPS; LEAVE;
+          SP -= count;
+          PUTBACK; FREETMPS; LEAVE;
         }
     }
 
