@@ -202,7 +202,7 @@ Perl.
 
 =item from_json
 
-from_json has been renamed to encode_json
+from_json has been renamed to decode_json
 
 =item to_json
 
