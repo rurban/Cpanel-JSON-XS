@@ -1,4 +1,4 @@
-BEGIN { $| = 1; print "1..76\n"; }
+BEGIN { $| = 1; print "1..79\n"; }
 
 use utf8;
 use Cpanel::JSON::XS;
@@ -20,6 +20,22 @@ ok ($false == !$true);
 ok (Cpanel::JSON::XS::is_bool $false);
 ok (++$false == 1);
 ok (!Cpanel::JSON::XS::is_bool $false);
+{
+  ok ("0" eq decode_json("false"));
+  ok ("1" eq decode_json("true"));
+  my $FH;
+  my $fn = "tmp_$$";
+  open $FH, ">", $fn;
+  print $FH decode_json("false"); # printed as "false", but upstream as "0". GH #29
+  print $FH decode_json("true");
+  print $FH "\n";
+  close $FH;
+  open $FH, "<", $fn;
+  my $s = <$FH>;
+  close $FH;
+  unlink $fn;
+  ok ("01\n" eq $s);
+}
 
 ok (Cpanel::JSON::XS->new->allow_nonref (1)->decode ('5') == 5);
 ok (Cpanel::JSON::XS->new->allow_nonref (1)->decode ('-5') == -5);
@@ -56,4 +72,3 @@ ok (32768 == ((decode_json encode_json [32768])->[0]));
 
 my @sparse; @sparse[0,3] = (1, 4);
 ok ("[1,null,null,4]" eq encode_json \@sparse);
-

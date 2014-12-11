@@ -1738,16 +1738,16 @@ use overload
    "0+"     => sub { ${$_[0]} },
    "++"     => sub { $_[0] = ${$_[0]} + 1 },
    "--"     => sub { $_[0] = ${$_[0]} - 1 },
-  '""'      => sub { ${$_[0]} == 1 ? 'true' : 'false' },
-  'eq'      => sub {
-    my ($obj, $op) = ref ($_[0]) ? ($_[0], $_[1]) : ($_[1], $_[0]);
-    if ($op eq 'true' or $op eq 'false') {
-      return "$obj" eq 'true' ? 'true' eq $op : 'false' eq $op;
-    }
-    else {
-      return $obj ? 1 == $op : 0 == $op;
-    }
-   },
+  # '""'    => sub { ${$_[0]} == 1 ? 'true' : 'false' },
+  #'eq'      => sub {
+  #  my ($obj, $op) = ref ($_[0]) ? ($_[0], $_[1]) : ($_[1], $_[0]);
+  #  if ($op eq 'true' or $op eq 'false') {
+  #    return "$obj" eq 'true' ? 'true' eq $op : 'false' eq $op;
+  #  }
+  #  else {
+  #    return $obj ? 1 == $op : 0 == $op;
+  #  }
+  # },
    fallback => 1;
 
 1;
