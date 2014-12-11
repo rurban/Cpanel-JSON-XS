@@ -176,8 +176,8 @@ json_init (JSON *json)
 static void
 init_MY_CXT(pTHX_ my_cxt_t * cxt)
 {
-  cxt->json_stash         = gv_stashpv ("Cpanel::JSON::XS", 1);
-  cxt->json_boolean_stash = gv_stashpv ("JSON::XS::Boolean", 1);
+  cxt->json_stash          = gv_stashpv ("Cpanel::JSON::XS", 1);
+  cxt->json_boolean_stash  = gv_stashpv ("JSON::XS::Boolean", 1);
   cxt->json_boolean_stash3 = gv_stashpv ("JSON::PP::Boolean", 1);
 
   cxt->json_true  = get_bool (aTHX_ "Cpanel::JSON::XS::true");

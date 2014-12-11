@@ -9,6 +9,8 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
          and numbers are now not mishandled anymore by dual-vars, temp. string representations.
          Add prompt for it.
          Add t/117_numbers.t from JSON::PP, PR#10 by kraih.
+       - Change stringification of false and true to 0 and 1, matching upstream JSON and JSON::XS, #29.
+         This didn't affect string comparisons, just e.g. print decode_json("false").
        - Tolerate literal ASCII TABs in strings in relaxed mode #22 (from JSON::XS)
        - Revise pod, merge updates from JSON::XS.
        - Fix pod typo #30 (Colin Kuskie)
