@@ -954,23 +954,37 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
 {
   SvGETMAGIC (sv);
 
-  if (SvPOKp (sv))
+  if (SvNOKp (sv))
     {
-      STRLEN len;
-      char *str = SvPV (sv, len);
-      encode_ch (aTHX_ enc, '"');
-      encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
-      encode_ch (aTHX_ enc, '"');
-    }
-  else if (SvNOKp (sv))
-    {
+      char * savecur = enc->cur;
       /* trust that perl will do the right thing w.r.t. JSON syntax. */
       need (aTHX_ enc, NV_DIG + 32);
       Gconvert (SvNVX (sv), NV_DIG, 0, enc->cur);
+
+      if (strEQ(enc->cur, "nan") || strEQ(enc->cur, "inf")) {
+#ifdef STRINGIFY_INFNAN
+        memmove(enc->cur+1, enc->cur, 4);
+        *enc->cur = '"';
+        *(enc->cur + 4) = '"';
+        *(enc->cur + 5) = 0;
+#else
+        strncpy(enc->cur, "null\0", 5);
+#endif
+      }
+      if (SvPOKp (sv) && !strEQ(enc->cur, SvPVX (sv))) {
+        STRLEN len;
+        char *str = SvPV (sv, len);
+        enc->cur = savecur;
+        encode_ch (aTHX_ enc, '"');
+        encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
+        encode_ch (aTHX_ enc, '"');
+      }
       enc->cur += strlen (enc->cur);
     }
   else if (SvIOKp (sv))
     {
+      char * savecur = enc->cur;
+
       /* we assume we can always read an IV as a UV and vice versa */
       /* we assume two's complement */
       /* we assume no aliasing issues in the union */
@@ -1002,6 +1016,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
           digit = u >> 26; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x3ffffffUL) * 5;
           digit = u >> 25; *enc->cur = digit + '0'; enc->cur += (nz = nz || digit); u = (u & 0x1ffffffUL) * 5;
           digit = u >> 24; *enc->cur = digit + '0'; enc->cur += 1; /* correctly generate '0' */
+          *enc->cur = 0;
         }
       else
         {
@@ -1012,6 +1027,23 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
                 ? snprintf (enc->cur, IVUV_MAXCHARS, "%"UVuf, (UV)SvUVX (sv))
                 : snprintf (enc->cur, IVUV_MAXCHARS, "%"IVdf, (IV)SvIVX (sv));
         }
+
+      if (SvPOKp (sv) && !strEQ(savecur, SvPVX (sv))) {
+        STRLEN len;
+        char *str = SvPV (sv, len);
+        enc->cur = savecur;
+        encode_ch (aTHX_ enc, '"');
+        encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
+        encode_ch (aTHX_ enc, '"');
+      }
+    }
+  else if (SvPOKp (sv))
+    {
+      STRLEN len;
+      char *str = SvPV (sv, len);
+      encode_ch (aTHX_ enc, '"');
+      encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
+      encode_ch (aTHX_ enc, '"');
     }
   else if (SvROK (sv))
     encode_rv (aTHX_ enc, SvRV (sv));

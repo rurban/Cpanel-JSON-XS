@@ -102,6 +102,14 @@ or        L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
 B<Changes to JSON::XS>
 
+- fixed encode of numbers for dual-vars. Different string representations
+  are preserved, but numbers with temporary strings which represent the same number
+  are here treated as numbers, not strings. Cpanel::JSON::XS is a bit slower, but
+  preserves numeric types better.
+
+- different handling of inf/nan. Default now to null, optionally with -DSTRINGIFY_INFNAN
+  to "inf"/"nan".
+
 - added C<binary> extension, non-JSON and non JSON parsable, allows
   C<\xNN> and C<\NNN> sequences.
 
@@ -1217,8 +1225,8 @@ your own serialiser method.
 =item simple scalars
 
 Simple Perl scalars (any scalar that is not a reference) are the most
-difficult objects to encode: Cpanel::JSON::XS will encode undefined scalars as
-JSON C<null> values, scalars that have last been used in a string context
+difficult objects to encode: Cpanel::JSON::XS will encode undefined scalars or inf/nan
+as JSON C<null> values, scalars that have last been used in a string context
 before encoding as JSON strings, and anything else as number value:
 
    # dump as number
@@ -1226,9 +1234,14 @@ before encoding as JSON strings, and anything else as number value:
    encode_json [-3.0e17]                # yields [-3e+17]
    my $value = 5; encode_json [$value]  # yields [5]
 
-   # used as string, so dump as string
+   # used as string, but the two representations are for the same number
    print $value;
-   encode_json [$value]                 # yields ["5"]
+   encode_json [$value]                 # yields [5]
+
+   # used as different string (non-matching dual-var)
+   my $str = '0 but true';
+   my $num = 1 + $str;
+   encode_json [$num, $str]           # yields [1,"0 but true"]
 
    # undef becomes null
    encode_json [undef]                  # yields [null]
@@ -1246,16 +1259,13 @@ You can force the type to be a JSON number by numifying it:
    $x += 0;     # numify it, ensuring it will be dumped as a number
    $x *= 1;     # same thing, the choice is yours.
 
-You can not currently force the type in other, less obscure, ways. Tell me
-if you need this capability (but don't forget to explain why it's needed
-:).
-
 Note that numerical precision has the same meaning as under Perl (so
 binary to decimal conversion follows the same rules as in Perl, which
 can differ to other languages). Also, your perl interpreter might expose
 extensions to the floating point numbers of your platform, such as
-infinities or NaN's - these cannot be represented in JSON, and it is an
-error to pass those in.
+infinities or NaN's - these cannot be represented in JSON, and thus
+null is returned instead. Optionally you can configure it to stringify
+inf and nan values.
 
 =back
 
