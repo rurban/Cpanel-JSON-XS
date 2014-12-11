@@ -7,8 +7,8 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 3.0108 2014-12-11 (rurban)
        - Change encode of numbers with dual-strings (int and float), integers
          and numbers are now not mishandled anymore by dual-vars, temp. string representations.
-         Add prompt for it.
          Add t/117_numbers.t from JSON::PP, PR#10 by kraih.
+       - Add prompt for nan/inf encode policy: null or stringify.
        - Change stringification of false and true to 0 and 1, matching upstream JSON and JSON::XS, #29.
          This didn't affect string comparisons, just e.g. print decode_json("false").
        - Tolerate literal ASCII TABs in strings in relaxed mode #22 (from JSON::XS)
