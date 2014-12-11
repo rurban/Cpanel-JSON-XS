@@ -4,6 +4,11 @@ TODO: maybe detect and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0108 2014-12-11 (rurban)
+       - fix pod typo #30 (Colin Kuskie)
+       - add t/117_numbers.t from JSON::PP (PR#10 by kraih)
+       - tolerate literal ASCII TABs in strings in relaxed mode #22 (from JSON::XS)
+
 3.0107 2014-11-28 (rurban)
        - fix fatal stack corruption with perl callbacks in list context
          #27 (dur-randir)

@@ -38,8 +38,10 @@ t/96_interop.t
 t/97_unshare_hek.t
 t/98_56only.t
 t/99_binary.t
+t/117_numbers.t
 t/z_kwalitee.t
 t/z_leaktrace.t
+t/z_leak.t
 t/z_meta.t
 t/z_perl_minimum_version.t
 t/z_pod-coverage.t

@@ -20,6 +20,14 @@ SYNOPSIS
      # Note that 5.6 misses most smart utf8 and encoding functionalities
      # of newer releases.
 
+     # Note that L<JSON::MaybeXS> will automatically use Cpanel::JSON::XS
+     # if available, at virtually no speed overhead either, so you should
+     # be able to just:
+ 
+     use JSON::MaybeXS;
+
+     # and do the same things, except that you have a pure-perl fallback now.
+
 DESCRIPTION
     This module converts Perl data structures to JSON and vice versa. Its
     primary goal is to be *correct* and its secondary goal is to be *fast*.
@@ -37,7 +45,7 @@ DESCRIPTION
     values and vice versa.
 
   FEATURES
-    *   smart Unicode handling
+    *   correct Unicode handling
 
         This module knows how to handle Unicode with Perl version higher
         than 5.8.5, documents how and when it does so, and even documents
@@ -157,7 +165,7 @@ FUNCTIONAL INTERFACE
 
 DEPRECATED FUNCTIONS
     from_json
-        from_json has been renamed to encode_json
+        from_json has been renamed to decode_json
 
     to_json
         to_json has been renamed to encode_json
@@ -439,6 +447,16 @@ OBJECT-ORIENTED INTERFACE
                     # neither this one...
               ]
 
+        *   literal ASCII TAB characters in strings
+
+            Literal ASCII TAB characters are now allowed in strings (and
+            treated as "\t").
+
+              [
+                 "Hello\tWorld",
+                 "Hello<TAB>World", # literal <TAB> would not normally be allowed
+              ]
+
     $json = $json->canonical ([$enable])
     $enabled = $json->get_canonical
         If $enable is true (or missing), then the "encode" method will
@@ -447,7 +465,8 @@ OBJECT-ORIENTED INTERFACE
 
         If $enable is false, then the "encode" method will output key-value
         pairs in the order Perl stores them (which will likely change
-        between runs of the same script).
+        between runs of the same script, and can change even within the same
+        run from 5.18 onwards).
 
         This option is useful if you want the same data structure to be
         encoded as the same JSON text (given the same overall settings). If
@@ -504,6 +523,8 @@ OBJECT-ORIENTED INTERFACE
         If $enable is false (the default), then "encode" will throw an
         exception when it encounters a blessed object.
 
+        This setting has no effect on "decode".
+
     $json = $json->convert_blessed ([$enable])
     $enabled = $json->get_convert_blessed
         If $enable is true (or missing), then "encode", upon encountering a
@@ -521,12 +542,10 @@ OBJECT-ORIENTED INTERFACE
         the object) are usually in upper case letters and to avoid
         collisions with any "to_json" function or method.
 
-        This setting does not yet influence "decode" in any way, but in the
-        future, global hooks might get installed that influence "decode" and
-        are enabled by this setting.
+        If $enable is false (the default), then "encode" will not consider
+        this type of conversion.
 
-        If $enable is false, then the "allow_blessed" setting will decide
-        what to do when a blessed object is found.
+        This setting has no effect on "decode".
 
     $json = $json->allow_tags ([$enable])
     $enabled = $json->get_allow_tags
@@ -712,8 +731,7 @@ OBJECT-ORIENTED INTERFACE
         characters consumed so far.
 
         This is useful if your JSON texts are not delimited by an outer
-        protocol (which is not the brightest thing to do in the first place)
-        and you need to know where the JSON text ends.
+        protocol and you need to know where the JSON text ends.
 
            Cpanel::JSON::XS->new->decode_prefix ("[1] the tail")
            => ([], 3)

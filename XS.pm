@@ -21,6 +21,14 @@ Cpanel::JSON::XS - JSON::XS for Cpanel, fast and correct serialising, also for 5
  # Note that 5.6 misses most smart utf8 and encoding functionalities
  # of newer releases.
 
+ # Note that L<JSON::MaybeXS> will automatically use Cpanel::JSON::XS
+ # if available, at virtually no speed overhead either, so you should
+ # be able to just:
+ 
+ use JSON::MaybeXS;
+
+ # and do the same things, except that you have a pure-perl fallback now.
+
 =head1 DESCRIPTION
 
 This module converts Perl data structures to JSON and vice versa. Its
@@ -42,7 +50,7 @@ values and vice versa.
 
 =over 4
 
-=item * smart Unicode handling
+=item * correct Unicode handling
 
 This module knows how to handle Unicode with Perl version higher than 5.8.5,
 documents how and when it does so, and even documents what "correct" means.
@@ -129,7 +137,7 @@ B<Changes to JSON::XS>
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '3.0107';
+our $VERSION = '3.0108';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -510,6 +518,16 @@ character, after which more white-space and comments are allowed.
         # neither this one...
   ]
 
+=item * literal ASCII TAB characters in strings
+
+Literal ASCII TAB characters are now allowed in strings (and treated as
+C<\t>).
+
+  [
+     "Hello\tWorld",
+     "Hello<TAB>World", # literal <TAB> would not normally be allowed
+  ]
+
 =back
 
 =item $json = $json->canonical ([$enable])
@@ -521,7 +539,8 @@ by sorting their keys. This is adding a comparatively high overhead.
 
 If C<$enable> is false, then the C<encode> method will output key-value
 pairs in the order Perl stores them (which will likely change between runs
-of the same script).
+of the same script, and can change even within the same run from 5.18
+onwards).
 
 This option is useful if you want the same data structure to be encoded as
 the same JSON text (given the same overall settings). If it is disabled,
@@ -582,6 +601,8 @@ encoded. Has no effect on C<decode>.
 If C<$enable> is false (the default), then C<encode> will throw an
 exception when it encounters a blessed object.
 
+This setting has no effect on C<decode>.
+
 =item $json = $json->convert_blessed ([$enable])
 
 =item $enabled = $json->get_convert_blessed
@@ -601,12 +622,10 @@ methods called by the Perl core (== not by the user of the object) are
 usually in upper case letters and to avoid collisions with any C<to_json>
 function or method.
 
-This setting does not yet influence C<decode> in any way, but in the
-future, global hooks might get installed that influence C<decode> and are
-enabled by this setting.
+If C<$enable> is false (the default), then C<encode> will not consider
+this type of conversion.
 
-If C<$enable> is false, then the C<allow_blessed> setting will decide what
-to do when a blessed object is found.
+This setting has no effect on C<decode>.
 
 =item $json = $json->allow_tags ([$enable])
 
@@ -797,8 +816,7 @@ silently stop parsing there and return the number of characters consumed
 so far.
 
 This is useful if your JSON texts are not delimited by an outer protocol
-(which is not the brightest thing to do in the first place) and you need
-to know where the JSON text ends.
+and you need to know where the JSON text ends.
 
    Cpanel::JSON::XS->new->decode_prefix ("[1] the tail")
    => ([], 3)
