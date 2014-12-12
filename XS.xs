@@ -978,6 +978,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         encode_ch (aTHX_ enc, '"');
         encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
         encode_ch (aTHX_ enc, '"');
+        *enc->cur = 0;
       }
       enc->cur += strlen (enc->cur);
     }
@@ -1035,6 +1036,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         encode_ch (aTHX_ enc, '"');
         encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
         encode_ch (aTHX_ enc, '"');
+        *enc->cur = 0;
       }
     }
   else if (SvPOKp (sv))
