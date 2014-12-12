@@ -4,6 +4,10 @@ TODO: maybe detect and croak on more invalid inputs (e.g. +-inf/nan)
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0110 2014-12-12 (rurban)
+       - Fixed one more memory bug with encode of dual-vars to strings,
+         esp. with older perl <5.10, leading to eventual panic: realloc.
+
 3.0109 2014-12-12 (rurban)
        - Fixed serious bug with encode of dual-vars to strings, missing
          the ending \0. #31 (Grinnz)

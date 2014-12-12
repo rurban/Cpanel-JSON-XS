@@ -956,9 +956,11 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
 
   if (SvNOKp (sv))
     {
-      char * savecur = enc->cur;
+      char *savecur, *saveend;
       /* trust that perl will do the right thing w.r.t. JSON syntax. */
       need (aTHX_ enc, NV_DIG + 32);
+      savecur = enc->cur;
+      saveend = enc->end;
       Gconvert (SvNVX (sv), NV_DIG, 0, enc->cur);
 
       if (strEQ(enc->cur, "nan") || strEQ(enc->cur, "inf")) {
@@ -975,17 +977,19 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         STRLEN len;
         char *str = SvPV (sv, len);
         enc->cur = savecur;
+        enc->end = saveend;
         encode_ch (aTHX_ enc, '"');
         encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
         encode_ch (aTHX_ enc, '"');
         *enc->cur = 0;
       }
-      enc->cur += strlen (enc->cur);
+      else {
+        enc->cur += strlen (enc->cur);
+      }
     }
   else if (SvIOKp (sv))
     {
-      char * savecur = enc->cur;
-
+      char *savecur, *saveend;
       /* we assume we can always read an IV as a UV and vice versa */
       /* we assume two's complement */
       /* we assume no aliasing issues in the union */
@@ -1000,6 +1004,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
           char digit, nz = 0;
 
           need (aTHX_ enc, 6);
+          savecur = enc->cur;
+          saveend = enc->end;
 
           *enc->cur = '-'; enc->cur += i < 0 ? 1 : 0;
           u = i < 0 ? -i : i;
@@ -1023,6 +1029,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         {
           /* large integer, use the (rather slow) snprintf way. */
           need (aTHX_ enc, IVUV_MAXCHARS);
+          savecur = enc->cur;
+          saveend = enc->end;
           enc->cur +=
              SvIsUV(sv)
                 ? snprintf (enc->cur, IVUV_MAXCHARS, "%"UVuf, (UV)SvUVX (sv))
@@ -1033,6 +1041,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         STRLEN len;
         char *str = SvPV (sv, len);
         enc->cur = savecur;
+        enc->end = saveend;
         encode_ch (aTHX_ enc, '"');
         encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
         encode_ch (aTHX_ enc, '"');
