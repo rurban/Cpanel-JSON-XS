@@ -1,10 +1,14 @@
 use strict;
 use Cpanel::JSON::XS;
 use Test::More;
-plan tests => 6;
+plan tests => 9;
 
-is encode_json([9**9**9]), '[null]';
-is encode_json([-sin(9**9**9)]), '[null]';
+# TODO: detect STRINGIFY_INFNAN somehow. add it to the API?
+is encode_json([9**9**9]), '[null]';          #inf
+is encode_json([-sin(9**9**9)]), '[null]';    #nan
+is encode_json([-9**9**9]), '[null]';         #-inf
+is encode_json([sin(9**9**9)]), '[null]';     #-nan
+is encode_json([9**9**9/9**9**9]), '[null]';  #-nan
 
 my $num = 3;
 my $str = "$num";

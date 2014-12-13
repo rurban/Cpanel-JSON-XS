@@ -145,7 +145,7 @@ B<Changes to JSON::XS>
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '3.0110';
+our $VERSION = '3.0111';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -1245,6 +1245,10 @@ before encoding as JSON strings, and anything else as number value:
 
    # undef becomes null
    encode_json [undef]                  # yields [null]
+
+   # inf or nan becomes null, unless you answered
+   # "Do you want to handle inf/nan as strings" with yes
+   encode_json [9**9**9]                # yields [null]
 
 You can force the type to be a JSON string by stringifying it:
 
