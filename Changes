@@ -4,9 +4,10 @@ TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
 3.0111 2014-12-13 (rurban)
-       - Fixed detecting 1.#INF/1.#IND on windows. Also detect now -inf and -nan. #28
+       - Fixed detecting 1.#INF/1.#IND on windows. #28
+       - Also detect now -inf and -nan. #28
        - Fixed STRINGIFY_INFNAN return string, length off by one. #28
-       - Fixed a non-C99 declaration error on XS.xs:863
+       - Fixed a non-C99 declaration error on XS.xs:863. Was broken with older MSVC.
 
 3.0110 2014-12-12 (rurban)
        - Fixed one more memory bug with encode of dual-vars to strings,
