@@ -799,15 +799,18 @@ C<0> is specified).
 
 See SECURITY CONSIDERATIONS, below, for more info on why this is useful.
 
-=item $enabled = $json->get_stringify_infnan
+=item $json->stringify_infnan ([$infnan_mode = 1])
 
-Check how Cpanel::JSON::XS encodes C<inf> or C<nan> for numeric
-values. The default is to encode is as C<null>, unlike JSON or
-JSON::XS, which encode it to invalid inf or nan elements. When
-Cpanel::JSON::XS was compiled with yes on "Do you want to handle
-inf/nan as strings? Default: null. (yes/<no>)" then C<get_stringify_infnan>
-will return a boolean C<true>, otherwise C<false>.
-This is a compile-time only setting, and cannot be changed at runtime.
+=item $infnan_mode = $json->get_stringify_infnan
+
+Get or set how Cpanel::JSON::XS encodes C<inf> or C<nan> for numeric
+values. 
+
+C<null>:     infnan_mode = 0. Similar to most JSON modules in other languages.
+
+stringified: infnan_mode = 1. As in Mojo::JSON.
+
+inf/nan:     infnan_mode = 2. As in JSON::XS, and older releases. Produces invalid JSON.
 
 =item $json_text = $json->encode ($perl_scalar)
 

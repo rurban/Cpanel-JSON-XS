@@ -716,14 +716,18 @@ OBJECT-ORIENTED INTERFACE
         See SECURITY CONSIDERATIONS, below, for more info on why this is
         useful.
 
-    $enabled = $json->get_stringify_infnan
-        Check how Cpanel::JSON::XS encodes "inf" or "nan" for numeric
-        values. The default is to encode is as "null", unlike JSON or
-        JSON::XS, which encode it to invalid inf or nan elements. When
-        Cpanel::JSON::XS was compiled with yes on "Do you want to handle
-        inf/nan as strings? Default: null. (yes/<no>)" then
-        "stringify_infnan" will return "yes", otherwise "no". This is a
-        compile-time only setting, and cannot be changed at runtime.
+    $json->stringify_infnan ([$infnan_mode = 1])
+    $infnan_mode = $json->get_stringify_infnan
+        Get or set how Cpanel::JSON::XS encodes "inf" or "nan" for numeric
+        values.
+
+        "null": infnan_mode = 0. Similar to most JSON modules in other
+        languages.
+
+        stringified: infnan_mode = 1. As in Mojo::JSON.
+
+        inf/nan: infnan_mode = 2. As in JSON::XS, and older releases.
+        Produces invalid JSON.
 
     $json_text = $json->encode ($perl_scalar)
         Converts the given Perl data structure (a simple scalar or a

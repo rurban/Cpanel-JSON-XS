@@ -4,7 +4,9 @@ TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
 3.0112 2014-12-14 (rurban)
-       - Add get_stringify_infnan method and use it in the test, compile-time only. #32
+       - Add {get_,}stringify_infnan methods and use it in the test, now run-time. #32
+         mode 0: null, 1: stringify, 2: inf/nan (invalid JSON) as before.
+       - Remove build-time "Do you want to handle inf/nan as strings? Default: null." prompt.
        - Improve docs.
 
 3.0111 2014-12-13 (rurban)

@@ -1,22 +1,29 @@
 use strict;
 use Cpanel::JSON::XS;
 use Test::More;
-plan tests => 9;
+plan tests => 19;
 
-if (Cpanel::JSON::XS->get_stringify_infnan) {
-  my ($inf, $nan) = ($^O eq 'MSWin32') ? ('1.#INF','1.#IND') : ('inf','nan');
-  is encode_json([9**9**9]), "[\"$inf\"]";           #inf
-  is encode_json([-sin(9**9**9)]), "[\"$nan\"]";     #nan
-  is encode_json([-9**9**9]), "[\"-$inf\"]";         #-inf
-  is encode_json([sin(9**9**9)]), "[\"-$nan\"]";     #-nan
-  is encode_json([9**9**9/9**9**9]), "[\"-$nan\"]";  #-nan
-} else {
-  is encode_json([9**9**9]), '[null]';          #inf
-  is encode_json([-sin(9**9**9)]), '[null]';    #nan
-  is encode_json([-9**9**9]), '[null]';         #-inf
-  is encode_json([sin(9**9**9)]), '[null]';     #-nan
-  is encode_json([9**9**9/9**9**9]), '[null]';  #-nan
-}
+is encode_json([9**9**9]), '[null]';
+is encode_json([-sin(9**9**9)]), '[null]';
+is encode_json([-9**9**9]), '[null]';
+is encode_json([sin(9**9**9)]), '[null]';
+is encode_json([9**9**9/9**9**9]), '[null]';
+
+my $json = Cpanel::JSON::XS->new->stringify_infnan;
+my ($inf, $nan) = ($^O eq 'MSWin32') ? ('1.#INF','1.#IND') : ('inf','nan');
+is $json->encode([9**9**9]), "[\"$inf\"]";
+is $json->encode([-sin(9**9**9)]), "[\"$nan\"]";
+is $json->encode([-9**9**9]), "[\"-$inf\"]";
+is $json->encode([sin(9**9**9)]), "[\"-$nan\"]";
+is $json->encode([9**9**9/9**9**9]), "[\"-$nan\"]";
+
+$json = Cpanel::JSON::XS->new->stringify_infnan(2);
+($inf, $nan) = ('inf','nan');
+is $json->encode([9**9**9]), "[$inf]";
+is $json->encode([-sin(9**9**9)]), "[$nan]";
+is $json->encode([-9**9**9]), "[-$inf]";
+is $json->encode([sin(9**9**9)]), "[-$nan]";
+is $json->encode([9**9**9/9**9**9]), "[-$nan]";
 
 my $num = 3;
 my $str = "$num";
