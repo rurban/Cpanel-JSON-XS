@@ -29,8 +29,13 @@
 #define STR_NAN "1.#IND"
 #define STR_QNAN "1.#QNAN"
 #else
+#if defined(sun) || defined(__sun)
+#define STR_INF "Infinity"
+#define STR_NAN "NaN"
+#else
 #define STR_INF "inf"
 #define STR_NAN "nan"
+#endif
 #endif
 
 /* some old perls do not have this, try to make it work, no */

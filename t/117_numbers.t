@@ -11,7 +11,10 @@ is encode_json([sin(9**9**9)]),    '[null]', "-nan -> null";
 is encode_json([9**9**9/9**9**9]), '[null]', "-nan -> null";
 
 my $json = Cpanel::JSON::XS->new->stringify_infnan;
-my ($inf, $nan) = ($^O eq 'MSWin32') ? ('1.#INF','1.#QNAN') : ('inf','nan');
+my ($inf, $nan) =
+  ($^O eq 'MSWin32') ? ('1.#INF','1.#QNAN') :
+  ($^O eq 'solaris') ? ('Infinity','NaN') :
+                       ('inf','nan');
 my $neg_nan = ($^O eq 'MSWin32') ? $nan : "-".$nan;
 # newlib and glibc 2.5 have no -nan support, just nan
 if ($^O eq 'cygwin' or ($Config{glibc_version} && $Config{glibc_version} < 2.6)) {
