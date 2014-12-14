@@ -994,7 +994,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
           *(enc->cur + l+2) = 0;
         }
         else if (enc->json.infnan_mode != 2) {
-          croak ("invalid stringify_infnan mode %d. Must be 0, 1 or 2", enc->json.infnan_mode);
+          croak ("invalid stringify_infnan mode %c. Must be 0, 1 or 2", enc->json.infnan_mode);
         }
       }
       if (SvPOKp (sv) && !strEQ(enc->cur, SvPVX (sv))) {
@@ -2834,7 +2834,7 @@ void stringify_infnan (JSON *self, IV infnan_mode = 1)
 	PPCODE:
         self->infnan_mode = (unsigned char)infnan_mode;
         if (self->infnan_mode < 0 || self->infnan_mode > 2) {
-          croak ("invalid stringify_infnan mode %d. Must be 0, 1 or 2", infnan_mode);
+          croak ("invalid stringify_infnan mode %c. Must be 0, 1 or 2", self->infnan_mode);
         }
         XPUSHs (ST (0));
         
