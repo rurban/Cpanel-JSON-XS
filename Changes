@@ -3,6 +3,10 @@ Revision history for Perl extension JSON::XS
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0112 2014-12-14 (rurban)
+       - Add get_stringify_infnan method and use it in the test, compile-time only. #32
+       - Improve docs.
+
 3.0111 2014-12-13 (rurban)
        - Fixed detecting 1.#INF/1.#IND on windows. #28
        - Also detect now -inf and -nan. #28

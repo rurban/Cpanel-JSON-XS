@@ -2825,6 +2825,14 @@ int get_max_size (JSON *self)
 	OUTPUT:
         RETVAL
 
+void get_stringify_infnan (SV *self)
+	PPCODE:
+#ifdef STRINGIFY_INFNAN
+        XPUSHs (boolSV (1));
+#else
+        XPUSHs (boolSV (0));
+#endif
+        
 void filter_json_object (JSON *self, SV *cb = &PL_sv_undef)
 	PPCODE:
 {

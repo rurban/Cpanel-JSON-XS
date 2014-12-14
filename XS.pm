@@ -145,7 +145,7 @@ B<Changes to JSON::XS>
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '3.0111';
+our $VERSION = '3.0112';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -798,6 +798,16 @@ If no argument is given, the limit check will be deactivated (same as when
 C<0> is specified).
 
 See SECURITY CONSIDERATIONS, below, for more info on why this is useful.
+
+=item $enabled = $json->get_stringify_infnan
+
+Check how Cpanel::JSON::XS encodes C<inf> or C<nan> for numeric
+values. The default is to encode is as C<null>, unlike JSON or
+JSON::XS, which encode it to invalid inf or nan elements. When
+Cpanel::JSON::XS was compiled with yes on "Do you want to handle
+inf/nan as strings? Default: null. (yes/<no>)" then C<get_stringify_infnan>
+will return a boolean C<true>, otherwise C<false>.
+This is a compile-time only setting, and cannot be changed at runtime.
 
 =item $json_text = $json->encode ($perl_scalar)
 
@@ -1571,11 +1581,11 @@ tables. They have been generated with the help of the C<eg/bench> program
 in the JSON::XS distribution, to make it easy to compare on your own
 system.
 
-JSON::XS is with L<Data::MessagePack> one of the fastest serializers,
-because JSON and JSON::XS do not support backrefs (no graph structures),
-only trees. Storable supports backrefs, i.e. graphs. Data::MessagePack
-encodes its data binary (as Storable) and supports only very simple
-subset of JSON.
+JSON::XS is with L<Data::MessagePack> and L<Sereal> one of the fastest
+serializers, because JSON and JSON::XS do not support backrefs (no
+graph structures), only trees. Storable supports backrefs,
+i.e. graphs. Data::MessagePack encodes its data binary (as Storable)
+and supports only very simple subset of JSON.
 
 First comes a comparison between various modules using
 a very short single-line JSON string (also available at
@@ -1632,6 +1642,9 @@ will be broken due to missing (or wrong) Unicode handling. Others refuse
 to decode or encode properly, so it was impossible to prepare a fair
 comparison table for that case.
 
+For updated graphs see L<https://github.com/Sereal/Sereal/wiki/Sereal-Comparison-Graphs>
+
+
 =head1 INTEROP with JSON and JSON::XS
 
 JSON-XS-3.01 broke interoperability with JSON-2.90 with booleans. See L<JSON>.
@@ -1684,12 +1697,12 @@ L<http://blog.archive.jpsykes.com/47/practical-csrf-and-json-security/> to
 see whether you are vulnerable to some common attack vectors (which really
 are browser design bugs, but it is still you who will have to deal with
 it, as major browser developers care only for features, not about getting
-security right).
-
+security right). You might also want to also look at L<Mojo::JSON>
+special escape rules to prevent from XSS attacks.
 
 =head1 THREADS
 
-Cpanel::JSON::XS has experimental ithreads support, unlike JSON::XS. If you
+Cpanel::JSON::XS has proper ithreads support, unlike JSON::XS. If you
 encounter any bugs with thread support please report them.
 
 =head1 BUGS
@@ -1705,7 +1718,7 @@ to report any issues twice. Once in private to MLEHMANN to be fixed in
 JSON::XS for the masses and one to our the public tracker. Issues
 fixed by JSON::XS with a new release will also be backported to
 Cpanel::JSON::XS and 5.6.2, as long as Cpanel relies on 5.6.2 and
-JSON::XS as our serializer of choice.
+Cpanel::JSON::XS as our serializer of choice.
 
 L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
@@ -1760,10 +1773,12 @@ use overload
 
 The F<cpanel_json_xs> command line utility for quick experiments.
 
+L<JSON>, L<JSON::XS>, L<JSON::MaybeXS>, L<Mojo::JSON>, L<Mojo::JSON::MaybeXS>,
+L<JSON::SL>, L<JSON::DWIW>, L<JSON::YAJL>, L<https://metacpan.org/search?q=JSON>
+
 =head1 AUTHOR
 
-  Marc Lehmann <schmorp@schmorp.de>
-  http://home.schmorp.de/
+  Marc Lehmann <schmorp@schmorp.de>, http://home.schmorp.de/
 
   cPanel Inc. <cpan@cpanel.net>
 
