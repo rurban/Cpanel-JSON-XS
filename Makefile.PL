@@ -2,8 +2,6 @@ use 5.006002;
 use ExtUtils::MakeMaker;
 use Config ();
 
-my $infnan = prompt("Do you want to handle inf/nan as strings? Default: null. (yes/<no>)", "no");
-
 WriteMakefile(
   dist	 => {
     PREOP	=> 'pod2text XS.pm | tee README >$(DISTVNAME)/README; chmod -R u=rwX,go=rX . ;',
@@ -13,8 +11,6 @@ WriteMakefile(
   EXE_FILES    => [ "bin/cpanel_json_xs" ],
   VERSION_FROM => "XS.pm",
   NAME         => "Cpanel::JSON::XS",
-  ($infnan =~ /^yes/i
-   ? (CCFLAGS => '-DSTRINGIFY_INFNAN '.$Config::Config{ccflags}) : ()),
   PREREQ_PM    => {
     'Pod::Text'     => '2.08',
     'Pod::Usage'    => '1.33',
