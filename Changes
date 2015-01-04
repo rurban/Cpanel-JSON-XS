@@ -3,6 +3,9 @@ Revision history for Perl extension JSON::XS
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0114 2015-01-04 (rurban)
+       - Fix bad powl with Freebsd 10 -Duselongdouble. Rather use strtold. #34 + RT #101265
+
 3.0113 2014-12-15 (rurban)
        - t/117_number relax the tests for negative nan, as BSDs also cannot deal with it. #33
 

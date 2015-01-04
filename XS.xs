@@ -24,6 +24,11 @@
 #define HAVE_NO_POWL
 #endif
 
+/* Freebsd 10: It has powl, but it is too bad. strtold is good. RT #101265 */
+#if defined(__FreeBSD__) && defined(__clang__) && defined(USE_LONG_DOUBLE)
+#define HAVE_BAD_POWL
+#endif
+
 #if defined(_WIN32)
 #define STR_INF "1.#INF"
 #define STR_NAN "1.#IND"
@@ -326,6 +331,9 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
   UV  uaccum = 0;
   int eaccum = 0;
 
+#if defined(HAVE_BAD_POWL)
+  *accum = strtold(s, NULL);
+#else
   /* if we recurse too deep, skip all remaining digits */
   /* to avoid a stack overflow attack */
   if (expect_false (--maxdepth <= 0))
@@ -396,6 +404,7 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
   *accum += uaccum * Perl_pow (10., *expo);
 #endif
   *expo += eaccum;
+#endif
 }
 
 static NV
