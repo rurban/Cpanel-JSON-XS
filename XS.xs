@@ -893,6 +893,7 @@ encode_rv (pTHX_ enc_t *enc, SV *sv)
           while (count)
             {
               encode_sv (aTHX_ enc, SP[1 - count--]);
+              SPAGAIN;
 
               if (count)
                 encode_ch (aTHX_ enc, ',');
