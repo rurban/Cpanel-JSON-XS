@@ -1,7 +1,11 @@
-Revision history for Perl extension JSON::XS
+Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
+
+3.0115 2015-01-31 (rurban)
+       - Fix stack corruption when encoding nested objects with FREEZE method,
+         #35 (Sergey Aleynikov)
 
 3.0114 2015-01-04 (rurban)
        - Fix bad powl with Freebsd 10 -Duselongdouble. Rather use strtold. #34 + RT #101265
