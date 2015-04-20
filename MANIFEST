@@ -19,6 +19,7 @@ t/05_dwiw_decode.t
 t/06_pc_pretty.t
 t/07_pc_esc.t
 t/08_pc_base.t
+t/08_pc_base_nv.t
 t/09_pc_extra_number.t
 t/10_pc_keysort.t
 t/11_pc_expo.t
