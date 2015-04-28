@@ -21,21 +21,32 @@ WriteMakefile(
     AUTHOR         => 'cPanel Inc. <cpan@cpanel.net>',
     # ORIGINAL_AUTHOR => 'Marc Lehmann <schmorp@schmorp.de>'
    ) : ()),
-  ($ExtUtils::MakeMaker::VERSION gt '6.46' ?
-   ('META_MERGE'  =>
-    {"recommends" =>
-     {
-       'common::sense' => '3.5',
-       'Encode'        => '1.9801',
-     },
-     resources =>
-     {
-       license     => 'http://dev.perl.org/licenses/',
-       bugtracker  => 'https://github.com/rurban/Cpanel-JSON-XS/issues',
-       # Note: https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS is also observed
-       repository  => 'https://github.com/rurban/Cpanel-JSON-XS',
-       homepage    => 'http://software.schmorp.de/pkg/JSON-XS.html',
-     },
+  ($ExtUtils::MakeMaker::VERSION gt '6.46'
+   ? ('META_MERGE'  =>
+    {
+      prereqs => {
+        runtime => {
+          requires => { # just the script, not the module
+            'Encode'        => '1.9801',
+          }
+        },
+        test => {
+          requires => {
+            'Encode'        => '1.9801',
+          },
+          suggests => {
+            'common::sense' => '3.5',
+          }
+        }
+      },
+      resources =>
+      {
+        license     => 'http://dev.perl.org/licenses/',
+        bugtracker  => 'https://github.com/rurban/Cpanel-JSON-XS/issues',
+        # Note: https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS is also observed
+        repository  => 'https://github.com/rurban/Cpanel-JSON-XS',
+        homepage    => 'http://software.schmorp.de/pkg/JSON-XS.html',
+      },
     }
    ) : ()),
   SIGN  => 1,
