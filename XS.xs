@@ -103,6 +103,7 @@
 #define F_ALLOW_UNKNOWN  0x00002000UL
 #define F_ALLOW_TAGS     0x00004000UL
 #define F_BINARY         0x00008000UL
+#define F_STRING_BLESSED 0x00010000UL
 #define F_HOOK           0x00080000UL // some hooks exist, so slow-path processing
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
@@ -851,6 +852,39 @@ encode_hv (pTHX_ enc_t *enc, HV *hv)
   encode_ch (aTHX_ enc, '}');
 }
 
+static void
+encode_stringify(pTHX_ enc_t *enc, SV *sv)
+{
+  char *str = NULL;
+  STRLEN len;
+  SV *pv = NULL;
+  svtype type = SvTYPE(sv);
+
+  /* sv_2pv_flags does not accept those types: */
+  if (type != SVt_PVAV && type != SVt_PVHV && type != SVt_PVFM) {
+    /* the essential of pp_stringify */
+    pv = newSVpvs("");
+    sv_copypv(pv, sv);
+    SvSETMAGIC(pv);
+    str = SvPVutf8_force(pv, len);
+  } else {
+    /* manually call all possible magic on AV, HV, FM */
+    if (SvGMAGICAL(sv)) mg_get(sv);
+    if (SvAMAGIC(sv)) {
+      pv = AMG_CALLunary(sv, string_amg);
+      TAINT_IF(pv && SvTAINTED(pv));
+      if (pv && SvPOK(pv))
+        str = SvPVutf8_force(pv, len);
+    }
+  }
+  if (!str)
+    encode_str (aTHX_ enc, "null", 4, 0);
+  else
+    encode_str (aTHX_ enc, str, len, 0);
+  if (pv) SvREFCNT_dec(pv);
+
+}
+
 /* encode objects, arrays and special \0=false and \1=true values
    and other representations of booleans: JSON::PP::Boolean, Mojo::JSON::_Bool
  */
@@ -946,10 +980,12 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
 
           FREETMPS; LEAVE;
         }
+      else if (enc->json.flags & F_STRING_BLESSED)
+        encode_stringify(aTHX_ enc, sv);
       else if (enc->json.flags & F_ALLOW_BLESSED)
         encode_str (aTHX_ enc, "null", 4, 0);
       else
-        croak ("encountered object '%s', but neither allow_blessed, convert_blessed nor allow_tags settings are enabled (or TO_JSON/FREEZE method missing)",
+        croak ("encountered object '%s', but neither allow_blessed, convert_blessed, stringify_blessed nor allow_tags settings are enabled (or TO_JSON/FREEZE method missing)",
                SvPV_nolen (sv_2mortal (newRV_inc (sv))));
     }
   else if (svt == SVt_PVHV)
@@ -967,6 +1003,8 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
         encode_str (aTHX_ enc, "false", 5, 0);
       else if (enc->json.flags & F_ALLOW_UNKNOWN)
         encode_str (aTHX_ enc, "null", 4, 0);
+      else if (enc->json.flags & F_STRING_BLESSED)
+        encode_stringify(aTHX_ enc, sv);
       else
         croak ("cannot encode reference to scalar '%s' unless the scalar is 0 or 1",
                SvPV_nolen (sv_2mortal (newRV_inc (sv))));
@@ -2801,6 +2839,7 @@ void ascii (JSON *self, int enable = 1)
         shrink          = F_SHRINK
         allow_blessed   = F_ALLOW_BLESSED
         convert_blessed = F_CONV_BLESSED
+        stringify_blessed = F_STRING_BLESSED
         relaxed         = F_RELAXED
         allow_unknown   = F_ALLOW_UNKNOWN
         allow_tags      = F_ALLOW_TAGS
@@ -2828,6 +2867,7 @@ void get_ascii (JSON *self)
         get_shrink          = F_SHRINK
         get_allow_blessed   = F_ALLOW_BLESSED
         get_convert_blessed = F_CONV_BLESSED
+        get_stringify_blessed = F_STRING_BLESSED
         get_relaxed         = F_RELAXED
         get_allow_unknown   = F_ALLOW_UNKNOWN
         get_allow_tags      = F_ALLOW_TAGS

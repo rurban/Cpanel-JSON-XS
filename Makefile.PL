@@ -33,6 +33,7 @@ WriteMakefile(
         test => {
           requires => {
             'Encode'        => '1.9801',
+            'Time::Piece'   => 0,
           },
           suggests => {
             'common::sense' => '3.5',

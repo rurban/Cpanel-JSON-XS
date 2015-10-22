@@ -39,6 +39,7 @@ t/24_freeze_recursion.t
 t/25_boolean.t
 t/52_object.t
 t/53_readonly.t
+t/54_stringify.t
 t/96_interop.t
 t/96_mojo.t
 t/97_unshare_hek.t
