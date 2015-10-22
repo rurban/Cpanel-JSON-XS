@@ -35,6 +35,7 @@ t/21_evans.t
 t/22_comment_at_eof.t
 t/23_array_ctx.t
 t/24_freeze_recursion.t
+t/25_boolean.t
 t/52_object.t
 t/53_readonly.t
 t/96_interop.t
