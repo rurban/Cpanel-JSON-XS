@@ -3,6 +3,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0116 2015-??-?? (rurban)
+       - Simplify handling of references, removing all the complicated
+         work-around for reblessing. Breaks overloaded values, but fixes
+         serialising refs to readonly values. #21 (Gianni Ceccarelli)
+
 3.0115 2015-01-31 (rurban)
        - Fix stack corruption when encoding nested objects with FREEZE method,
          #35 (Sergey Aleynikov)
