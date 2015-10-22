@@ -14,7 +14,7 @@ my @MODULES = (
 
 # Don't run tests during end-user installs
 use Test::More;
-unless (-d '.git' || $ENV{IS_MAINTAINER}) {
+unless (-d '.git' || $ENV{AUTHOR_TESTING}) {
   plan( skip_all => "Author tests not required for installation" );
 }
 
@@ -24,10 +24,10 @@ foreach my $MODULE ( @MODULES ) {
   if ( $@ ) {
     plan( skip_all => "$MODULE not available for testing" );
     die "Failed to load required release-testing module $MODULE"
-      if -d '.git' || $ENV{IS_MAINTAINER};
+      if -d '.git' || $ENV{AUTHOR_TESTING};
   }
 }
 
-all_minimum_version_ok("5.008");
+all_minimum_version_ok("5.008"); # but 5.6.2 is allowed dynamically
 
 1;

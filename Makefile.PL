@@ -36,6 +36,16 @@ WriteMakefile(
           },
           suggests => {
             'common::sense' => '3.5',
+            'Mojo::JSON'    => '6.11',
+            'JSON'          => 0,
+            'JSON::XS'      => 0,
+            'JSON::PP'      => 0,
+            'Test::LeakTrace' => 0,
+            'Test::MinimumVersion' => '0.008',
+            'Perl::MinimumVersion' => '1.20',
+            'Test::CPAN::Meta'     => '0.12',
+            'Test::Pod'            => '1.00',
+            'Test::Pod::Coverage'  => '1.04',
           }
         }
       },

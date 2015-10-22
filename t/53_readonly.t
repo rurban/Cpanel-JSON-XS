@@ -1,7 +1,7 @@
 #!perl
 use strict;
 use warnings;
-BEGIN { $| = 1; print "1..1\n"; }
+use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 1);
 use Cpanel::JSON::XS;
 
 my $json = Cpanel::JSON::XS->new->convert_blessed;
@@ -17,4 +17,4 @@ Internals::SvREADONLY($string,1);
 my $hash = {obj=>$object};
 
 my $enc = $json->encode ($hash);
-print $enc eq '{"obj":1}' ? "" : "not ", "ok 1 # $enc\n";
+ok $enc eq '{"obj":1}', "$enc";

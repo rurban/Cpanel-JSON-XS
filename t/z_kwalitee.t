@@ -1,12 +1,12 @@
 # -*- perl -*-
 use strict;
 use warnings;
-
 use Test::More;
 use Config;
 
-BEGIN {
+plan skip_all => 'requires Test::More 0.88' if Test::More->VERSION < 0.88;
 
+BEGIN {
   plan skip_all => 'This test is only run for the module author'
     unless -d '.git' || $ENV{AUTHOR_TESTING};
   plan skip_all => 'Test::Kwalitee fails with clang -faddress-sanitizer'
