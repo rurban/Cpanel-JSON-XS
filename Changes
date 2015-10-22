@@ -7,6 +7,8 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
        - Simplify handling of references, removing all the complicated
          work-around for reblessing. Breaks overloaded values, but fixes
          serialising refs to readonly values. #21 (Gianni Ceccarelli)
+       - Stabilize Test::Kwalitee with missing XS dependencies
+       - suggests common::sense, not recommend. #36 (mst)
 
 3.0115 2015-01-31 (rurban)
        - Fix stack corruption when encoding nested objects with FREEZE method,
