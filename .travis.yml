@@ -49,8 +49,7 @@ matrix:
     - perl: "5.18"
       env: COVERAGE=1 AUTHOR_TESTING=1  # enables coverage+coveralls reporting
   allow_failures:
-    - perl: "5.18"
-      env: COVERAGE=1 AUTHOR_TESTING=1  # enables coverage+coveralls reporting
+    - env: COVERAGE=1 AUTHOR_TESTING=1  # enables coverage+coveralls reporting
 
 # Hack to not run on tag pushes:
 branches:
