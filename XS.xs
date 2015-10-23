@@ -967,7 +967,15 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
 {
   SvGETMAGIC (sv);
 
-  if (SvNOKp (sv))
+  if (expect_false(sv == &PL_sv_yes ))
+    {
+      encode_str (aTHX_ enc, "true", 4, 0);
+    }
+  else if (expect_false(sv == &PL_sv_no ))
+    {
+      encode_str (aTHX_ enc, "false", 5, 0);
+    }
+  else if (SvNOKp (sv))
     {
       char *savecur, *saveend;
       /* trust that perl will do the right thing w.r.t. JSON syntax. */
