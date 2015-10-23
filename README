@@ -1521,6 +1521,37 @@ INTEROP with JSON and JSON::XS
     I cannot think of any reason to still use JSON::XS anymore.
 
 SECURITY CONSIDERATIONS
+    JSON::XS is not only fast, JSON is generally the most secure serializing
+    format, because it is the only one besides Data::MessagePack, which does
+    not deserialize objects per default. For all languages, not just perl.
+    The binary variant BSON (MondoDB) does more but is unsafe.
+
+    It is trivial for any attacker to create such serialized objects in JSON
+    and trick perl into expanding them, thereby triggering certain methods.
+    Watch <https://www.youtube.com/watch?v=Gzx6KlqiIZE> for an exploit demo
+    for "CVE-2015-1592 SixApart MovableType Storable Perl Code Execution"
+    for a deserializer which expands objects. Deserializing even coderefs
+    (methods, functions) or external data would be considered the most
+    dangerous.
+
+    Overview of serializers regarding deserializing objects by default:
+
+                          Objects   Coderefs  External Data
+
+        Data::Dumper      YES       YES       YES
+        Storable          YES       NO (def)  NO
+        Sereal            YES       NO        NO
+        YAML              YES       NO        NO
+        B::C              YES       YES       YES
+        B::Bytecode       YES       YES       YES
+        BSON              YES       YES       NO
+        JSON              NO (def)  NO        NO
+        Data::MessagePack NO        NO        NO
+        XML               NO        NO        YES
+
+        Pickle            YES       YES       YES
+        PHP Deserialize   YES       NO        NO
+
     When you are using JSON in a protocol, talking to untrusted potentially
     hostile creatures requires relatively few measures.
 
