@@ -145,6 +145,7 @@
 typedef struct {
   HV *json_stash;          /* Cpanel::JSON::XS:: */
   HV *json_boolean_stash;  /* JSON::PP::Boolean::  */
+  HV *mojo_boolean_stash;  /* Mojo::JSON::_Bool:: if empty will be (HV*)1 */
   SV *json_true, *json_false;
   SV *sv_json;
 } my_cxt_t;
@@ -198,6 +199,9 @@ init_MY_CXT(pTHX_ my_cxt_t * cxt)
 {
   cxt->json_stash          = gv_stashpvn ("Cpanel::JSON::XS",  sizeof("Cpanel::JSON::XS")-1, 1);
   cxt->json_boolean_stash  = gv_stashpvn ("JSON::PP::Boolean", sizeof("JSON::PP::Boolean")-1, 1);
+  cxt->mojo_boolean_stash  = gv_stashpvn ("Mojo::JSON::_Bool", sizeof("Mojo::JSON::_Bool")-1, 0);
+  if ( !cxt->mojo_boolean_stash )
+    cxt->mojo_boolean_stash = (HV*)1; /* invalid ptr to compare against, better than a NULL stash */
 
   cxt->json_true  = get_bool (aTHX_ "Cpanel::JSON::XS::true");
   cxt->json_false = get_bool (aTHX_ "Cpanel::JSON::XS::false");
@@ -837,7 +841,9 @@ encode_hv (pTHX_ enc_t *enc, HV *hv)
   encode_ch (aTHX_ enc, '}');
 }
 
-/* encode objects, arrays and special \0=false and \1=true values. */
+/* encode objects, arrays and special \0=false and \1=true values
+   and other representations of booleans: JSON::PP::Boolean, Mojo::JSON::_Bool
+ */
 static void
 encode_rv (pTHX_ enc_t *enc, SV *rv)
 {
@@ -851,10 +857,11 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
   if (expect_false (SvOBJECT (sv)))
     {
       dMY_CXT;
-      HV *bstash  = MY_CXT.json_boolean_stash;  /* JSON-XS-3.x interop (Types::Serialiser/JSON::PP) */
+      HV *bstash = MY_CXT.json_boolean_stash; /* JSON-XS-3.x interop (Types::Serialiser/JSON::PP::Boolean) */
+      HV *mstash = MY_CXT.mojo_boolean_stash; /* Mojo::JSON::_Bool interop */
       HV *stash = SvSTASH (sv);
 
-      if (stash == bstash)
+      if (stash == bstash || stash == mstash)
         {
           if (SvIV (sv))
             encode_str (aTHX_ enc, "true", 4, 0);

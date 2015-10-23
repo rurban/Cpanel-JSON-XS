@@ -1666,7 +1666,7 @@ comparison table for that case.
 For updated graphs see L<https://github.com/Sereal/Sereal/wiki/Sereal-Comparison-Graphs>
 
 
-=head1 INTEROP with JSON and JSON::XS
+=head1 INTEROP with JSON and JSON::XS and other JSON modules
 
 JSON-XS-3.01 broke interoperability with JSON-2.90 with booleans. See L<JSON>.
 
@@ -1674,12 +1674,14 @@ Cpanel::JSON::XS needs to know the JSON and JSON::XS versions to be able work
 with those objects, especially when encoding a booleans like C<{"is_true":true}>.
 So you need to load these modules before.
 
-true/false overloading is supported.
+true/false overloading and boolean representions are supported.
 
 JSON::XS and JSON::PP representations are accepted and older JSON::XS accepts
-Cpanel::JSON::XS booleans. All JSON modules JSON, JSON, PP, JSON::XS , Cpanel::JSON::XS
+Cpanel::JSON::XS booleans. All JSON modules JSON, JSON, PP, JSON::XS, Cpanel::JSON::XS
 produce JSON::PP::Boolean objects, just Mojo and JSON::YAJL not.
 Mojo produces Mojo::JSON::_Bool and JSON::YAJL::Parser just an unblessed IV.
+
+Cpanel::JSON::XS accepts JSON::PP::Boolean and Mojo::JSON::_Bool objects as booleans.
 
 I cannot think of any reason to still use JSON::XS anymore.
 
@@ -1699,7 +1701,8 @@ Code Execution" for a deserializer which expands
 objects. Deserializing even coderefs (methods, functions) or external
 data would be considered the most dangerous.
 
-Overview of serializers regarding deserializing objects by default:
+Security relevant overview of serializers regarding deserializing
+objects by default:
 
                       Objects   Coderefs  External Data
 
@@ -1710,6 +1713,7 @@ Overview of serializers regarding deserializing objects by default:
     B::C              YES       YES       YES
     B::Bytecode       YES       YES       YES
     BSON              YES       YES       NO
+    JSON::SL          YES       NO        YES
     JSON              NO (def)  NO        NO
     Data::MessagePack NO        NO        NO
     XML               NO        NO        YES
