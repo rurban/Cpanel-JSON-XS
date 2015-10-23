@@ -143,8 +143,8 @@
 #define MY_CXT_KEY "Cpanel::JSON::XS::_guts"
 
 typedef struct {
-  HV *json_stash; /* Cpanel::JSON::XS:: */
-  HV *json_boolean_stash, *json_boolean_stash3; /* JSON::XS::Boolean, Types::Serialiser */
+  HV *json_stash;          /* Cpanel::JSON::XS:: */
+  HV *json_boolean_stash;  /* JSON::PP::Boolean::  */
   SV *json_true, *json_false;
   SV *sv_json;
 } my_cxt_t;
@@ -196,9 +196,8 @@ json_init (JSON *json)
 static void
 init_MY_CXT(pTHX_ my_cxt_t * cxt)
 {
-  cxt->json_stash          = gv_stashpv ("Cpanel::JSON::XS", 1);
-  cxt->json_boolean_stash  = gv_stashpv ("JSON::XS::Boolean", 1);
-  cxt->json_boolean_stash3 = gv_stashpv ("JSON::PP::Boolean", 1);
+  cxt->json_stash          = gv_stashpvn ("Cpanel::JSON::XS",  sizeof("Cpanel::JSON::XS")-1, 1);
+  cxt->json_boolean_stash  = gv_stashpvn ("JSON::PP::Boolean", sizeof("JSON::PP::Boolean")-1, 1);
 
   cxt->json_true  = get_bool (aTHX_ "Cpanel::JSON::XS::true");
   cxt->json_false = get_bool (aTHX_ "Cpanel::JSON::XS::false");
@@ -852,11 +851,10 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
   if (expect_false (SvOBJECT (sv)))
     {
       dMY_CXT;
-      HV *bstash = MY_CXT.json_boolean_stash;
-      HV *bstash3 = MY_CXT.json_boolean_stash3; /* JSON-XS-3.x interop (Types::Serialiser/JSON::PP) */
+      HV *bstash  = MY_CXT.json_boolean_stash;  /* JSON-XS-3.x interop (Types::Serialiser/JSON::PP) */
       HV *stash = SvSTASH (sv);
 
-      if (stash == bstash || stash == bstash3)
+      if (stash == bstash)
         {
           if (SvIV (sv))
             encode_str (aTHX_ enc, "true", 4, 0);

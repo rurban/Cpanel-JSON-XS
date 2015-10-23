@@ -1053,10 +1053,10 @@ MAPPING
 
     true, false
         These JSON atoms become "Cpanel::JSON::XS::true" and
-        "Cpanel::JSON::XS::false", respectively. They are overloaded to act
-        almost exactly like the numbers 1 and 0. You can check whether a
-        scalar is a JSON boolean by using the "Cpanel::JSON::XS::is_bool"
-        function.
+        "Cpanel::JSON::XS::false", respectively. They are
+        "JSON::PP::Boolean" objects and are overloaded to act almost exactly
+        like the numbers 1 and 0. You can check whether a scalar is a JSON
+        boolean by using the "Cpanel::JSON::XS::is_bool" function.
 
         The other round, from perl to JSON, "!0" which is represented as
         "yes" becomes "true", and "!1" which is represented as "no" becomes
@@ -1106,7 +1106,7 @@ MAPPING
         the option "allow_unknown", you can ignore the exception and return
         "null" instead.
 
-           encode_json [\"x"]        # => cannot encode reference to scalar 'SCALAR(0x..)' 
+           encode_json [\"x"]        # => cannot encode reference to scalar 'SCALAR(0x..)'
                                      # unless the scalar is 0 or 1
            encode_json [\0, \1]      # yields [false,true]
 
@@ -1122,8 +1122,8 @@ MAPPING
 
     blessed objects
         Blessed objects are not directly representable in JSON, but
-        "Cpanel::JSON::XS" allows various ways of handling objects. See
-        "OBJECT SERIALISATION", below, for details.
+        "Cpanel::JSON::XS" allows various optional ways of handling objects.
+        See "OBJECT SERIALISATION", below, for details.
 
         See the "allow_blessed" and "convert_blessed" methods on various
         options on how to deal with this: basically, you can choose between
@@ -1532,7 +1532,10 @@ INTEROP with JSON and JSON::XS
     true/false overloading is supported.
 
     JSON::XS and JSON::PP representations are accepted and older JSON::XS
-    accepts Cpanel::JSON::XS booleans.
+    accepts Cpanel::JSON::XS booleans. All JSON modules JSON, JSON, PP,
+    JSON::XS , Cpanel::JSON::XS produce JSON::PP::Boolean objects, just Mojo
+    and JSON::YAJL not. Mojo produces Mojo::JSON::_Bool and
+    JSON::YAJL::Parser just an unblessed IV.
 
     I cannot think of any reason to still use JSON::XS anymore.
 
@@ -1540,7 +1543,7 @@ SECURITY CONSIDERATIONS
     JSON::XS is not only fast, JSON is generally the most secure serializing
     format, because it is the only one besides Data::MessagePack, which does
     not deserialize objects per default. For all languages, not just perl.
-    The binary variant BSON (MondoDB) does more but is unsafe.
+    The binary variant BSON (MongoDB) does more but is unsafe.
 
     It is trivial for any attacker to create such serialized objects in JSON
     and trick perl into expanding them, thereby triggering certain methods.

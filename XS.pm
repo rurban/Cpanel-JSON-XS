@@ -1162,9 +1162,10 @@ up to but not including the least significant bit.
 
 =item true, false
 
-These JSON atoms become C<Cpanel::JSON::XS::true> and C<Cpanel::JSON::XS::false>,
-respectively. They are overloaded to act almost exactly like the numbers
-C<1> and C<0>. You can check whether a scalar is a JSON boolean by using
+These JSON atoms become C<Cpanel::JSON::XS::true> and
+C<Cpanel::JSON::XS::false>, respectively. They are C<JSON::PP::Boolean>
+objects and are overloaded to act almost exactly like the numbers C<1>
+and C<0>. You can check whether a scalar is a JSON boolean by using
 the C<Cpanel::JSON::XS::is_bool> function.
 
 The other round, from perl to JSON, C<!0> which is represented as
@@ -1676,7 +1677,9 @@ So you need to load these modules before.
 true/false overloading is supported.
 
 JSON::XS and JSON::PP representations are accepted and older JSON::XS accepts
-Cpanel::JSON::XS booleans.
+Cpanel::JSON::XS booleans. All JSON modules JSON, JSON, PP, JSON::XS , Cpanel::JSON::XS
+produce JSON::PP::Boolean objects, just Mojo and JSON::YAJL not.
+Mojo produces Mojo::JSON::_Bool and JSON::YAJL::Parser just an unblessed IV.
 
 I cannot think of any reason to still use JSON::XS anymore.
 
@@ -1685,7 +1688,7 @@ I cannot think of any reason to still use JSON::XS anymore.
 JSON::XS is not only fast, JSON is generally the most secure
 serializing format, because it is the only one besides
 Data::MessagePack, which does not deserialize objects per default. For
-all languages, not just perl.  The binary variant BSON (MondoDB) does
+all languages, not just perl.  The binary variant BSON (MongoDB) does
 more but is unsafe.
 
 It is trivial for any attacker to create such serialized objects in
@@ -1782,26 +1785,27 @@ license and the GPL.
 =cut
 
 our ($true, $false);
-if ($INC{'JSON/XS.pm'} and $JSON::XS::VERSION ge "3.00") {
-  $true  = $Types::Serialiser::true; # readonly if loaded by JSON::XS
-  $false = $Types::Serialiser::false;
-} else {
-  $true  = do { bless \(my $dummy = 1), "JSON::XS::Boolean" };
-  $false = do { bless \(my $dummy = 0), "JSON::XS::Boolean" };
+BEGIN {
+  if ($INC{'JSON/XS.pm'} and $JSON::XS::VERSION ge "3.00") {
+    $true  = $Types::Serialiser::true; # readonly if loaded by JSON::XS
+    $false = $Types::Serialiser::false;
+  } else {
+    $true  = do { bless \(my $dummy = 1), "JSON::PP::Boolean" };
+    $false = do { bless \(my $dummy = 0), "JSON::PP::Boolean" };
+  }
 }
 
 sub true()  { $true  }
 sub false() { $false }
-
-sub is_bool($) {
-  UNIVERSAL::isa($_[0], "JSON::XS::Boolean")
-    or UNIVERSAL::isa($_[0], "JSON::PP::Boolean");
+sub is_bool($) { 
+  UNIVERSAL::isa( $_[0], JSON::PP::Boolean:: )
+    or (exists $INC{'Types/Serializer.pm'} and Types::Serialiser::is_bool($_0))
 }
 
 XSLoader::load 'Cpanel::JSON::XS', $VERSION;
 
 package
-  JSON::XS::Boolean;
+  JSON::PP::Boolean;
 
 use overload
    "0+"     => sub { ${$_[0]} },
