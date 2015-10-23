@@ -116,6 +116,10 @@ DESCRIPTION
     representations are accepted and JSON::XS accepts Cpanel::JSON::XS
     booleans [#13]
 
+    - native boolean mapping of yes and no to true and false, as in
+    YAML::XS. In perl "!0" is yes, "!1" is no. The JSON value true maps to
+    1, false maps to 0. [#39]
+
     - ithread support. Cpanel::JSON::XS is thread-safe, JSON::XS not
 
     - performance optimizations for threaded Perls
@@ -1054,6 +1058,10 @@ MAPPING
         scalar is a JSON boolean by using the "Cpanel::JSON::XS::is_bool"
         function.
 
+        The other round, from perl to JSON, "!0" which is represented as
+        "yes" becomes "true", and "!1" which is represented as "no" becomes
+        "false".
+
     null
         A JSON null atom becomes "undef" in Perl.
 
@@ -1094,15 +1102,23 @@ MAPPING
     other references
         Other unblessed references are generally not allowed and will cause
         an exception to be thrown, except for references to the integers 0
-        and 1, which get turned into "false" and "true" atoms in JSON. You
-        can also use "Cpanel::JSON::XS::false" and "Cpanel::JSON::XS::true"
-        to improve readability.
+        and 1, which get turned into "false" and "true" atoms in JSON. With
+        the option "allow_unknown", you can ignore the exception and return
+        "null" instead.
 
-           encode_json [\0, Cpanel::JSON::XS::true]      # yields [false,true]
+           encode_json [\"x"]        # => cannot encode reference to scalar 'SCALAR(0x..)' 
+                                     # unless the scalar is 0 or 1
+           encode_json [\0, \1]      # yields [false,true]
+
+           allow_unknown->encode_json [\"x"] # yields null
 
     Cpanel::JSON::XS::true, Cpanel::JSON::XS::false
         These special values become JSON true and JSON false values,
-        respectively. You can also use "\1" and "\0" directly if you want.
+        respectively. You can also use "\1" and "\0" or "!0" and "!1"
+        directly if you want.
+
+           encode_json [Cpanel::JSON::XS::true, Cpanel::JSON::XS::true]      # yields [false,true]
+           encode_json [!1, !0]      # yields [false,true]
 
     blessed objects
         Blessed objects are not directly representable in JSON, but

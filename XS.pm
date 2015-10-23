@@ -119,6 +119,10 @@ B<Changes to JSON::XS>
 - interop for true/false overloading. JSON::XS and JSON::PP representations
   are accepted and JSON::XS accepts Cpanel::JSON::XS booleans [#13]
 
+- native boolean mapping of yes and no to true and false, as in YAML::XS.
+  In perl C<!0> is yes, C<!1> is no.
+  The JSON value true maps to 1, false maps to 0. [#39]
+
 - ithread support. Cpanel::JSON::XS is thread-safe, JSON::XS not
 
 - performance optimizations for threaded Perls
@@ -1163,6 +1167,10 @@ respectively. They are overloaded to act almost exactly like the numbers
 C<1> and C<0>. You can check whether a scalar is a JSON boolean by using
 the C<Cpanel::JSON::XS::is_bool> function.
 
+The other round, from perl to JSON, C<!0> which is represented as
+C<yes> becomes C<true>, and C<!1> which is represented as
+C<no> becomes C<false>.
+
 =item null
 
 A JSON null atom becomes C<undef> in Perl.
@@ -1213,22 +1221,30 @@ Perl array references become JSON arrays.
 
 Other unblessed references are generally not allowed and will cause an
 exception to be thrown, except for references to the integers C<0> and
-C<1>, which get turned into C<false> and C<true> atoms in JSON. You can
-also use C<Cpanel::JSON::XS::false> and C<Cpanel::JSON::XS::true> to improve
-readability.
+C<1>, which get turned into C<false> and C<true> atoms in JSON.
+With the option C<allow_unknown>, you can ignore the exception and return
+C<null> instead.
 
-   encode_json [\0, Cpanel::JSON::XS::true]      # yields [false,true]
+   encode_json [\"x"]        # => cannot encode reference to scalar 'SCALAR(0x..)'
+                             # unless the scalar is 0 or 1
+   encode_json [\0, \1]      # yields [false,true]
+
+   allow_unknown->encode_json [\"x"] # yields null
 
 =item Cpanel::JSON::XS::true, Cpanel::JSON::XS::false
 
 These special values become JSON true and JSON false values,
-respectively. You can also use C<\1> and C<\0> directly if you want.
+respectively. You can also use C<\1> and C<\0> or C<!0> and C<!1>
+directly if you want.
+
+   encode_json [Cpanel::JSON::XS::true, Cpanel::JSON::XS::true]      # yields [false,true]
+   encode_json [!1, !0]      # yields [false,true]
 
 =item blessed objects
 
 Blessed objects are not directly representable in JSON, but
-C<Cpanel::JSON::XS> allows various ways of handling objects. See
-L<OBJECT SERIALISATION>, below, for details.
+C<Cpanel::JSON::XS> allows various optional ways of handling
+objects. See L<OBJECT SERIALISATION>, below, for details.
 
 See the C<allow_blessed> and C<convert_blessed> methods on various options on
 how to deal with this: basically, you can choose between throwing an
