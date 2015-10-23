@@ -1777,9 +1777,11 @@ if ($INC{'JSON/XS.pm'} and $JSON::XS::VERSION ge "3.00") {
 sub true()  { $true  }
 sub false() { $false }
 
+use Scalar::Util ();
+
 sub is_bool($) {
-  UNIVERSAL::isa($_[0], "JSON::XS::Boolean")
-    or UNIVERSAL::isa($_[0], "JSON::PP::Boolean");
+  Scalar::Util::blessed($_[0]) and
+     ($_[0]->isa("JSON::XS::Boolean") or $_[0]->isa("JSON::PP::Boolean"));
 }
 
 XSLoader::load 'Cpanel::JSON::XS', $VERSION;
