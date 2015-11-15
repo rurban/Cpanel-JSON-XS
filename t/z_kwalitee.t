@@ -14,9 +14,9 @@ BEGIN {
 
   # Missing XS dependencies are usually not caught by EUMM
   # And they are usually only XS-loaded by the importer, not require.
-  for (qw( Class::XSAccessor Text::CSV_XS Module::CPANTS::Analyse 
-           Module::CPANTS::Kwalitee::Distros
-           List::MoreUtils Test::Kwalitee )) {
+  for (qw( Class::XSAccessor Text::CSV_XS Module::CPANTS::Kwalitee::Distros
+           List::MoreUtils
+           Module::CPANTS::Analyse Test::Kwalitee )) {
     eval { eval "require $_;"; $_->import unless $_ eq 'Test::Kwalitee'; };
     plan skip_all => "$_ needed for Test::Kwalitee"
       if $@;
