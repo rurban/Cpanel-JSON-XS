@@ -4,9 +4,12 @@ BEGIN {
   if ($@) {
     plan skip_all => "Mojo::JSON required for testing interop";
     exit 0;
-  } else {
-    plan tests => 9;
   }
+  if (!defined &Mojo::JSON::decode_json) {
+    plan skip_all => "Mojo::JSON::decode_json required for testing interop";
+    exit 0;
+  }
+  plan tests => 9;
 }
 
 use Mojo::JSON ();

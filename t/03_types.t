@@ -33,8 +33,8 @@ ok (!Cpanel::JSON::XS::is_bool $false);
   open $FH, "<", $fn;
   my $s = <$FH>;
   close $FH;
+  ok ("01\n" eq $s); # 12
   unlink $fn;
-  ok ("01\n" eq $s);
 }
 
 ok (Cpanel::JSON::XS->new->allow_nonref (1)->decode ('5') == 5);

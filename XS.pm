@@ -1790,7 +1790,9 @@ license and the GPL.
 
 our ($true, $false);
 BEGIN {
-  if ($INC{'JSON/XS.pm'} and $JSON::XS::VERSION ge "3.00") {
+  if ($INC{'JSON/XS.pm'}
+      and $INC{'Types/Serialiser.pm'}
+      and $JSON::XS::VERSION ge "3.00") {
     $true  = $Types::Serialiser::true; # readonly if loaded by JSON::XS
     $false = $Types::Serialiser::false;
   } else {
@@ -1801,9 +1803,10 @@ BEGIN {
 
 sub true()  { $true  }
 sub false() { $false }
-sub is_bool($) { 
-  UNIVERSAL::isa( $_[0], JSON::PP::Boolean:: )
-    or (exists $INC{'Types/Serializer.pm'} and Types::Serialiser::is_bool($_0))
+sub is_bool($) {
+  shift if @_ == 2; # as method call
+  (ref($_[0]) and $_[0]->isa(JSON::PP::Boolean::))
+  or (exists $INC{'Types/Serializer.pm'} and Types::Serialiser::is_bool($_0))
 }
 
 XSLoader::load 'Cpanel::JSON::XS', $VERSION;
@@ -1815,16 +1818,16 @@ use overload
    "0+"     => sub { ${$_[0]} },
    "++"     => sub { $_[0] = ${$_[0]} + 1 },
    "--"     => sub { $_[0] = ${$_[0]} - 1 },
-  # '""'    => sub { ${$_[0]} == 1 ? 'true' : 'false' },
-  #'eq'      => sub {
-  #  my ($obj, $op) = ref ($_[0]) ? ($_[0], $_[1]) : ($_[1], $_[0]);
-  #  if ($op eq 'true' or $op eq 'false') {
-  #    return "$obj" eq 'true' ? 'true' eq $op : 'false' eq $op;
-  #  }
-  #  else {
-  #    return $obj ? 1 == $op : 0 == $op;
-  #  }
-  # },
+   #'""'    => sub { ${$_[0]} == 1 ? 'true' : 'false' }, # GH 29
+   'eq'      => sub {
+     my ($obj, $op) = ref ($_[0]) ? ($_[0], $_[1]) : ($_[1], $_[0]);
+     if ($op eq 'true' or $op eq 'false') {
+       return "$obj" eq 'true' ? 'true' eq $op : 'false' eq $op;
+     }
+     else {
+       return $obj ? 1 == $op : 0 == $op;
+     }
+   },
    fallback => 1;
 
 1;
