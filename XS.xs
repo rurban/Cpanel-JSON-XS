@@ -748,7 +748,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv)
 
   /* for canonical output we have to sort by keys first */
   /* caused by randomised hash orderings */
-  if (enc->json.flags & F_CANONICAL && !SvRMAGICAL (hv))
+  if (enc->json.flags & F_CANONICAL && !SvTIED_mg((SV*)hv, PERL_MAGIC_tied))
     {
       int count = hv_iterinit (hv);
 
