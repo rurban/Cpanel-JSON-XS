@@ -195,13 +195,13 @@ Except being faster.
 
 =item $perl_scalar = decode_json $json_text
 
-The opposite of C<encode_json>: expects an UTF-8 (binary) string and tries
-to parse that as an UTF-8 encoded JSON text, returning the resulting
+The opposite of C<encode_json>: expects an UTF-8 (binary) string of an json reference
+and tries to parse that as an UTF-8 encoded JSON text, returning the resulting
 reference. Croaks on error.
 
 This function call is functionally identical to:
 
-   $perl_scalar = Cpanel::JSON::XS->new->utf8->decode ($json_text)
+   $perl_scalar = Cpanel::JSON::XS->new->utf8->allow_nonref->decode ($json_text)
 
 Except being faster.
 
@@ -1788,13 +1788,14 @@ license and the GPL.
 
 =cut
 
-our ($true, $false);
+our ($true, $false, $has_Types_Serialiser);
 BEGIN {
   if ($INC{'JSON/XS.pm'}
       and $INC{'Types/Serialiser.pm'}
       and $JSON::XS::VERSION ge "3.00") {
     $true  = $Types::Serialiser::true; # readonly if loaded by JSON::XS
     $false = $Types::Serialiser::false;
+    $has_Types_Serialiser = 1;
   } else {
     $true  = do { bless \(my $dummy = 1), "JSON::PP::Boolean" };
     $false = do { bless \(my $dummy = 0), "JSON::PP::Boolean" };
@@ -1811,15 +1812,17 @@ sub is_bool($) {
 
 XSLoader::load 'Cpanel::JSON::XS', $VERSION;
 
-package
-  JSON::PP::Boolean;
+{
+  # This must done before blessing to work around bugs
+  # in perl < 5.18. It seems to be fixed in 5.18.
+  package JSON::PP::BooleanBase;
 
-use overload
+  use overload
    "0+"     => sub { ${$_[0]} },
    "++"     => sub { $_[0] = ${$_[0]} + 1 },
    "--"     => sub { $_[0] = ${$_[0]} - 1 },
-   #'""'    => sub { ${$_[0]} == 1 ? 'true' : 'false' }, # GH 29
-   'eq'      => sub {
+   '""'     => sub { ${$_[0]} == 1 ? 'true' : '0' }, # GH 29
+   'eq'     => sub {
      my ($obj, $op) = ref ($_[0]) ? ($_[0], $_[1]) : ($_[1], $_[0]);
      if ($op eq 'true' or $op eq 'false') {
        return "$obj" eq 'true' ? 'true' eq $op : 'false' eq $op;
@@ -1828,8 +1831,9 @@ use overload
        return $obj ? 1 == $op : 0 == $op;
      }
    },
-   fallback => 1;
-
+  fallback => 1;
+  @JSON::PP::Boolean::ISA = JSON::PP::BooleanBase:: unless $has_Types_Serialiser;
+}
 1;
 
 =head1 SEE ALSO

@@ -1,39 +1,39 @@
-BEGIN { $| = 1; print "1..79\n"; }
-
+BEGIN { $| = 1; print "1..78\n"; }
 use utf8;
 use Cpanel::JSON::XS;
 
 our $test;
-sub ok($) {
-   print $_[0] ? "" : "not ", "ok ", ++$test, "\n";
+sub ok($;$) {
+  print $_[0] ? "" : "not ", "ok ", ++$test;
+  print @_ > 1 ? " # $_[1]\n" : "\n";
 }
-
 ok (!defined Cpanel::JSON::XS->new->allow_nonref (1)->decode ('null'));
-ok (Cpanel::JSON::XS->new->allow_nonref (1)->decode ('true') == 1);
-ok (Cpanel::JSON::XS->new->allow_nonref (1)->decode ('false') == 0);
-
+my $null  = Cpanel::JSON::XS->new->allow_nonref (1)->decode ('null');
 my $true  = Cpanel::JSON::XS->new->allow_nonref (1)->decode ('true');
-ok ($true eq 1);
-ok (Cpanel::JSON::XS::is_bool $true);
 my $false = Cpanel::JSON::XS->new->allow_nonref (1)->decode ('false');
+
+ok ($true == 1, sprintf("true: numified %d", 0+$true));
+ok ($false == 0, sprintf("false: numified %d", 0+$false));
+ok (Cpanel::JSON::XS::is_bool $true);
 ok ($false == !$true);
 ok (Cpanel::JSON::XS::is_bool $false);
 ok (++$false == 1);
 ok (!Cpanel::JSON::XS::is_bool $false);
+ok ($false eq "0", "false: stringified $false");
+ok ($true eq "true", "true: stringified $true");
 {
-  ok ("0" eq decode_json("false"));
-  ok ("1" eq decode_json("true"));
   my $FH;
   my $fn = "tmp_$$";
   open $FH, ">", $fn;
-  print $FH decode_json("false"); # printed as "false", but upstream as "0". GH #29
-  print $FH decode_json("true");
+  print $FH $false; # printed as "false", but upstream as "0". GH #29
+  print $FH "\n";
+  print $FH $true;
   print $FH "\n";
   close $FH;
   open $FH, "<", $fn;
   my $s = <$FH>;
   close $FH;
-  ok ("01\n" eq $s); # 12
+  ok ($s eq "0\ntrue\n", $s); # 12
   unlink $fn;
 }
 

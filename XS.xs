@@ -214,14 +214,15 @@ init_MY_CXT(pTHX_ my_cxt_t * cxt)
 /*/////////////////////////////////////////////////////////////////////////// */
 /* utility functions */
 
+/* This is a reference to the Boolean object */
 INLINE SV *
 get_bool (pTHX_ const char *name)
 {
   SV *sv = get_sv (name, 1);
 
+  if (SvROK(sv))
+    sv = SvRV(sv); /* eq overload needs the object not the ref */
   SvREADONLY_on (sv);
-  SvREADONLY_on (SvRV(sv));
-
   return sv;
 }
 
@@ -2462,6 +2463,7 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
 {
   dec_t dec;
   SV *sv;
+  dMY_CXT;
 
   /* work around bugs in 5.10 where manipulating magic values
    * makes perl ignore the magic in subsequent accesses.
@@ -2555,12 +2557,10 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
              dec.cur != dec.end ? SvPV_nolen (uni) : "(end of string)");
     }
 
-  sv = sv_2mortal (sv);
-
-  if (!(dec.json.flags & F_ALLOW_NONREF) && !SvROK (sv))
+  if (!SvROK (sv) || SvRV(sv) == MY_CXT.json_true || SvRV(sv) == MY_CXT.json_false)
     croak ("JSON text must be an object or array (but found number, string, true, false or null, use allow_nonref to allow this)");
 
-  return sv;
+  return sv_2mortal (sv);
 }
 
 /*/////////////////////////////////////////////////////////////////////////// */

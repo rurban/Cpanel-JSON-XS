@@ -156,13 +156,13 @@ FUNCTIONAL INTERFACE
         Except being faster.
 
     $perl_scalar = decode_json $json_text
-        The opposite of "encode_json": expects an UTF-8 (binary) string and
-        tries to parse that as an UTF-8 encoded JSON text, returning the
-        resulting reference. Croaks on error.
+        The opposite of "encode_json": expects an UTF-8 (binary) string of
+        an json reference and tries to parse that as an UTF-8 encoded JSON
+        text, returning the resulting reference. Croaks on error.
 
         This function call is functionally identical to:
 
-           $perl_scalar = Cpanel::JSON::XS->new->utf8->decode ($json_text)
+           $perl_scalar = Cpanel::JSON::XS->new->utf8->allow_nonref->decode ($json_text)
 
         Except being faster.
 
