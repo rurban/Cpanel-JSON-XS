@@ -1798,14 +1798,13 @@ license and the GPL.
 
 =cut
 
-our ($true, $false, $has_Types_Serialiser);
+our ($true, $false);
 BEGIN {
   if ($INC{'JSON/XS.pm'}
       and $INC{'Types/Serialiser.pm'}
       and $JSON::XS::VERSION ge "3.00") {
     $true  = $Types::Serialiser::true; # readonly if loaded by JSON::XS
     $false = $Types::Serialiser::false;
-    $has_Types_Serialiser = 1;
   } else {
     $true  = do { bless \(my $dummy = 1), "JSON::PP::Boolean" };
     $false = do { bless \(my $dummy = 0), "JSON::PP::Boolean" };
@@ -1823,9 +1822,7 @@ sub is_bool($) {
 XSLoader::load 'Cpanel::JSON::XS', $VERSION;
 
 {
-  # This must done before blessing to work around bugs
-  # in perl < 5.18. It seems to be fixed in 5.18.
-  package JSON::PP::BooleanBase;
+  package JSON::PP::Boolean;
 
   use overload
    "0+"     => sub { ${$_[0]} },
@@ -1842,7 +1839,6 @@ XSLoader::load 'Cpanel::JSON::XS', $VERSION;
      }
    },
   fallback => 1;
-  @JSON::PP::Boolean::ISA = JSON::PP::BooleanBase:: unless $has_Types_Serialiser;
 }
 1;
 

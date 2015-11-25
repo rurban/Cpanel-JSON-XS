@@ -220,8 +220,7 @@ get_bool (pTHX_ const char *name)
 {
   dMY_CXT;
   SV *sv = get_sv (name, 1);
-  SV *rv = SvRV(sv);
-
+  SV* rv = SvRV(sv);
   if (!SvOBJECT(sv) || !SvSTASH(sv)) {
     SvREADONLY_off (sv);
     SvREADONLY_off (rv);
