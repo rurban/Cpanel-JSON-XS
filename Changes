@@ -3,12 +3,31 @@ Revision history for Perl extension Cpanel::JSON::XS
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-3.0116 2015-??-?? (rurban)
+3.0201 2015-??-?? (rurban)
        - Simplify handling of references, removing all the complicated
          work-around for reblessing. Breaks overloaded values, but fixes
          serialising refs to readonly values. #21 (Gianni Ceccarelli)
        - Stabilize Test::Kwalitee with missing XS dependencies
        - suggests common::sense, not recommend. #36 (mst)
+         new test t/53_readonly.t
+         schmorp thinks that overloading is broken with this patch,
+         but reblessing and breaking readonly is worse.
+       - Boolean interop: only JSON::PP::Boolean. #40
+         Remove our own JSON::XS::Boolean, and solely use
+         JSON::PP::Boolean and accept Mojo::JSON::_Bool and
+         Types::Serialiser::Boolean, which is aliased to JSON::PP::Boolean.
+         JSON::YAJL::Parser just produces an unbless IV (0|1).
+         stringify true to true.
+       - accept Mojo::JSON::_Bool (#37)
+         Mojo does not store their booleans as JSON::PP::Boolean
+         as everybody else does.
+       - accept is_bool as method call also.
+       - implement native encode_sv of the internal sv_yes/sv_no values (#39)
+         and map them to json true/false. YAML::XS compatible.
+       - pod: add SECURITY CONSIDERATIONS
+         added a table of safe and unsafe serializers for comparison.
+         Written by JD Lightsey.
+         Only JSON and Data::MessagePack are safe by default.
 
 3.0115 2015-01-31 (rurban)
        - Fix stack corruption when encoding nested objects with FREEZE method,

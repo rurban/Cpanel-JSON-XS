@@ -7,10 +7,10 @@ sub ok($;$) {
   print $_[0] ? "" : "not ", "ok ", ++$test;
   print @_ > 1 ? " # $_[1]\n" : "\n";
 }
-ok (!defined Cpanel::JSON::XS->new->allow_nonref (1)->decode ('null'));
-my $null  = Cpanel::JSON::XS->new->allow_nonref (1)->decode ('null');
-my $true  = Cpanel::JSON::XS->new->allow_nonref (1)->decode ('true');
-my $false = Cpanel::JSON::XS->new->allow_nonref (1)->decode ('false');
+ok (!defined Cpanel::JSON::XS->new->allow_nonref->decode ('null'));
+my $null   = Cpanel::JSON::XS->new->allow_nonref->decode ('null');
+my $true   = Cpanel::JSON::XS->new->allow_nonref->decode ('true');
+my $false  = Cpanel::JSON::XS->new->allow_nonref->decode ('false');
 
 ok ($true == 1, sprintf("true: numified %d", 0+$true));
 ok ($false == 0, sprintf("false: numified %d", 0+$false));

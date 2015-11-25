@@ -214,7 +214,7 @@ init_MY_CXT(pTHX_ my_cxt_t * cxt)
 /*/////////////////////////////////////////////////////////////////////////// */
 /* utility functions */
 
-/* This is a reference to the Boolean object */
+/* Unpacks the 2 boolean objects from the global references */
 INLINE SV *
 get_bool (pTHX_ const char *name)
 {
@@ -988,7 +988,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
       need (aTHX_ enc, NV_DIG + 32);
       savecur = enc->cur;
       saveend = enc->end;
-      Gconvert (SvNVX (sv), NV_DIG, 0, enc->cur);
+      (void)Gconvert (SvNVX (sv), NV_DIG, 0, enc->cur);
 
       if (strEQ(enc->cur, STR_INF) || strEQ(enc->cur, STR_NAN)
 #if defined(_WIN32)
@@ -2557,7 +2557,10 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
              dec.cur != dec.end ? SvPV_nolen (uni) : "(end of string)");
     }
 
-  if (!SvROK (sv) || SvRV(sv) == MY_CXT.json_true || SvRV(sv) == MY_CXT.json_false)
+  if (!(dec.json.flags & F_ALLOW_NONREF) &&
+       (!SvROK (sv)
+        || SvRV(sv) == SvRV(MY_CXT.json_true)
+        || SvRV(sv) == SvRV(MY_CXT.json_false)))
     croak ("JSON text must be an object or array (but found number, string, true, false or null, use allow_nonref to allow this)");
 
   return sv_2mortal (sv);

@@ -102,6 +102,8 @@ or        L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
 B<Changes to JSON::XS>
 
+- stricter decode_json() as documented. non-refs are disallowed. decode() honors now allow_nonref.
+
 - fixed encode of numbers for dual-vars. Different string representations
   are preserved, but numbers with temporary strings which represent the same number
   are here treated as numbers, not strings. Cpanel::JSON::XS is a bit slower, but
@@ -118,6 +120,8 @@ B<Changes to JSON::XS>
 
 - interop for true/false overloading. JSON::XS and JSON::PP representations
   are accepted and JSON::XS accepts Cpanel::JSON::XS booleans [#13]
+  Fixed overloading of booleans, for <5.18 where it is broken in core and >5.18.
+  Cpanel::JSON::XS::true stringifies now to true, not 1.
 
 - native boolean mapping of yes and no to true and false, as in YAML::XS.
   In perl C<!0> is yes, C<!1> is no.
@@ -135,6 +139,8 @@ B<Changes to JSON::XS>
 
   - #7 avoid re-blessing where possible (e.g. SvREADONLY restricted hashes)
 
+  - #41 overloading of booleans, use the object not the reference.
+
 - public maintenance and bugtracker
 
 - use ppport.h, sanify XS.xs comment styles, harness C coding style
@@ -149,7 +155,7 @@ B<Changes to JSON::XS>
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '3.0116';
+our $VERSION = '3.0201';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -201,9 +207,13 @@ reference. Croaks on error.
 
 This function call is functionally identical to:
 
-   $perl_scalar = Cpanel::JSON::XS->new->utf8->allow_nonref->decode ($json_text)
+   $perl_scalar = Cpanel::JSON::XS->new->utf8->decode ($json_text)
 
-Except being faster.
+except being faster.
+
+Note that older decode_json versions in Cpanel::JSON::XS older than
+3.0116 and JSON::XS did not set allow_nonref but allowed them due to a
+bug in the decoder.
 
 =item $is_boolean = Cpanel::JSON::XS::is_bool $scalar
 
