@@ -18,7 +18,7 @@ my $js;
     require JSON::XS;
     my $json = JSON::XS->new;
     $js = $json->decode( $boolstring );
-    # bless { is_true => 1}, "JSON::XS::Boolean"
+    # bless { is_true => 1 }, "JSON::PP::Boolean"
 }
 my $cjson = Cpanel::JSON::XS->new;
 
@@ -28,10 +28,10 @@ is($cjson->encode( $js ), $boolstring) or diag "\$JSON::XS::VERSION=$JSON::XS::V
     local $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
     my $json = JSON->new;
     $js = $json->decode( $boolstring );
-    # bless { is_true => 1}, "JSON::PP::Boolean"
+    # bless { is_true => 1 }, "JSON::PP::Boolean"
 }
 
-is($cjson->encode( $js ), $boolstring) or diag "\$JSON::VERSION=$JSON::VERSION";
+is ($cjson->encode( $js ), $boolstring) or diag "\$JSON::VERSION=$JSON::VERSION";
 
 {
     local $ENV{PERL_JSON_BACKEND} = 'JSON::XS';
@@ -44,5 +44,5 @@ is($cjson->encode( $js ), $boolstring) or diag "\$JSON::VERSION=$JSON::VERSION";
 
 # issue18: support Types::Serialiser without allow_blessed (if JSON-XS-3.x is loaded)
 $js = $cjson->decode( $boolstring );
-is($cjson->encode( $js ), $boolstring) or diag(ref $js->{is_true});
+is ($cjson->encode( $js ), $boolstring) or diag(ref $js->{is_true});
 

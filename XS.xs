@@ -218,10 +218,12 @@ init_MY_CXT(pTHX_ my_cxt_t * cxt)
 INLINE SV *
 get_bool (pTHX_ const char *name)
 {
+  dMY_CXT;
   SV *sv = get_sv (name, 1);
 
-  if (SvROK(sv))
-    sv = SvRV(sv); /* eq overload needs the object not the ref */
+  SvREADONLY_off (sv);
+  (void)sv_bless(sv, MY_CXT.json_boolean_stash); /* bless the ref */
+  SvREADONLY_on (SvRV(sv));
   SvREADONLY_on (sv);
   return sv;
 }
