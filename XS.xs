@@ -2413,11 +2413,10 @@ decode_sv (pTHX_ dec_t *dec)
       case 't':
         if (dec->end - dec->cur >= 4 && !memcmp (dec->cur, "true", 4))
           {
+            dMY_CXT;
             dec->cur += 4;
-            {
-              dMY_CXT;
-              return newSVsv (MY_CXT.json_true);
-            }
+            /*return newSVrv(MY_CXT.json_true, "JSON::PP::Boolean");*/
+            return SvREFCNT_inc_NN(MY_CXT.json_true);
           }
         else
           ERR ("'true' expected");
@@ -2427,11 +2426,9 @@ decode_sv (pTHX_ dec_t *dec)
       case 'f':
         if (dec->end - dec->cur >= 5 && !memcmp (dec->cur, "false", 5))
           {
+            dMY_CXT;
             dec->cur += 5;
-            {
-              dMY_CXT;
-              return newSVsv (MY_CXT.json_false);
-            }
+            return SvREFCNT_inc_NN(MY_CXT.json_false);
           }
         else
           ERR ("'false' expected");
@@ -2442,7 +2439,7 @@ decode_sv (pTHX_ dec_t *dec)
         if (dec->end - dec->cur >= 4 && !memcmp (dec->cur, "null", 4))
           {
             dec->cur += 4;
-            return newSVsv (&PL_sv_undef);
+            return SvREFCNT_inc_NN(&PL_sv_undef);
           }
         else
           ERR ("'null' expected");
