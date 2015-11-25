@@ -20,7 +20,7 @@ my $js;
     $js = $json->decode( $boolstring );
     # bless { is_true => 1 }, "JSON::PP::Boolean"
 }
-my $cjson = Cpanel::JSON::XS->new;
+my $cjson = Cpanel::JSON::XS->new->allow_blessed;
 
 is($cjson->encode( $js ), $boolstring) or diag "\$JSON::XS::VERSION=$JSON::XS::VERSION";
 

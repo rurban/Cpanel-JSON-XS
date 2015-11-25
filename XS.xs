@@ -143,9 +143,10 @@
 #define MY_CXT_KEY "Cpanel::JSON::XS::_guts"
 
 typedef struct {
-  HV *json_stash;          /* Cpanel::JSON::XS:: */
-  HV *json_boolean_stash;  /* JSON::PP::Boolean::  */
-  HV *mojo_boolean_stash;  /* Mojo::JSON::_Bool:: if empty will be (HV*)1 */
+  HV *json_stash;             /* Cpanel::JSON::XS:: */
+  HV *json_boolean_stash;     /* JSON::PP::Boolean::  */
+  HV *jsonold_boolean_stash;  /* JSON::XS::Boolean:: if empty will be (HV*)1 */
+  HV *mojo_boolean_stash;     /* Mojo::JSON::_Bool:: if empty will be (HV*)1 */
   SV *json_true, *json_false;
   SV *sv_json;
 } my_cxt_t;
@@ -197,11 +198,14 @@ json_init (JSON *json)
 static void
 init_MY_CXT(pTHX_ my_cxt_t * cxt)
 {
-  cxt->json_stash          = gv_stashpvn ("Cpanel::JSON::XS",  sizeof("Cpanel::JSON::XS")-1, 1);
-  cxt->json_boolean_stash  = gv_stashpvn ("JSON::PP::Boolean", sizeof("JSON::PP::Boolean")-1, 1);
-  cxt->mojo_boolean_stash  = gv_stashpvn ("Mojo::JSON::_Bool", sizeof("Mojo::JSON::_Bool")-1, 0);
+  cxt->json_stash            = gv_stashpvn ("Cpanel::JSON::XS",  sizeof("Cpanel::JSON::XS")-1, 1);
+  cxt->json_boolean_stash    = gv_stashpvn ("JSON::PP::Boolean", sizeof("JSON::PP::Boolean")-1, 1);
+  cxt->jsonold_boolean_stash = gv_stashpvn ("JSON::XS::Boolean", sizeof("JSON::XS::Boolean")-1, 0);
+  cxt->mojo_boolean_stash    = gv_stashpvn ("Mojo::JSON::_Bool", sizeof("Mojo::JSON::_Bool")-1, 0);
   if ( !cxt->mojo_boolean_stash )
     cxt->mojo_boolean_stash = (HV*)1; /* invalid ptr to compare against, better than a NULL stash */
+  if ( !cxt->jsonold_boolean_stash )
+    cxt->jsonold_boolean_stash = (HV*)1;
 
   cxt->json_true  = get_bool (aTHX_ "Cpanel::JSON::XS::true");
   cxt->json_false = get_bool (aTHX_ "Cpanel::JSON::XS::false");
@@ -863,11 +867,12 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
   if (expect_false (SvOBJECT (sv)))
     {
       dMY_CXT;
-      HV *bstash = MY_CXT.json_boolean_stash; /* JSON-XS-3.x interop (Types::Serialiser/JSON::PP::Boolean) */
-      HV *mstash = MY_CXT.mojo_boolean_stash; /* Mojo::JSON::_Bool interop */
-      HV *stash = SvSTASH (sv);
+      HV *bstash   = MY_CXT.json_boolean_stash; /* JSON-XS-3.x interop (Types::Serialiser/JSON::PP::Boolean) */
+      HV *oldstash = MY_CXT.jsonold_boolean_stash; /* JSON-XS-2.x interop (JSON::XS::Boolean) */
+      HV *mstash   = MY_CXT.mojo_boolean_stash; /* Mojo::JSON::_Bool interop */
+      HV *stash    = SvSTASH (sv);
 
-      if (stash == bstash || stash == mstash)
+      if (stash == bstash || stash == mstash || stash == oldstash)
         {
           if (SvIV (sv))
             encode_str (aTHX_ enc, "true", 4, 0);
