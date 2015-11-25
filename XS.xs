@@ -220,10 +220,14 @@ get_bool (pTHX_ const char *name)
 {
   dMY_CXT;
   SV *sv = get_sv (name, 1);
+  SV *rv = SvRV(sv);
 
-  SvREADONLY_off (sv);
-  (void)sv_bless(sv, MY_CXT.json_boolean_stash); /* bless the ref */
-  SvREADONLY_on (SvRV(sv));
+  if (!SvOBJECT(sv) || !SvSTASH(sv)) {
+    SvREADONLY_off (sv);
+    SvREADONLY_off (rv);
+    (void)sv_bless(sv, MY_CXT.json_boolean_stash); /* bless the ref */
+  }
+  SvREADONLY_on (rv);
   SvREADONLY_on (sv);
   return sv;
 }
