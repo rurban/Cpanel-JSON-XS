@@ -557,7 +557,8 @@ OBJECT-ORIENTED INTERFACE
         blessed object, will check for the availability of the "TO_JSON"
         method on the object's class. If found, it will be called in scalar
         context and the resulting scalar will be encoded instead of the
-        object. If no "TO_JSON" method is found, the value of
+        object. If no "TO_JSON" method is found, a stringification overload
+        method is tried next. If both are not found, the value of
         "allow_blessed" will decide what to do.
 
         The "TO_JSON" method may safely call die if it wants. If "TO_JSON"
@@ -1141,7 +1142,8 @@ MAPPING
         See the "allow_blessed" and "convert_blessed" methods on various
         options on how to deal with this: basically, you can choose between
         throwing an exception, encoding the reference as if it weren't
-        blessed, or provide your own serialiser method.
+        blessed, use the objects overloaded stringification method or
+        provide your own serialiser method.
 
     simple scalars
         Simple Perl scalars (any scalar that is not a reference) are the
@@ -1248,6 +1250,19 @@ MAPPING
               $uri->as_string
            }
 
+    2. "convert_blessed" is enabled and the object has a stringification
+    overload.
+        In this case, the overloaded "" method of the object is invoked in
+        scalar context. It must return a single scalar that can be directly
+        encoded into JSON. This scalar replaces the object in the JSON text.
+
+        For example, the following "" method will convert all URI objects to
+        JSON strings when serialised. The fact that these values originally
+        were URI objects is lost.
+
+            package URI;
+            use overload '""' => sub { shift->as_string };
+
     3. "allow_blessed" is enabled.
         The object will be serialised as a JSON null value.
 
@@ -1291,6 +1306,9 @@ MAPPING
 
           $class->new (type => $type, id => $id)
        }
+
+    See the "SECURITY CONSIDERATIONS" section below. Allowing external json
+    objects being deserialized to perl objects is usually a very bad idea.
 
 ENCODING/CODESET FLAG NOTES
     The interested reader might have seen a number of flags that signify

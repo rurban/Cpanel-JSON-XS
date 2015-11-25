@@ -3,6 +3,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0202 2015-11-26 (rurban)
+       - New feature: convert_blessed for encode.
+         Stringify overloaded perl objects and with allow_blessed even without
+         string overload (#37)
+
 3.0201 2015-11-26 (rurban)
        - Simplify handling of references, removing all the complicated
          work-around for reblessing. Breaks overloaded values, but fixes

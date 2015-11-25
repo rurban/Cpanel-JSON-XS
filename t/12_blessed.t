@@ -1,10 +1,11 @@
-BEGIN { $| = 1; print "1..16\n"; }
+BEGIN { $| = 1; print "1..18\n"; }
 
 use Cpanel::JSON::XS;
 
 our $test;
 sub ok($;$) {
-   print $_[0] ? "" : "not ", "ok ", ++$test, "\n";
+  print $_[0] ? "" : "not ", "ok ", ++$test, "\n";
+  $_[0]
 }
 
 my $o1 = bless { a => 3 }, "XX";
@@ -35,9 +36,12 @@ eval { $js->encode ($o2) }; ok ($@ =~ /allow_blessed/);
 $js->allow_blessed;
 ok ($js->encode ($o1) eq "null");
 ok ($js->encode ($o2) eq "null");
-$js->convert_blessed;
+$js->allow_blessed(0)->convert_blessed;
 ok ($js->encode ($o1) eq '{"__":""}');
 ok ($js->encode ($o2) eq "null");
+$js->allow_blessed->convert_blessed;
+ok ($js->encode ($o1) eq '{"__":""}');
+ok ($js->encode ($o2) == 1) or print STDERR "# ",$js->encode ($o2),"\n";
 
 $js->filter_json_object (sub { 5 });
 $js->filter_json_single_key_object (a => sub { shift });

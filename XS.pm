@@ -159,7 +159,7 @@ B<Changes to JSON::XS>
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '3.0201';
+our $VERSION = '3.0202';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -638,7 +638,8 @@ If C<$enable> is true (or missing), then C<encode>, upon encountering a
 blessed object, will check for the availability of the C<TO_JSON> method
 on the object's class. If found, it will be called in scalar context
 and the resulting scalar will be encoded instead of the object. If no
-C<TO_JSON> method is found, the value of C<allow_blessed> will decide what
+C<TO_JSON> method is found, a stringification overload method is tried next.
+If both are not found, the value of C<allow_blessed> will decide what
 to do.
 
 The C<TO_JSON> method may safely call die if it wants. If C<TO_JSON>
@@ -1261,9 +1262,10 @@ Blessed objects are not directly representable in JSON, but
 C<Cpanel::JSON::XS> allows various optional ways of handling
 objects. See L<OBJECT SERIALISATION>, below, for details.
 
-See the C<allow_blessed> and C<convert_blessed> methods on various options on
-how to deal with this: basically, you can choose between throwing an
-exception, encoding the reference as if it weren't blessed, or provide
+See the C<allow_blessed> and C<convert_blessed> methods on various
+options on how to deal with this: basically, you can choose between
+throwing an exception, encoding the reference as if it weren't
+blessed, use the objects overloaded stringification method or provide
 your own serialiser method.
 
 =item simple scalars
@@ -1379,6 +1381,19 @@ originally were L<URI> objects is lost.
       $uri->as_string
    }
 
+=item 2. C<convert_blessed> is enabled and the object has a stringification overload.
+
+In this case, the overloaded C<""> method of the object is invoked in scalar
+context. It must return a single scalar that can be directly encoded into
+JSON. This scalar replaces the object in the JSON text.
+
+For example, the following C<""> method will convert all L<URI>
+objects to JSON strings when serialised. The fact that these values
+originally were L<URI> objects is lost.
+
+    package URI;
+    use overload '""' => sub { shift->as_string };
+
 =item 3. C<allow_blessed> is enabled.
 
 The object will be serialised as a JSON null value.
@@ -1425,6 +1440,10 @@ C<My::Object> from the C<FREEZE> example earlier:
 
       $class->new (type => $type, id => $id)
    }
+
+See the L</SECURITY CONSIDERATIONS> section below. Allowing external
+json objects being deserialized to perl objects is usually a very bad
+idea.
 
 
 =head1 ENCODING/CODESET FLAG NOTES
