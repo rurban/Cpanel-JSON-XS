@@ -41,7 +41,11 @@ ok ($js->encode ($o1) eq '{"__":""}');
 ok ($js->encode ($o2) eq "null");
 $js->allow_blessed->convert_blessed;
 ok ($js->encode ($o1) eq '{"__":""}');
-ok ($js->encode ($o2) == 1) or print STDERR "# ",$js->encode ($o2),"\n";
+if ($] < 5.008) {
+  print "ok ",++$test," # skip 5.6\n"
+} else {
+  ok ($js->encode ($o2) == 1) or print STDERR "# ",$js->encode ($o2),"\n";
+}
 
 $js->filter_json_object (sub { 5 });
 $js->filter_json_single_key_object (a => sub { shift });
@@ -64,7 +68,7 @@ $js->filter_json_single_key_object ("a");
 ok (4 == $js->decode ('[{"a":4}]')->[0]{a});
 
 if ($]<5.008) {
-  print "ok 16 # skip 5.6\n";
+  print "ok 18 # skip 5.6\n";
 } else {
   $js->filter_json_single_key_object (a => sub { });
   ok (4 == $js->decode ('[{"a":4}]')->[0]{a});
