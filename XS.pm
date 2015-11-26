@@ -1825,10 +1825,10 @@ sub is_bool($) {
 
 XSLoader::load 'Cpanel::JSON::XS', $VERSION;
 
-{
-  package JSON::PP::Boolean;
+package
+  JSON::PP::Boolean;
 
-  use overload
+use overload
    "0+"     => sub { ${$_[0]} },
    "++"     => sub { $_[0] = ${$_[0]} + 1 },
    "--"     => sub { $_[0] = ${$_[0]} - 1 },
@@ -1843,7 +1843,7 @@ XSLoader::load 'Cpanel::JSON::XS', $VERSION;
      }
    },
   fallback => 1;
-}
+
 1;
 
 =head1 SEE ALSO
