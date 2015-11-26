@@ -3182,7 +3182,7 @@ void encode_json (SV *scalar)
         XPUSHs (scalar);
 }
 
-void decode_json (SV *jsonstr)
+void decode_json (SV *jsonstr, SV *allow_nonref = NULL)
 	ALIAS:
         _from_json  = 0
         decode_json = F_UTF8
@@ -3191,6 +3191,8 @@ void decode_json (SV *jsonstr)
         JSON json;
         json_init (&json);
         json.flags |= ix;
+        if (ix && allow_nonref)
+          json.flags |= F_ALLOW_NONREF;
         PUTBACK; jsonstr = decode_json (aTHX_ jsonstr, &json, 0); SPAGAIN;
         XPUSHs (jsonstr);
 }

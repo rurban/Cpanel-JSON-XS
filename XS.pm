@@ -159,7 +159,7 @@ B<Changes to JSON::XS>
 
 package Cpanel::JSON::XS;
 
-our $VERSION = '3.0202';
+our $VERSION = '3.0203';
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(encode_json decode_json to_json from_json);
@@ -203,7 +203,7 @@ This function call is functionally identical to:
 
 Except being faster.
 
-=item $perl_scalar = decode_json $json_text
+=item $perl_scalar = decode_json $json_text [, $allow_nonref ]
 
 The opposite of C<encode_json>: expects an UTF-8 (binary) string of an json reference
 and tries to parse that as an UTF-8 encoded JSON text, returning the resulting
@@ -218,6 +218,10 @@ except being faster.
 Note that older decode_json versions in Cpanel::JSON::XS older than
 3.0116 and JSON::XS did not set allow_nonref but allowed them due to a
 bug in the decoder.
+
+If the new optional $allow_nonref argument is set and not false, the allow_nonref
+option will be set and the function will act is described as in the relaxed RFC 7159
+allowing all values such as objects, arrays, strings, numbers, "null", "true", and "false".
 
 =item $is_boolean = Cpanel::JSON::XS::is_bool $scalar
 
