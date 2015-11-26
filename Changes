@@ -3,6 +3,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0203 2015-11-26 (rurban)
+       - New optional decode_json() argument to set allow_nonref as in
+         RFC 7159 and PHP. Before 3.02 JSON::XS and Cpanel::JSON::XS always
+         allowed nonref values for decode_json due to an interal bug.
+
 3.0202 2015-11-26 (rurban)
        - New feature: convert_blessed for encode.
          Stringify overloaded perl objects and with allow_blessed even without

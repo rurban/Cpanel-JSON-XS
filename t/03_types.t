@@ -1,4 +1,4 @@
-BEGIN { $| = 1; print "1..80\n"; }
+BEGIN { $| = 1; print "1..84\n"; }
 use utf8;
 use Cpanel::JSON::XS;
 
@@ -74,3 +74,9 @@ ok (32768 == ((decode_json encode_json [32768])->[0]));
 
 my @sparse; @sparse[0,3] = (1, 4);
 ok ("[1,null,null,4]" eq encode_json \@sparse);
+
+# RFC 7159: optional 2nd allow_nonref arg
+ok (32768 == decode_json("32768", 1));
+ok ("32768" eq decode_json("32768", 1));
+ok (1 == decode_json("true", 1));
+ok (0 == decode_json("false", 1));

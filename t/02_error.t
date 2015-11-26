@@ -46,7 +46,7 @@ eval { Cpanel::JSON::XS->new->decode ([]) }; ok $@ =~ /malformed/;
 eval { Cpanel::JSON::XS->new->decode (\*STDERR) }; ok $@ =~ /malformed/;
 eval { Cpanel::JSON::XS->new->decode (*STDERR) }; ok !!$@; # cannot coerce GLOB
 
-
+# RFC 7159: missing optional 2nd allow_nonref arg
 eval { decode_json ("null") }; ok $@ =~ /JSON text must be an object or array/, "null";
 eval { decode_json ("true") }; ok $@ =~ /JSON text must be an object or array/, "true $@";
 eval { decode_json ("false") }; ok $@ =~ /JSON text must be an object or array/, "false $@";
