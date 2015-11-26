@@ -3,7 +3,7 @@ Revision history for Perl extension Cpanel::JSON::XS
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-3.0201 2015-11-25 (rurban)
+3.0201 2015-11-26 (rurban)
        - Simplify handling of references, removing all the complicated
          work-around for reblessing. Breaks overloaded values, but fixes
          serialising refs to readonly values. #21 (Gianni Ceccarelli)
@@ -12,7 +12,7 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
          but reblessing and breaking readonly is worse.
        - Stabilize Test::Kwalitee with missing XS dependencies
        - suggests common::sense, not recommend. #36 (mst)
-       - Boolean interop: only JSON::PP::Boolean. #40
+       - Boolean interop: use only JSON::PP::Boolean. #40
          Remove our own JSON::XS::Boolean, and solely use
          JSON::PP::Boolean and accept Mojo::JSON::_Bool and
          Types::Serialiser::Boolean, which is aliased to JSON::PP::Boolean.

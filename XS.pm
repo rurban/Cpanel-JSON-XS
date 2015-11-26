@@ -110,7 +110,7 @@ B<Changes to JSON::XS>
   preserves numeric types better.
 
 - different handling of inf/nan. Default now to null, optionally with -DSTRINGIFY_INFNAN
-  to "inf"/"nan".
+  to "inf"/"nan". [#28, #32]
 
 - added C<binary> extension, non-JSON and non JSON parsable, allows
   C<\xNN> and C<\NNN> sequences.
@@ -118,16 +118,19 @@ B<Changes to JSON::XS>
 - 5.6.2 support; sacrificing some utf8 features (assuming bytes all-over),
   no multi-byte unicode characters.
 
-- interop for true/false overloading. JSON::XS and JSON::PP representations
-  are accepted and JSON::XS accepts Cpanel::JSON::XS booleans [#13]
-  Fixed overloading of booleans, for <5.18 where it is broken in core and >5.18.
-  Cpanel::JSON::XS::true stringifies now to true, not 1.
+- interop for true/false overloading. JSON::XS, JSON::PP and Mojo::JSON 
+  representations for booleans are accepted and JSON::XS accepts
+  Cpanel::JSON::XS booleans [#13, #37]
+  Fixed overloading of booleans. Cpanel::JSON::XS::true stringifies now
+  to true, not 1.
 
 - native boolean mapping of yes and no to true and false, as in YAML::XS.
   In perl C<!0> is yes, C<!1> is no.
   The JSON value true maps to 1, false maps to 0. [#39]
 
 - ithread support. Cpanel::JSON::XS is thread-safe, JSON::XS not
+
+- is_bool can be called as method, JSON::XS::is_bool not.
 
 - performance optimizations for threaded Perls
 
@@ -137,7 +140,8 @@ B<Changes to JSON::XS>
 
   - #10 unshare_hek crash
 
-  - #7 avoid re-blessing where possible (e.g. SvREADONLY restricted hashes)
+  - #7, #29 avoid re-blessing where possible. It fails in JSON::XS for
+   READONLY values, i.e. restricted hashes.
 
   - #41 overloading of booleans, use the object not the reference.
 
@@ -1851,13 +1855,13 @@ L<JSON::SL>, L<JSON::DWIW>, L<JSON::YAJL>, L<https://metacpan.org/search?q=JSON>
 
 =head1 AUTHOR
 
-  Marc Lehmann <schmorp@schmorp.de>, http://home.schmorp.de/
+Marc Lehmann <schmorp@schmorp.de>, http://home.schmorp.de/
 
-  cPanel Inc. <cpan@cpanel.net>
+Reini Urban <rurban@cpanel.net>, http://cpanel.net/
 
 =head1 MAINTAINER
 
-  cPanel Inc. <cpan@cpanel.net>
+Reini Urban <rurban@cpanel.net>
 
 =cut
 
