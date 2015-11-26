@@ -10,8 +10,7 @@ BEGIN {
   }
 }
 use Time::Piece;
-plan tests => 5;
-#$] < 5.008 ? (skip_all => "5.6") : (tests => 5);
+plan $] < 5.008 ? (skip_all => "5.6 no AMG yet") : (tests => 5);
 use Cpanel::JSON::XS;
 
 my $time = localtime;
@@ -32,20 +31,14 @@ package main;
 my $object = bless ["foo"], 'Foo';
 my $enc = $json->encode( { obj => $object } );
 
-TODO: {
-  #local $TODO = 'Not yet ready';
-  is( $enc, '{"obj":"Foo <foo>"}', "mg object stringified" )
-    or diag($enc);
-}
+is( $enc, '{"obj":"Foo <foo>"}', "mg object stringified" )
+  or diag($enc);
 
 $enc = $json->encode( { time => $time } );
 isa_ok($time, "Time::Piece");
 
-TODO: {
-  #local $TODO = 'Not yet ready';
-  # my $dec = $json->decode($enc);
-  is( $enc, qq({"time":"$time"}), 'mg Time::Piece object was stringified' );
-}
+# my $dec = $json->decode($enc);
+is( $enc, qq({"time":"$time"}), 'mg Time::Piece object was stringified' );
 
 $object = bless [], 'main';
 $json->allow_blessed;

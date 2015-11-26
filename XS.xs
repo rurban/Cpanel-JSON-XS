@@ -860,12 +860,21 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv)
   SV *pv = NULL;
   svtype type = SvTYPE(sv);
   int amg = 0;
+#if PERL_VERSION <= 8
+  MAGIC *mg;
+#endif
 
 /* SvAMAGIC without the ref */
 #if PERL_VERSION > 17
 #define MyAMG(sv) (SvOBJECT(sv) && HvAMAGIC(SvSTASH(sv)))
 #else
+#if PERL_VERSION > 8
 #define MyAMG(sv) (SvOBJECT(sv) && (SvFLAGS(sv) & SVf_AMAGIC))
+#else
+#define MyAMG(sv) (SvOBJECT(sv) && ((SvFLAGS(sv) & SVf_AMAGIC) \
+        || ((mg = mg_find((SV*)SvSTASH(sv), PERL_MAGIC_overload_table)) \
+            && mg->mg_ptr && AMT_AMAGIC((AMT*)mg->mg_ptr))))
+#endif
 #endif
 
   /* if no string overload found, check allow_blessed */
@@ -897,6 +906,14 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv)
     if (SvGMAGICAL(sv)) mg_get(sv);
     if (MyAMG(sv)) { /* force a RV here */
       SV* rv = newRV(SvREFCNT_inc(sv));
+#if PERL_VERSION <= 8
+      HV *stash = SvSTASH(sv);
+      if (!SvSTASH(rv) || !(SvFLAGS(sv) & SVf_AMAGIC)) {
+        sv_bless(rv, stash);
+        Gv_AMupdate(stash);
+        SvFLAGS(sv) |= SVf_AMAGIC;
+      }
+#endif
 #if PERL_VERSION > 13
       pv = AMG_CALLunary(rv, string_amg);
 #else
