@@ -18,7 +18,7 @@ WriteMakefile(
   LICENSE  => 'perl',
   ($] >= 5.005 ?
    (ABSTRACT_FROM  => 'XS.pm',
-    AUTHOR         => 'cPanel Inc. <cpan@cpanel.net>',
+    AUTHOR         => 'Reini Urban <rurban@cpanel.net>',
     # ORIGINAL_AUTHOR => 'Marc Lehmann <schmorp@schmorp.de>'
    ) : ()),
   ($ExtUtils::MakeMaker::VERSION gt '6.46'

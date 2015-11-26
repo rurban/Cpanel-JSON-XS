@@ -3,6 +3,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 TODO: maybe avoid the reblessing and better support readonly objects.
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0204 2015-11-26 (rurban)
+       - Fix is_bool with JSON::XS >3.0 interop. #44 (Graham Knop)
+
 3.0203 2015-11-26 (rurban)
        - New optional decode_json() argument to set allow_nonref as in
          RFC 7159 and PHP. Before 3.02 JSON::XS and Cpanel::JSON::XS always
@@ -39,6 +42,8 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
          added a table of safe and unsafe serializers for comparison.
          Written by JD Lightsey.
          Only JSON and Data::MessagePack are safe by default.
+       - With canonical only skip hash keys sorting for actually tied hashes.
+         #42 (Sergey Aleynikov)
 
 3.0115 2015-01-31 (rurban)
        - Fix stack corruption when encoding nested objects with FREEZE method,
