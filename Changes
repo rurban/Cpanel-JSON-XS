@@ -7,6 +7,8 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
        - Add t/20_unknown.t tests from JSON::PP, extended.
        - Fix convert_blessed, disallow invalid JSON. #46 (reported by Dan Book)
          convert_blessed returns now always a string, even for numbers.
+       - Fix encountered GLOB error message (still in JSON::XS, and JSON::PP took
+         over the wrong message also).
 
 3.0204 2015-11-26 (rurban)
        - Fix is_bool with JSON::XS >3.0 interop. #44 (Graham Knop)

@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use strict;
 
-use Test::More tests => 46;
+use Test::More tests => 48;
 use JSON ();
 use Cpanel::JSON::XS ();
 
@@ -60,19 +60,24 @@ is( $json->encode( {false => \!!""} ),  '{"false":null}',  'js \sv_no' );
 
 SKIP: {
 
-    skip "this test is for Perl 5.8 or later", 2 if $] < 5.008;
+  skip "this test is for Perl 5.8 or later", 2 if $] < 5.008;
 
+$pp->allow_unknown(0);
 $json->allow_unknown(0);
 
 my $fh;
 open( $fh, '>hoge.txt' ) or die $!;
 END { unlink('hoge.txt'); }
 
+eval q| $pp->encode( [ $fh ] ) |; # upstream changed due to this JSON::XS bug
+ok( $@ =~ /(encountered GLOB|cannot encode reference to scalar)/, "pp ".$@ );
 eval q| $json->encode( [ $fh ] ) |;
-ok( $@ =~ /cannot encode reference to scalar/, $@ ); # pp fails with 'encountered GLOB'
+ok( $@ =~ /encountered GLOB/, "js ".$@ );
 
+$pp->allow_unknown(1);
 $json->allow_unknown(1);
 
+is( $pp->encode  ( [ $fh ] ),    '[null]' );
 is( $json->encode( [ $fh ] ),    '[null]' );
 
 close $fh;

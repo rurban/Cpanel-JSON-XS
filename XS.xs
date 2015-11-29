@@ -1056,7 +1056,7 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
     encode_hv (aTHX_ enc, (HV *)sv);
   else if (svt == SVt_PVAV)
     encode_av (aTHX_ enc, (AV *)sv);
-  else if (svt < SVt_PVAV)
+  else if (svt < SVt_PVAV && svt != SVt_PVGV)
     {
       STRLEN len = 0;
       char *pv = svt ? SvPV (sv, len) : 0;
