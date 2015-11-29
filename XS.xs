@@ -901,6 +901,11 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv)
 #endif
     SvSETMAGIC(pv);
     str = SvPVutf8_force(pv, len);
+    if (!len) {
+      encode_str (aTHX_ enc, "null", 4, 0);
+      SvREFCNT_dec(pv);
+      return;
+    }
   } else {
     /* manually call all possible magic on AV, HV, FM */
     if (SvGMAGICAL(sv)) mg_get(sv);
@@ -933,8 +938,11 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv)
   }
   if (!str)
     encode_str (aTHX_ enc, "null", 4, 0);
-  else
+  else {
+    encode_ch (aTHX_ enc, '"');
     encode_str (aTHX_ enc, str, len, 0);
+    encode_ch (aTHX_ enc, '"');
+  }
   if (pv) SvREFCNT_dec(pv);
 
 #undef MyAMG

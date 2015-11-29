@@ -1,3 +1,8 @@
+package Cpanel::JSON::XS;
+our $VERSION = '3.0205';
+
+=pod
+
 =head1 NAME
 
 Cpanel::JSON::XS - JSON::XS for Cpanel, fast and correct serialising, also for 5.6.2
@@ -157,11 +162,7 @@ B<Changes to JSON::XS>
 
 =cut
 
-package Cpanel::JSON::XS;
-
-our $VERSION = '3.0204';
 our @ISA = qw(Exporter);
-
 our @EXPORT = qw(encode_json decode_json to_json from_json);
 
 sub to_json($@) {

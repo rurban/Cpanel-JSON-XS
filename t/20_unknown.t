@@ -94,9 +94,9 @@ is( $pp->encode  ( {false => \""} ),     '{"false":null}' );
 is( $pp->encode  ( {false => \!!""} ),   '{"false":null}' );
 TODO: {
   local $TODO = 'invalid JSON #46' if $Cpanel::JSON::XS::VERSION lt '3.0205';
-  is( $json->encode( {false => \"some"} ), '{"false":null}' ); # TODO
-  is( $json->encode( {false => \""} ),     '{"false":null}' ); # TODO
-  is( $json->encode( {false => \!!""} ),   '{"false":null}' ); # TODO
+  is( $json->encode( {false => \"some"} ), '{"false":"some"}' );
+  is( $json->encode( {false => \""} ),     '{"false":null}' );
+  is( $json->encode( {false => \!!""} ),   '{"false":null}' );
 }
 
 
