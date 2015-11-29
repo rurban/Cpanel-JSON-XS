@@ -2102,13 +2102,13 @@ fail:
 INLINE SV *
 decode_str (pTHX_ dec_t *dec)
 {
-  return _decode_str(dec, '"');
+  return _decode_str(aTHX_ dec, '"');
 }
 
 INLINE SV *
 decode_str_sq (pTHX_ dec_t *dec)
 {
-  return _decode_str(dec, 0x27);
+  return _decode_str(aTHX_ dec, 0x27);
 }
 
 static SV *
@@ -2222,9 +2222,37 @@ decode_num (pTHX_ dec_t *dec)
         /* fits into NV without loss of precision */
         return newSVnv (json_atof (start));
 
+      if (dec->json.flags & F_ALLOW_BIGNUM) {
+        SV* pv = newSVpvs("require Math::BigInt && return Math::BigInt->new(");
+        sv_catpv(pv, start);
+        sv_catpvs(pv, ");");
+        eval_sv(pv, G_SCALAR);
+        SvREFCNT_dec(pv);
+        {
+          dSP;
+          SV *retval = SvREFCNT_inc(POPs);
+          PUTBACK;
+          return retval;
+        }
+      }
+
       /* everything else fails, convert it to a string */
       return newSVpvn (start, dec->cur - start);
     }
+
+  if (dec->json.flags & F_ALLOW_BIGNUM) {
+    SV* pv = newSVpvs("require Math::BigFloat && return Math::BigFloat->new(");
+    sv_catpv(pv, start);
+    sv_catpvs(pv, ");");
+    eval_sv(pv, G_SCALAR);
+    SvREFCNT_dec(pv);
+    {
+      dSP;
+      SV *retval = SvREFCNT_inc(POPs);
+      PUTBACK;
+      return retval;
+    }
+  }
 
   /* loss of precision here */
   return newSVnv (json_atof (start));
