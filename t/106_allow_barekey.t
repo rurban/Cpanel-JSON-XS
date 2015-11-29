@@ -1,5 +1,5 @@
 
-use Test::More tests => 2;
+use Test::More tests => 4;
 use strict;
 use Cpanel::JSON::XS;
 #########################
@@ -11,4 +11,6 @@ ok($@); # in XS and PP, the error message differs.
 
 $json->allow_barekey;
 is($json->decode('{foo:"bar"}')->{foo}, 'bar');
+is($json->decode('{ foo : "bar"}')->{foo}, 'bar', 'with space');
+is($json->decode(qq({\tfoo\t:"bar"}))->{foo}, 'bar', 'with tab');
 

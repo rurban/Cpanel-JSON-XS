@@ -103,7 +103,7 @@
 #define F_ALLOW_UNKNOWN  0x00002000UL
 #define F_ALLOW_TAGS     0x00004000UL
 #define F_BINARY         0x00008000UL
-#define F_ALLOW_BAREKEY 0x00010000UL
+#define F_ALLOW_BAREKEY  0x00010000UL
 #define F_ALLOW_SQUOTE   0x00020000UL
 #define F_ALLOW_BIGNUM   0x00040000UL
 #define F_ESCAPE_SLASH   0x00080000UL
@@ -1904,7 +1904,7 @@ fail:
 }
 
 static SV *
-decode_str (pTHX_ dec_t *dec)
+_decode_str (pTHX_ dec_t *dec, char endstr)
 {
   SV *sv = 0;
   int utf8 = 0;
@@ -1919,9 +1919,9 @@ decode_str (pTHX_ dec_t *dec)
 
       do
         {
-          ch = *(unsigned char *)dec_cur++;
+          ch = *(unsigned char *)dec_cur++; /* also the end char */
 
-          if (expect_false (ch == '"'))
+          if (expect_false (ch == endstr))
             {
               --dec_cur;
               break;
@@ -2097,6 +2097,18 @@ decode_str (pTHX_ dec_t *dec)
 fail:
   dec->cur = dec_cur;
   return 0;
+}
+
+INLINE SV *
+decode_str (pTHX_ dec_t *dec)
+{
+  return _decode_str(dec, '"');
+}
+
+INLINE SV *
+decode_str_sq (pTHX_ dec_t *dec)
+{
+  return _decode_str(dec, 0x27);
 }
 
 static SV *
@@ -2280,6 +2292,7 @@ decode_hv (pTHX_ dec_t *dec)
   HV *hv = newHV ();
   int allow_squote = dec->json.flags & F_ALLOW_SQUOTE;
   int allow_barekey = dec->json.flags & F_ALLOW_BAREKEY;
+  char endstr = '"';
 
   DEC_INC_DEPTH;
   decode_ws (dec);
@@ -2289,14 +2302,16 @@ decode_hv (pTHX_ dec_t *dec)
   else
     for (;;)
       {
-        if (expect_false(allow_barekey && *dec->cur == '"')) {
-          ++dec->cur;
-        }
-        if (expect_false(allow_squote)) {
+        if (expect_false(allow_barekey
+                         && *dec->cur >= 'A' && *dec->cur <= 'z'))
+          ;
+        else if (expect_false(allow_squote)) {
           if (*dec->cur != '"' && *dec->cur != 0x27) {
             ERR ("'\"' or ''' expected");
-            ++dec->cur;
           }
+          else if (*dec->cur == 0x27)
+            endstr = 0x27;
+          ++dec->cur;
         } else {
           EXPECT_CH ('"');
         }
@@ -2314,10 +2329,12 @@ decode_hv (pTHX_ dec_t *dec)
           for (;;)
             {
               /* the >= 0x80 is false on most architectures */
-              if (p == e || *p < 0x20 || *(U8*)p >= 0x80 || *p == '\\')
+              if (!allow_barekey &&
+                  (p == e || *p < 0x20 || *(U8*)p >= 0x80 || *p == '\\'
+                   || allow_squote))
                 {
                   /* slow path, back up and use decode_str */
-                  SV *key = decode_str (aTHX_ dec);
+                  SV *key = _decode_str (aTHX_ dec, endstr);
                   if (!key)
                     goto fail;
 
@@ -2336,16 +2353,17 @@ decode_hv (pTHX_ dec_t *dec)
 
                   break;
                 }
-              else if (*p == '"'
-                    || expect_false(allow_squote && *p == 0x27)
-                    || expect_false(allow_barekey && (*p == ' ' || *p == ':')))
+              else if (*p == endstr
+                       || (allow_barekey &&
+                           (*p == ':' || *p == ' ' || *p == 0x0a
+                            || *p == 0x0d || *p == 0x09)))
                 {
                   /* fast path, got a simple key */
                   char *key = dec->cur;
                   int len = p - key;
                   dec->cur = p + 1;
 
-                  decode_ws (dec); EXPECT_CH (':');
+                  decode_ws (dec); if (*p != ':') EXPECT_CH (':');
 
                   decode_ws (dec);
                   value = decode_sv (aTHX_ dec);
@@ -2549,7 +2567,7 @@ decode_sv (pTHX_ dec_t *dec)
       case '"': ++dec->cur; return decode_str (aTHX_ dec);
       case 0x27:
         if (dec->json.flags & F_ALLOW_SQUOTE) {
-          ++dec->cur; return decode_str (aTHX_ dec);
+          ++dec->cur; return decode_str_sq (aTHX_ dec);
         }
         ERR ("malformed JSON string, neither tag, array, object, number, string or atom");
         break;

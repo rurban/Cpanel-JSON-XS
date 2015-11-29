@@ -7,7 +7,8 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
        - Map sort_by to canonical from JSON::PP. #47
        - Add support for allow_singlequote from JSON::PP. #47
        - Add support for allow_barekey from JSON::PP. #47
-       - Add support for allow_bignum from JSON::PP. #47
+       - Add testcase for yet unsupported for allow_bignum from JSON::PP. #47
+       - relaxed uses now also allow_singlequote and allow_barekey.
 
 3.0205 2015-11-29 (rurban)
        - Add t/20_unknown.t tests from JSON::PP, extended.
