@@ -1826,6 +1826,10 @@ license and the GPL.
 
 =cut
 
+sub allow_bigint {
+    Carp::carp("allow_bigint() is obsoleted. use allow_bignum() insted.");
+}
+
 our ($true, $false);
 BEGIN {
   if ($INC{'JSON/XS.pm'}

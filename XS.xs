@@ -103,7 +103,12 @@
 #define F_ALLOW_UNKNOWN  0x00002000UL
 #define F_ALLOW_TAGS     0x00004000UL
 #define F_BINARY         0x00008000UL
-#define F_HOOK           0x00080000UL // some hooks exist, so slow-path processing
+#define F_ALLOW_BAREKEY  0x00010000UL
+#define F_ALLOW_SQUOTE   0x00020000UL
+#define F_ALLOW_BIGNUM   0x00040000UL
+#define F_ESCAPE_SLASH   0x00080000UL
+#define F_SORT_BY        0x00100000UL
+#define F_HOOK           0x80000000UL // some hooks exist, so slow-path processing
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
 
@@ -176,6 +181,7 @@ typedef struct {
 
   SV *cb_object;
   HV *cb_sk_object;
+  SV *cb_sort_by;
 
   /* for the incremental parser */
   SV *incr_text;   /* the source text so far */
@@ -2905,6 +2911,10 @@ void ascii (JSON *self, int enable = 1)
         relaxed         = F_RELAXED
         allow_unknown   = F_ALLOW_UNKNOWN
         allow_tags      = F_ALLOW_TAGS
+        allow_barekey   = F_ALLOW_BAREKEY
+        allow_singlequote = F_ALLOW_SQUOTE
+        allow_bignum    = F_ALLOW_BIGNUM
+        escape_slash    = F_ESCAPE_SLASH
 	PPCODE:
 {
         if (enable)
@@ -2932,6 +2942,10 @@ void get_ascii (JSON *self)
         get_relaxed         = F_RELAXED
         get_allow_unknown   = F_ALLOW_UNKNOWN
         get_allow_tags      = F_ALLOW_TAGS
+        get_allow_barekey   = F_ALLOW_BAREKEY
+        get_allow_singlequote = F_ALLOW_SQUOTE
+        get_allow_bignum    = F_ALLOW_BIGNUM
+        get_esc_slash       = F_ESCAPE_SLASH
 	PPCODE:
         XPUSHs (boolSV (self->flags & ix));
 
@@ -2970,6 +2984,16 @@ int get_stringify_infnan (JSON *self)
         RETVAL = (int)self->infnan_mode;
 	OUTPUT:
         RETVAL
+
+void sort_by (JSON *self, SV* cb = &PL_sv_yes)
+	PPCODE:
+{
+        SvREFCNT_dec (self->cb_sort_by);
+        self->cb_sort_by = SvOK (cb) ? newSVsv (cb) : 0;
+
+        XPUSHs (ST (0));
+}
+
         
 void filter_json_object (JSON *self, SV *cb = &PL_sv_undef)
 	PPCODE:
@@ -3172,6 +3196,7 @@ void DESTROY (JSON *self)
 	CODE:
         SvREFCNT_dec (self->cb_sk_object);
         SvREFCNT_dec (self->cb_object);
+        SvREFCNT_dec (self->cb_sort_by);
         SvREFCNT_dec (self->incr_text);
 
 PROTOTYPES: ENABLE
