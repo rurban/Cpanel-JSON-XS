@@ -358,6 +358,7 @@ in files or databases, not when talking to other JSON encoders/decoders.
   Cpanel::JSON::XS->new->latin1->encode (["\x{89}\x{abc}"]
   => ["\x{89}\\u0abc"]    # (perl syntax, U+abc escaped, U+89 not)
 
+
 =item $json = $json->binary ([$enable])
 
 =item $enabled = $json = $json->get_binary
@@ -409,6 +410,7 @@ non-JSON conformant hex or octal encoding C<\xNN> or C<\NNN>.
   Cpanel::JSON::XS->new->decode (["\x89"])
   Error: illegal hex character in non-binary string
 
+
 =item $json = $json->utf8 ([$enable])
 
 =item $enabled = $json->get_utf8
@@ -456,6 +458,7 @@ Example, pretty-print some simple structure:
       ]
    }
 
+
 =item $json = $json->indent ([$enable])
 
 =item $enabled = $json->get_indent
@@ -468,6 +471,7 @@ If C<$enable> is false, no newlines or indenting will be produced, and the
 resulting JSON text is guaranteed not to contain any C<newlines>.
 
 This setting has no effect when decoding JSON texts.
+
 
 =item $json = $json->space_before ([$enable])
 
@@ -560,7 +564,16 @@ substituted for "\t" sequence.
      "Hello<TAB>World", # literal <TAB> would not normally be allowed
   ]
 
+=item * allow_singlequote
+
+Single quotes are accepted instead of double quotes. See the L</allow_singlequote> option.
+
+    { "foo":'bar' }
+    { 'foo':"bar" }
+    { 'foo':'bar' }
+
 =back
+
 
 =item $json = $json->canonical ([$enable])
 
@@ -583,6 +596,17 @@ This setting has no effect when decoding JSON texts.
 
 This setting has currently no effect on tied hashes.
 
+
+=item $json = $json->sort_by (undef, 0, 1 or a block)
+
+This currently only (un)sets the C<canonical> option, and ignores
+custom sort blocks.
+
+This setting has no effect when decoding JSON texts.
+
+This setting has currently no effect on tied hashes.
+
+
 =item $json = $json->escape_slash ([$enable])
 
 =item $enabled = $json->get_escape_slash
@@ -595,6 +619,67 @@ If C<$enable> is true (or missing), then C<encode> will escape slashes,
 C<"\/">.
 
 This setting has no effect when decoding JSON texts.
+
+
+=item $json = $json->allow_singlequote ([$enable])
+
+=item $enabled = $json->get_allow_singlequote
+
+    $json = $json->allow_singlequote([$enable])
+
+If C<$enable> is true (or missing), then C<decode> will accept
+JSON strings quoted by single quotations that are invalid JSON
+format.
+
+    $json->allow_singlequote->decode({"foo":'bar'});
+    $json->allow_singlequote->decode({'foo':"bar"});
+    $json->allow_singlequote->decode({'foo':'bar'});
+
+This is also enabled with C<relaxed>.
+As same as the C<relaxed> option, this option may be used to parse
+application-specific files written by humans.
+
+
+=item $json = $json->allow_barekey ([$enable])
+
+=item $enabled = $json->get_allow_barekey
+
+    $json = $json->allow_barekey([$enable])
+
+If C<$enable> is true (or missing), then C<decode> will accept
+bare keys of JSON object that are invalid JSON format.
+
+As same as the C<relaxed> option, this option may be used to parse
+application-specific files written by humans.
+
+    $json->allow_barekey->decode('{foo:"bar"}');
+
+
+=item $json = $json->allow_bignum ([$enable])
+
+=item $enabled = $json->get_allow_bignum
+
+    $json = $json->allow_bignum([$enable])
+
+If C<$enable> is true (or missing), then C<decode> will convert
+the big integer Perl cannot handle as integer into a L<Math::BigInt>
+object and convert a floating number (any) into a L<Math::BigFloat>.
+
+On the contary, C<encode> converts C<Math::BigInt> objects and C<Math::BigFloat>
+objects into JSON numbers with C<allow_blessed> enable.
+
+   $json->allow_nonref->allow_blessed->allow_bignum;
+   $bigfloat = $json->decode('2.000000000000000000000000001');
+   print $json->encode($bigfloat);
+   # => 2.000000000000000000000000001
+
+See L<JSON::XS/MAPPING> about the normal conversion of JSON number.
+
+
+=item $json = $json->allow_bigint ([$enable])
+
+This option is obsolete and replaced by allow_bignum.
+
 
 =item $json = $json->allow_nonref ([$enable])
 
@@ -1840,7 +1925,7 @@ license and the GPL.
 =cut
 
 sub allow_bigint {
-    Carp::carp("allow_bigint() is obsoleted. use allow_bignum() insted.");
+    Carp::carp("allow_bigint() is obsoleted. use allow_bignum() instead.");
 }
 
 our ($true, $false);

@@ -1908,6 +1908,8 @@ decode_str (pTHX_ dec_t *dec)
   SV *sv = 0;
   int utf8 = 0;
   char *dec_cur = dec->cur;
+  unsigned char ch;
+  int allow_squote = dec->json.flags & F_ALLOW_SQUOTE;
 
   do
     {
@@ -1916,7 +1918,7 @@ decode_str (pTHX_ dec_t *dec)
 
       do
         {
-          unsigned char ch = *(unsigned char *)dec_cur++;
+          ch = *(unsigned char *)dec_cur++;
 
           if (expect_false (ch == '"'))
             {
@@ -2019,8 +2021,13 @@ decode_str (pTHX_ dec_t *dec)
                     ERR ("illegal backslash escape sequence in string");
                 }
             }
-          else if (expect_true (ch >= 0x20 && ch < 0x80))
+          else if (expect_true (ch >= 0x20 && ch < 0x80)) {
             *cur++ = ch;
+            if (expect_false (allow_squote && ch == 0x27)) {
+              --dec_cur;
+              break;
+            }
+          }
           else if (ch >= 0x80)
             {
               STRLEN clen;
@@ -2068,7 +2075,7 @@ decode_str (pTHX_ dec_t *dec)
           sv = newSVpvn (buf, len);
       }
     }
-  while (*dec_cur != '"');
+  while (*dec_cur != ch);
 
   ++dec_cur;
 
@@ -2270,6 +2277,7 @@ decode_hv (pTHX_ dec_t *dec)
 {
   SV *sv;
   HV *hv = newHV ();
+  int allow_squote = dec->json.flags & F_ALLOW_SQUOTE;
 
   DEC_INC_DEPTH;
   decode_ws (dec);
@@ -2279,7 +2287,14 @@ decode_hv (pTHX_ dec_t *dec)
   else
     for (;;)
       {
-        EXPECT_CH ('"');
+        if (expect_false(allow_squote)) {
+          if (*dec->cur != '"' && *dec->cur != 0x27) {
+            ERR ("'\"' or ''' expected");
+            ++dec->cur;
+          }
+        } else {
+          EXPECT_CH ('"');
+        }
 
         /* heuristic: assume that */
         /* a) decode_str + hv_store_ent are abysmally slow. */
@@ -2316,7 +2331,8 @@ decode_hv (pTHX_ dec_t *dec)
 
                   break;
                 }
-              else if (*p == '"')
+              else if (*p == '"' ||
+                       expect_false(allow_squote && *p == 0x27))
                 {
                   /* fast path, got a simple key */
                   char *key = dec->cur;
@@ -2525,6 +2541,12 @@ decode_sv (pTHX_ dec_t *dec)
   switch (*dec->cur)
     {
       case '"': ++dec->cur; return decode_str (aTHX_ dec);
+      case 0x27:
+        if (dec->json.flags & F_ALLOW_SQUOTE) {
+          ++dec->cur; return decode_str (aTHX_ dec);
+        }
+        ERR ("malformed JSON string, neither tag, array, object, number, string or atom");
+        break;
       case '[': ++dec->cur; return decode_av  (aTHX_ dec);
       case '{': ++dec->cur; return decode_hv  (aTHX_ dec);
       case '(':             return decode_tag (aTHX_ dec);
@@ -2951,7 +2973,7 @@ void get_ascii (JSON *self)
         get_allow_barekey   = F_ALLOW_BAREKEY
         get_allow_singlequote = F_ALLOW_SQUOTE
         get_allow_bignum    = F_ALLOW_BIGNUM
-        get_esc_slash       = F_ESCAPE_SLASH
+        get_escape_slash    = F_ESCAPE_SLASH
 	PPCODE:
         XPUSHs (boolSV (self->flags & ix));
 
@@ -2996,6 +3018,8 @@ void sort_by (JSON *self, SV* cb = &PL_sv_yes)
 {
         SvREFCNT_dec (self->cb_sort_by);
         self->cb_sort_by = SvOK (cb) ? newSVsv (cb) : 0;
+        if (self->cb_sort_by)
+          self->flags |= F_CANONICAL;
 
         XPUSHs (ST (0));
 }

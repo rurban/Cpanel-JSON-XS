@@ -4,11 +4,11 @@ use strict;
 use Cpanel::JSON::XS;
 #########################
 
-my $json = Cpanel::JSON::XS->new->allow_nonref;
+my $json = Cpanel::JSON::XS->new;
 
 eval q| $json->decode("{'foo':'bar'}") |;
-
-ok($@); # in XS and PP, the error message differs.
+ok($@, "error $@"); # in XS and PP, the error message differs.
+# '"' expected, at character offset 1 (before "'foo':'bar'}")
 
 $json->allow_singlequote;
 

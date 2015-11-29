@@ -488,6 +488,15 @@ OBJECT-ORIENTED INTERFACE
                  "Hello<TAB>World", # literal <TAB> would not normally be allowed
               ]
 
+        *   allow_singlequote
+
+            Single quotes are accepted instead of double quotes. See the
+            "allow_singlequote" option.
+
+                { "foo":'bar' }
+                { 'foo':"bar" }
+                { 'foo':'bar' }
+
     $json = $json->canonical ([$enable])
     $enabled = $json->get_canonical
         If $enable is true (or missing), then the "encode" method will
@@ -509,6 +518,14 @@ OBJECT-ORIENTED INTERFACE
 
         This setting has currently no effect on tied hashes.
 
+    $json = $json->sort_by (undef, 0, 1 or a block)
+        This currently only (un)sets the "canonical" option, and ignores
+        custom sort blocks.
+
+        This setting has no effect when decoding JSON texts.
+
+        This setting has currently no effect on tied hashes.
+
     $json = $json->escape_slash ([$enable])
     $enabled = $json->get_escape_slash
         According to the JSON Grammar, the *forward slash* character
@@ -519,6 +536,56 @@ OBJECT-ORIENTED INTERFACE
         "\/".
 
         This setting has no effect when decoding JSON texts.
+
+    $json = $json->allow_singlequote ([$enable])
+    $enabled = $json->get_allow_singlequote
+            $json = $json->allow_singlequote([$enable])
+
+        If $enable is true (or missing), then "decode" will accept JSON
+        strings quoted by single quotations that are invalid JSON format.
+
+            $json->allow_singlequote->decode({"foo":'bar'});
+            $json->allow_singlequote->decode({'foo':"bar"});
+            $json->allow_singlequote->decode({'foo':'bar'});
+
+        This is also enabled with "relaxed". As same as the "relaxed"
+        option, this option may be used to parse application-specific files
+        written by humans.
+
+    $json = $json->allow_barekey ([$enable])
+    $enabled = $json->get_allow_barekey
+            $json = $json->allow_barekey([$enable])
+
+        If $enable is true (or missing), then "decode" will accept bare keys
+        of JSON object that are invalid JSON format.
+
+        As same as the "relaxed" option, this option may be used to parse
+        application-specific files written by humans.
+
+            $json->allow_barekey->decode('{foo:"bar"}');
+
+    $json = $json->allow_bignum ([$enable])
+    $enabled = $json->get_allow_bignum
+            $json = $json->allow_bignum([$enable])
+
+        If $enable is true (or missing), then "decode" will convert the big
+        integer Perl cannot handle as integer into a Math::BigInt object and
+        convert a floating number (any) into a Math::BigFloat.
+
+        On the contary, "encode" converts "Math::BigInt" objects and
+        "Math::BigFloat" objects into JSON numbers with "allow_blessed"
+        enable.
+
+           $json->allow_nonref->allow_blessed->allow_bignum;
+           $bigfloat = $json->decode('2.000000000000000000000000001');
+           print $json->encode($bigfloat);
+           # => 2.000000000000000000000000001
+
+        See "MAPPING" in JSON::XS about the normal conversion of JSON
+        number.
+
+    $json = $json->allow_bigint ([$enable])
+        This option is obsolete and replaced by allow_bignum.
 
     $json = $json->allow_nonref ([$enable])
     $enabled = $json->get_allow_nonref
