@@ -2527,8 +2527,7 @@ decode_sv (pTHX_ dec_t *dec)
           {
             dMY_CXT;
             dec->cur += 4;
-            /*return newSVrv(MY_CXT.json_true, "JSON::PP::Boolean");*/
-            return SvREFCNT_inc_NN(MY_CXT.json_true);
+            return newSVsv(MY_CXT.json_true);
           }
         else
           ERR ("'true' expected");
@@ -2540,7 +2539,7 @@ decode_sv (pTHX_ dec_t *dec)
           {
             dMY_CXT;
             dec->cur += 5;
-            return SvREFCNT_inc_NN(MY_CXT.json_false);
+            return newSVsv(MY_CXT.json_false);
           }
         else
           ERR ("'false' expected");
@@ -2551,7 +2550,7 @@ decode_sv (pTHX_ dec_t *dec)
         if (dec->end - dec->cur >= 4 && !memcmp (dec->cur, "null", 4))
           {
             dec->cur += 4;
-            return SvREFCNT_inc_NN(&PL_sv_undef);
+            return newSVsv(&PL_sv_undef);
           }
         else
           ERR ("'null' expected");

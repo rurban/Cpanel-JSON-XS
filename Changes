@@ -9,6 +9,10 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
          convert_blessed returns now always a string, even for numbers.
        - Fix encountered GLOB error message (still in JSON::XS, and JSON::PP took
          over the wrong message also).
+       - Fixed regression of immediate raw values for null/true/false to be
+         modifiable again. #45. Broken with 3.0201 - 3.0204.
+         (reported by Thomas Sibley and Karen Etheridge)
+         This caused failues in Test::JSON and App::RecordStream.
 
 3.0204 2015-11-26 (rurban)
        - Fix is_bool with JSON::XS >3.0 interop. #44 (Graham Knop)
