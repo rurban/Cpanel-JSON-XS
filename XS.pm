@@ -1,11 +1,11 @@
 package Cpanel::JSON::XS;
-our $VERSION = '3.0205';
+our $VERSION = '3.0206';
 
 =pod
 
 =head1 NAME
 
-Cpanel::JSON::XS - JSON::XS for Cpanel, fast and correct serialising, also for 5.6.2
+Cpanel::JSON::XS - Cpanel fork of JSON::XS, fast and correct serialising
 
 =head1 SYNOPSIS
 
@@ -107,15 +107,16 @@ or        L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
 B<Changes to JSON::XS>
 
-- stricter decode_json() as documented. non-refs are disallowed. decode() honors now allow_nonref.
+- stricter decode_json() as documented. non-refs are disallowed.
+  added a 2nd optional argument. decode() honors now allow_nonref.
 
 - fixed encode of numbers for dual-vars. Different string representations
   are preserved, but numbers with temporary strings which represent the same number
   are here treated as numbers, not strings. Cpanel::JSON::XS is a bit slower, but
   preserves numeric types better.
 
-- different handling of inf/nan. Default now to null, optionally with -DSTRINGIFY_INFNAN
-  to "inf"/"nan". [#28, #32]
+- different handling of inf/nan. Default now to null, optionally with
+  -DSTRINGIFY_INFNAN to "inf"/"nan". [#28, #32]
 
 - added C<binary> extension, non-JSON and non JSON parsable, allows
   C<\xNN> and C<\NNN> sequences.
@@ -132,6 +133,9 @@ B<Changes to JSON::XS>
 - native boolean mapping of yes and no to true and false, as in YAML::XS.
   In perl C<!0> is yes, C<!1> is no.
   The JSON value true maps to 1, false maps to 0. [#39]
+
+- support arbitrary stringification with encode, with convert_blessed
+  and allow_blessed.
 
 - ithread support. Cpanel::JSON::XS is thread-safe, JSON::XS not
 
@@ -158,6 +162,8 @@ B<Changes to JSON::XS>
   production module, just during development and testing.
 
 - extended testsuite
+
+- support many more options and methods from JSON::PP
 
 
 =cut
@@ -566,11 +572,19 @@ substituted for "\t" sequence.
 
 =item * allow_singlequote
 
-Single quotes are accepted instead of double quotes. See the L</allow_singlequote> option.
+Single quotes are accepted instead of double quotes. See the
+L</allow_singlequote> option.
 
     { "foo":'bar' }
     { 'foo':"bar" }
     { 'foo':'bar' }
+
+=item * allow_barekey
+
+Accept unquoted object keys instead of with mandatory double quotes. See the
+L</allow_barekey> option.
+
+    { foo:"bar" }
 
 =back
 
@@ -649,7 +663,7 @@ application-specific files written by humans.
 If C<$enable> is true (or missing), then C<decode> will accept
 bare keys of JSON object that are invalid JSON format.
 
-As same as the C<relaxed> option, this option may be used to parse
+Same as with the C<relaxed> option, this option may be used to parse
 application-specific files written by humans.
 
     $json->allow_barekey->decode('{foo:"bar"}');

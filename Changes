@@ -4,6 +4,10 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
 3.0206 2015-11-?? (rurban)
        - Add support for escape_slash from JSON::PP. #47
+       - Map sort_by to canonical from JSON::PP. #47
+       - Add support for allow_singlequote from JSON::PP. #47
+       - Add support for allow_barekey from JSON::PP. #47
+       - Add support for allow_bignum from JSON::PP. #47
 
 3.0205 2015-11-29 (rurban)
        - Add t/20_unknown.t tests from JSON::PP, extended.

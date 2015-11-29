@@ -103,7 +103,7 @@
 #define F_ALLOW_UNKNOWN  0x00002000UL
 #define F_ALLOW_TAGS     0x00004000UL
 #define F_BINARY         0x00008000UL
-#define F_ALLOW_BAREKEY  0x00010000UL
+#define F_ALLOW_BAREKEY 0x00010000UL
 #define F_ALLOW_SQUOTE   0x00020000UL
 #define F_ALLOW_BIGNUM   0x00040000UL
 #define F_ESCAPE_SLASH   0x00080000UL
@@ -111,6 +111,7 @@
 #define F_HOOK           0x80000000UL // some hooks exist, so slow-path processing
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
+#define SET_RELAXED (F_RELAXED | F_ALLOW_BAREKEY | F_ALLOW_SQUOTE)
 
 #define INIT_SIZE   32 // initial scalar size to be allocated
 #define INDENT_STEP 3  // spaces per indentation level
@@ -2278,6 +2279,7 @@ decode_hv (pTHX_ dec_t *dec)
   SV *sv;
   HV *hv = newHV ();
   int allow_squote = dec->json.flags & F_ALLOW_SQUOTE;
+  int allow_barekey = dec->json.flags & F_ALLOW_BAREKEY;
 
   DEC_INC_DEPTH;
   decode_ws (dec);
@@ -2287,6 +2289,9 @@ decode_hv (pTHX_ dec_t *dec)
   else
     for (;;)
       {
+        if (expect_false(allow_barekey && *dec->cur == '"')) {
+          ++dec->cur;
+        }
         if (expect_false(allow_squote)) {
           if (*dec->cur != '"' && *dec->cur != 0x27) {
             ERR ("'\"' or ''' expected");
@@ -2331,8 +2336,9 @@ decode_hv (pTHX_ dec_t *dec)
 
                   break;
                 }
-              else if (*p == '"' ||
-                       expect_false(allow_squote && *p == 0x27))
+              else if (*p == '"'
+                    || expect_false(allow_squote && *p == 0x27)
+                    || expect_false(allow_barekey && (*p == ' ' || *p == ':')))
                 {
                   /* fast path, got a simple key */
                   char *key = dec->cur;
@@ -2936,7 +2942,7 @@ void ascii (JSON *self, int enable = 1)
         shrink          = F_SHRINK
         allow_blessed   = F_ALLOW_BLESSED
         convert_blessed = F_CONV_BLESSED
-        relaxed         = F_RELAXED
+        relaxed         = SET_RELAXED
         allow_unknown   = F_ALLOW_UNKNOWN
         allow_tags      = F_ALLOW_TAGS
         allow_barekey   = F_ALLOW_BAREKEY
