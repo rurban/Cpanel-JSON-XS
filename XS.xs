@@ -512,6 +512,12 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
               *enc->cur++ = '\\';
               *enc->cur++ = '\\';
             }
+          else if (expect_false (ch == '/' && (enc->json.flags & F_ESCAPE_SLASH)))
+            {
+              need (aTHX_ enc, len += 1);
+              *enc->cur++ = '\\';
+              *enc->cur++ = '/';
+            }
           else
             *enc->cur++ = ch;
 

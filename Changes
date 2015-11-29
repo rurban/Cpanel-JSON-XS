@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0206 2015-11-?? (rurban)
+       - Add support for escape_slash from JSON::PP. #47
+
 3.0205 2015-11-29 (rurban)
        - Add t/20_unknown.t tests from JSON::PP, extended.
        - Fix convert_blessed, disallow invalid JSON. #46 (reported by Dan Book)

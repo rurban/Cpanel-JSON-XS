@@ -509,6 +509,17 @@ OBJECT-ORIENTED INTERFACE
 
         This setting has currently no effect on tied hashes.
 
+    $json = $json->escape_slash ([$enable])
+    $enabled = $json->get_escape_slash
+        According to the JSON Grammar, the *forward slash* character
+        (U+002F) "/" need to be escaped. But by default strings are encoded
+        without escaping slashes in all perl JSON encoders.
+
+        If $enable is true (or missing), then "encode" will escape slashes,
+        "\/".
+
+        This setting has no effect when decoding JSON texts.
+
     $json = $json->allow_nonref ([$enable])
     $enabled = $json->get_allow_nonref
         If $enable is true (or missing), then the "encode" method can

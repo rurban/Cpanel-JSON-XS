@@ -583,6 +583,19 @@ This setting has no effect when decoding JSON texts.
 
 This setting has currently no effect on tied hashes.
 
+=item $json = $json->escape_slash ([$enable])
+
+=item $enabled = $json->get_escape_slash
+
+According to the JSON Grammar, the I<forward slash> character (U+002F)
+C<"/"> need to be escaped.  But by default strings are encoded without
+escaping slashes in all perl JSON encoders.
+
+If C<$enable> is true (or missing), then C<encode> will escape slashes,
+C<"\/">.
+
+This setting has no effect when decoding JSON texts.
+
 =item $json = $json->allow_nonref ([$enable])
 
 =item $enabled = $json->get_allow_nonref
