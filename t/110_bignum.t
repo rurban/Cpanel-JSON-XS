@@ -24,19 +24,17 @@ $json->convert_blessed->allow_blessed;
 my $num  = $json->decode(q|100000000000000000000000000000000000000|);
 
 isa_ok($num, 'Math::BigInt');
-is("$num", $fix . '100000000000000000000000000000000000000', 'decode bigint') or
-  Dump ($num);
+is("$num", $fix . '100000000000000000000000000000000000000', 'decode bigint')
+  or Dump ($num);
 
 my $e = $json->encode($num);
-is($e, $fix . '100000000000000000000000000000000000000', 'encode bigint') or
-  Dump( $e );
+is($e, $fix . '100000000000000000000000000000000000000', 'encode bigint')
+  or Dump( $e );
 
 $num  = $json->decode(q|2.0000000000000000001|);
 isa_ok($num, 'Math::BigFloat');
 
-TODO: {
-  local $TODO = 'encode BigFloat';
-  is("$num", '2.0000000000000000001', 'decode bigfloat') or Dump $num;
-  my $e = $json->encode($num);
-  is($e, '2.0000000000000000001', 'encode bigfloat') or Dump $e;
-}
+is("$num", '2.0000000000000000001', 'decode bigfloat') or Dump $num;
+my $e = $json->encode($num);
+is($e, '2.0000000000000000001', 'encode bigfloat') or Dump $e;
+

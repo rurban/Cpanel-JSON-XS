@@ -2,13 +2,17 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-3.0206 2015-11-?? (rurban)
+3.0206 2015-11-30 (rurban)
        - Add support for escape_slash from JSON::PP. #47
        - Map sort_by to canonical from JSON::PP. #47
+         reverse sort or sort by custom keys not yet possible/silently ignored.
        - Add support for allow_singlequote from JSON::PP. #47
        - Add support for allow_barekey from JSON::PP. #47
-       - Add testcase for yet unsupported for allow_bignum from JSON::PP. #47
+       - Add support for allow_bignum from JSON::PP. #47
        - relaxed uses now also allow_singlequote and allow_barekey.
+       - Fixed t/20_unknown.t: SKIP when JSON is not available. #45
+       - Fixed t/55_modifiable.t: Broaden the is check of true <5.12 #45
+         (both reported by Paul Howarth)
 
 3.0205 2015-11-29 (rurban)
        - Add t/20_unknown.t tests from JSON::PP, extended.
