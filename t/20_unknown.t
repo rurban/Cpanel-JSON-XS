@@ -46,7 +46,8 @@ is( $json->encode( [ \{} ] ),    '[null]' );
 is( $pp->encode( {null => \"some"} ),   '{"null":null}',   'pp unknown' );
 is( $pp->encode( {null => \""} ),       '{"null":null}',   'pp unknown' );
 # valid special yes/no values even without nonref
-is( $pp->encode( {true => !!1} ),       '{"true":"1"}',    'pp sv_yes' );
+my $e = $pp->encode( {true => !!1} ); # pp is a bit inconsistent
+ok( ($e eq '{"true":"1"}') || ($e eq '{"true":1}'),    'pp sv_yes' );
 is( $pp->encode( {false => !!0} ),      '{"false":""}',    'pp sv_no' );
 is( $pp->encode( {false => !!""} ),     '{"false":""}',    'pp sv_no' );
 is( $pp->encode( {true => \!!1} ),      '{"true":true}',   'pp \sv_yes');
@@ -64,7 +65,7 @@ is( $json->encode( {false => \!!""} ),  '{"false":null}',  'js \sv_no' );
 
 SKIP: {
 
-  skip "this test is for Perl 5.8 or later", 2 if $] < 5.008;
+  skip "this test is for Perl 5.8 or later", 4 if $] < 5.008;
 
 $pp->allow_unknown(0);
 $json->allow_unknown(0);
@@ -86,7 +87,7 @@ is( $json->encode( [ $fh ] ),    '[null]' );
 
 close $fh;
 
-}
+} # skip 5.6
 
 # 46
 $json->allow_unknown->allow_blessed;
@@ -98,7 +99,8 @@ is( $json->encode( {false => \!!""} ),   '{"false":null}' );
 
 $json->allow_unknown->allow_blessed->convert_blessed;
 $pp->allow_unknown->allow_blessed->convert_blessed;
-is( $pp->encode  ( {false => \"some"} ), '{"false":null}' );
+$e = $pp->encode(  {false => \"some"} ); # again pp is a bit inconsistent
+ok( ($e eq '{"false":null}') || ($e eq '{"false":some}'), 'pp stringref' );
 is( $pp->encode  ( {false => \""} ),     '{"false":null}' );
 is( $pp->encode  ( {false => \!!""} ),   '{"false":null}' );
 TODO: {
@@ -117,3 +119,4 @@ is( $pp->encode  ( {false => \!!""} ),   '{"false":null}' );
 is( $json->encode( {false => \"some"} ), '{"false":null}' );
 is( $json->encode( {false => \""} ),     '{"false":null}' );
 is( $json->encode( {false => \!!""} ),   '{"false":null}' );
+
