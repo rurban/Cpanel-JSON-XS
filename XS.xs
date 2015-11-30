@@ -866,7 +866,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv)
 
 /* implement convert_blessed, sv is already unref'ed here */
 static void
-encode_stringify(pTHX_ enc_t *enc, SV *sv)
+encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
 {
   char *str = NULL;
   STRLEN len;
@@ -890,8 +890,10 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv)
 #endif
 #endif
 
+  if (isref && SvAMAGIC(sv))
+    ;
   /* if no string overload found, check allow_blessed */
-  if (!MyAMG(sv) && !(enc->json.flags & F_ALLOW_BLESSED)) {
+  else if (!MyAMG(sv) && !(enc->json.flags & F_ALLOW_BLESSED)) {
     encode_str (aTHX_ enc, "null", 4, 0);
     return;
   }
@@ -952,9 +954,11 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv)
   if (!str)
     encode_str (aTHX_ enc, "null", 4, 0);
   else {
-    encode_ch (aTHX_ enc, '"');
+    if (isref != 1)
+      encode_ch (aTHX_ enc, '"');
     encode_str (aTHX_ enc, str, len, 0);
-    encode_ch (aTHX_ enc, '"');
+    if (isref != 1)
+      encode_ch (aTHX_ enc, '"');
   }
   if (pv) SvREFCNT_dec(pv);
 
@@ -1045,7 +1049,7 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
           PUTBACK;
           call_sv ((SV *)GvCV (method), G_SCALAR);
           SPAGAIN;
-
+          
           /* catch this surprisingly common error */
           if (SvROK (TOPs) && SvRV (TOPs) == sv)
             croak ("%s::TO_JSON method returned same object as was passed instead of a new one", HvNAME (SvSTASH (sv)));
@@ -1057,8 +1061,13 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
 
           FREETMPS; LEAVE;
         }
+      else if ((enc->json.flags & F_ALLOW_BIGNUM)
+               && stash
+               && ((stash == gv_stashpvn ("Math::BigInt", sizeof("Math::BigInt")-1, 0))
+                || (stash == gv_stashpvn ("Math::BigFloat", sizeof("Math::BigFloat")-1, 0))))
+        encode_stringify(aTHX_ enc, rv, 1);
       else if (enc->json.flags & F_CONV_BLESSED)
-        encode_stringify(aTHX_ enc, sv);
+        encode_stringify(aTHX_ enc, sv, 0);
       else if (enc->json.flags & F_ALLOW_BLESSED)
         encode_str (aTHX_ enc, "null", 4, 0);
       else
@@ -1079,7 +1088,7 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
       else if (len == 1 && *pv == '0')
         encode_str (aTHX_ enc, "false", 5, 0);
       else if (enc->json.flags & F_CONV_BLESSED)
-        encode_stringify(aTHX_ enc, sv);
+        encode_stringify(aTHX_ enc, sv, SvROK(sv));
       else if (enc->json.flags & F_ALLOW_UNKNOWN)
         encode_str (aTHX_ enc, "null", 4, 0);
       else
