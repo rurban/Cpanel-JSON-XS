@@ -13,6 +13,8 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
        - Fixed t/20_unknown.t: SKIP when JSON is not available. #45
        - Fixed t/55_modifiable.t: Broaden the is check of true <5.12 #45
          (both reported by Paul Howarth)
+       - Add t/zero-mojibake.t from JSON::PP testing all supported decoding
+         options: none, utf8, ascii, latin1, binary.
 
 3.0205 2015-11-29 (rurban)
        - Add t/20_unknown.t tests from JSON::PP, extended.

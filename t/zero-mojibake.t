@@ -1,14 +1,9 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More;
-BEGIN { plan tests => 1 };
-
-BEGIN { $ENV{PERL_JSON_BACKEND} = 0; }
-
-use JSON::PP;
-
-my $json = JSON::PP->new;
+use Test::More tests => 5;
+use Cpanel::JSON::XS;
+my $json = Cpanel::JSON::XS->new;
 
 my $input = q[
 {
@@ -20,4 +15,20 @@ my $input = q[
 }
 ];
 eval { $json->decode($input) };
-is $@, '', 'decodes 0 with mojibake without error';
+is $@, '', 'decodes default mojibake without error';
+
+$json->utf8;
+eval { $json->decode($input) };
+is $@, '', 'decodes utf8 mojibake without error';
+
+$json->utf8(0)->ascii;
+eval { $json->decode($input) };
+is $@, '', 'decodes ascii mojibake without error';
+
+$json->ascii(0)->latin1;
+eval { $json->decode($input) };
+is $@, '', 'decodes latin1 mojibake without error';
+
+$json->latin1(0)->binary;
+eval { $json->decode($input) };
+is $@, '', 'decodes binary mojibake without error';
