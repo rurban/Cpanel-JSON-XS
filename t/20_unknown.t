@@ -1,7 +1,11 @@
 #!/usr/bin/perl -w
 use strict;
-
-use Test::More tests => 48;
+use Test::More;
+BEGIN {
+  eval 'require JSON;'
+    or plan skip_all => 'JSON required for cross testing';
+}
+plan tests => 48;
 use JSON ();
 use Cpanel::JSON::XS ();
 
