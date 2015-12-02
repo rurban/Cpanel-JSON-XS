@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '3.0207';
+our $VERSION = '3.0208';
 
 =pod
 
@@ -1979,7 +1979,7 @@ sub true()  { $true  }
 sub false() { $false }
 sub is_bool($) {
   shift if @_ == 2; # as method call
-  (ref($_[0]) and $_[0]->isa(JSON::PP::Boolean::))
+  (ref($_[0]) and UNIVERSAL::isa( $_[0], JSON::PP::Boolean::))
   or (exists $INC{'Types/Serializer.pm'} and Types::Serialiser::is_bool($_[0]))
 }
 

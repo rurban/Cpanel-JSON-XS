@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0208 2015-12-02 (rurban)
+       - Fix regression for is_bool([]), with unblessed references. #53
+         (reported by Gregory Oschwald)
+
 3.0207 2015-12-02 (rurban)
        - Fix regression decoding big strings (>16384). #50 (reported by Dan Book)
        - Ignore allow_barekey if we detect quotes. #51 (Fixed by Quim Rovira)
