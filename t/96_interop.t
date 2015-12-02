@@ -7,6 +7,7 @@ BEGIN {
   } else {
     plan tests => 4;
   }
+  $ENV{PERL_JSON_BACKEND} = 0;
 }
 
 use JSON (); # limitation: for interop with JSON load JSON before Cpanel::JSON::XS

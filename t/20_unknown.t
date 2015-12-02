@@ -4,6 +4,7 @@ use Test::More;
 BEGIN {
   eval 'require JSON;'
     or plan skip_all => 'JSON required for cross testing';
+  $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
 }
 plan tests => 48;
 use JSON ();
