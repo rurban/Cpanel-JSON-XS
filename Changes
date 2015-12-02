@@ -2,6 +2,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0207 2015-12-02 (rurban)
+       - Fix regression decoding big strings (>16384). #50 (reported by Dan Book)
+       - Ignore allow_barekey if we detect quotes. #51 (Fixed by Quim Rovira)
+       - Skip some unicode tests with 5.6
+
 3.0206 2015-11-30 (rurban)
        - Add support for escape_slash from JSON::PP. #47
        - Map sort_by to canonical from JSON::PP. #47

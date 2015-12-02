@@ -2085,7 +2085,7 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
           sv = newSVpvn (buf, len);
       }
     }
-  while (*dec_cur != ch);
+  while (*dec_cur != endstr);
 
   ++dec_cur;
 
