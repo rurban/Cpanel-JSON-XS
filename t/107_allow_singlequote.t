@@ -1,5 +1,5 @@
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 use strict;
 use Cpanel::JSON::XS;
 #########################
@@ -16,3 +16,4 @@ is($json->decode(q|{'foo':"bar"}|)->{foo}, 'bar');
 is($json->decode(q|{'foo':'bar'}|)->{foo}, 'bar');
 is($json->allow_barekey->decode(q|{foo:'bar'}|)->{foo}, 'bar');
 
+is($json->decode(q|{'foo baz':'bar'}|)->{"foo baz"}, 'bar');

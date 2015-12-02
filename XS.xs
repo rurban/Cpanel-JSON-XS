@@ -2339,6 +2339,8 @@ decode_hv (pTHX_ dec_t *dec)
   else
     for (;;)
       {
+        int is_bare = allow_barekey;
+
         if (expect_false(allow_barekey
                          && *dec->cur >= 'A' && *dec->cur <= 'z'))
           ;
@@ -2348,9 +2350,11 @@ decode_hv (pTHX_ dec_t *dec)
           }
           else if (*dec->cur == 0x27)
             endstr = 0x27;
+          is_bare=0;
           ++dec->cur;
         } else {
           EXPECT_CH ('"');
+          is_bare=0;
         }
 
         /* heuristic: assume that */
@@ -2366,7 +2370,7 @@ decode_hv (pTHX_ dec_t *dec)
           for (;;)
             {
               /* the >= 0x80 is false on most architectures */
-              if (!allow_barekey &&
+              if (!is_bare &&
                   (p == e || *p < 0x20 || *(U8*)p >= 0x80 || *p == '\\'
                    || allow_squote))
                 {
@@ -2391,7 +2395,7 @@ decode_hv (pTHX_ dec_t *dec)
                   break;
                 }
               else if (*p == endstr
-                       || (allow_barekey &&
+                       || (is_bare &&
                            (*p == ':' || *p == ' ' || *p == 0x0a
                             || *p == 0x0d || *p == 0x09)))
                 {
