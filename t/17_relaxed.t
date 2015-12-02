@@ -1,4 +1,4 @@
-use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 11);
+use Test::More $] < 5.008 ? (skip_all => "5.6") : (tests => 12);
 use Cpanel::JSON::XS;
 
 my $json = Cpanel::JSON::XS->new->relaxed;
@@ -17,3 +17,5 @@ ok (!eval { $json->decode ('{,}') });
 is (encode_json $json->decode ("[1#,2\n ,2,#  ]  \n\t]"), '[1,2]');
 
 is (encode_json $json->decode ("[\"Hello\tWorld\"]"), '["Hello\tWorld"]');
+
+is (encode_json $json->decode ('{"a b":2}'),    '{"a b":2}'); # allow_barekey
