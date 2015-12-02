@@ -1235,8 +1235,8 @@ MAPPING
                                      # unless the scalar is 0 or 1
            encode_json [\0, \1]      # yields [false,true]
 
-           allow_stringify->encode_json [\"x"] # yields "x"
-           allow_unknown->encode_json [\"x"] # yields null
+           allow_stringify->encode_json [\"x"] # yields "x" unlike JSON::PP
+           allow_unknown->encode_json [\"x"]   # yields null as in JSON::PP
 
     Cpanel::JSON::XS::true, Cpanel::JSON::XS::false
         These special values become JSON true and JSON false values,
