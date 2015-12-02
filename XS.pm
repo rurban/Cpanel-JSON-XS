@@ -731,6 +731,21 @@ exception when it encounters anything it cannot encode as JSON.
 This option does not affect C<decode> in any way, and it is recommended to
 leave it off unless you know your communications partner.
 
+=item $json = $json->allow_stringify ([$enable])
+
+=item $enabled = $json->get_allow_stringify
+
+If C<$enable> is true (or missing), then C<encode> will stringify the
+non-object perl value or reference. Note that blessed objects are not
+included here and are handled separately by C<allow_blessed> and
+C<convert_blessed>.  String references are stringified to the string
+value, other references as in perl.
+
+This option does not affect C<decode> in any way.
+
+This option is special to this module, it is not supported by other
+encoders.  So it is not recommended to use it.
+
 =item $json = $json->allow_blessed ([$enable])
 
 =item $enabled = $json->get_allow_blessed
@@ -1354,15 +1369,20 @@ Perl array references become JSON arrays.
 
 Other unblessed references are generally not allowed and will cause an
 exception to be thrown, except for references to the integers C<0> and
-C<1>, which get turned into C<false> and C<true> atoms in JSON.
-With the option C<allow_unknown>, you can ignore the exception and return
-C<null> instead.
+C<1>, which get turned into C<false> and C<true> atoms in JSON. 
+
+With the option C<allow_stringify>, you can ignore the exception and return
+the stringification of the perl value.
+
+With the option C<allow_unknown>, you can ignore the exception and
+return C<null> instead.
 
    encode_json [\"x"]        # => cannot encode reference to scalar 'SCALAR(0x..)'
                              # unless the scalar is 0 or 1
    encode_json [\0, \1]      # yields [false,true]
 
-   allow_unknown->encode_json [\"x"] # yields null
+   allow_stringify->encode_json [\"x"] # yields "x" unlike JSON::PP
+   allow_unknown->encode_json [\"x"]   # yields null as in JSON::PP
 
 =item Cpanel::JSON::XS::true, Cpanel::JSON::XS::false
 

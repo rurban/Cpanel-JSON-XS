@@ -6,7 +6,7 @@ BEGIN {
     or plan skip_all => 'JSON required for cross testing';
   $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
 }
-plan tests => 48;
+plan tests => 32;
 use JSON ();
 use Cpanel::JSON::XS ();
 
@@ -89,35 +89,3 @@ is( $json->encode( [ $fh ] ),    '[null]' );
 close $fh;
 
 } # skip 5.6
-
-# 46
-$json->allow_unknown->allow_blessed;
-$pp->allow_unknown->allow_blessed;
-is( $json->encode( {false => \"some"} ), '{"false":null}' );
-is( $json->encode( {false => \""} ),     '{"false":null}' );
-is( $pp->encode  ( {false => \!!""} ),   '{"false":null}' );
-is( $json->encode( {false => \!!""} ),   '{"false":null}' );
-
-$json->allow_unknown->allow_blessed->convert_blessed;
-$pp->allow_unknown->allow_blessed->convert_blessed;
-$e = $pp->encode(  {false => \"some"} ); # again pp is a bit inconsistent
-ok( ($e eq '{"false":null}') || ($e eq '{"false":some}'), 'pp stringref' );
-is( $pp->encode  ( {false => \""} ),     '{"false":null}' );
-is( $pp->encode  ( {false => \!!""} ),   '{"false":null}' );
-TODO: {
-  local $TODO = 'invalid JSON #46' if $Cpanel::JSON::XS::VERSION lt '3.0205';
-  is( $json->encode( {false => \"some"} ), '{"false":"some"}' );
-  is( $json->encode( {false => \""} ),     '{"false":null}' );
-  is( $json->encode( {false => \!!""} ),   '{"false":null}' );
-}
-
-
-$json->allow_unknown->allow_blessed(0)->convert_blessed;
-$pp->allow_unknown->allow_blessed(0)->convert_blessed;
-is( $pp->encode  ( {false => \"some"} ), '{"false":null}' );
-is( $pp->encode  ( {false => \""} ),     '{"false":null}' );
-is( $pp->encode  ( {false => \!!""} ),   '{"false":null}' );
-is( $json->encode( {false => \"some"} ), '{"false":null}' );
-is( $json->encode( {false => \""} ),     '{"false":null}' );
-is( $json->encode( {false => \!!""} ),   '{"false":null}' );
-

@@ -4,7 +4,7 @@ use Cpanel::JSON::XS;
 
 our $test;
 sub ok($;$) {
-  print $_[0] ? "" : "not ", "ok ", ++$test, "\n";
+  print $_[0] ? "" : "not ", "ok ", ++$test, $_[1]?"# ".$_[1]:"", "\n";
   $_[0]
 }
 
@@ -44,7 +44,8 @@ ok ($js->encode ($o1) eq '{"__":""}');
 if ($] < 5.008) {
   print "ok ",++$test," # skip 5.6\n"
 } else {
-  ok ($js->encode ($o2) eq '"1"') or print STDERR "# ",$js->encode ($o2),"\n";
+  # PP returns null
+  ok ($js->encode ($o2) eq 'null') or print STDERR "# ",$js->encode ($o2),"\n";
 }
 
 $js->filter_json_object (sub { 5 });

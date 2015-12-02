@@ -88,27 +88,28 @@
 /* three extra for rounding, sign, and end of string */
 #define IVUV_MAXCHARS (sizeof (UV) * CHAR_BIT * 28 / 93 + 3)
 
-#define F_ASCII          0x00000001UL
-#define F_LATIN1         0x00000002UL
-#define F_UTF8           0x00000004UL
-#define F_INDENT         0x00000008UL
-#define F_CANONICAL      0x00000010UL
-#define F_SPACE_BEFORE   0x00000020UL
-#define F_SPACE_AFTER    0x00000040UL
-#define F_ALLOW_NONREF   0x00000100UL
-#define F_SHRINK         0x00000200UL
-#define F_ALLOW_BLESSED  0x00000400UL
-#define F_CONV_BLESSED   0x00000800UL
-#define F_RELAXED        0x00001000UL
-#define F_ALLOW_UNKNOWN  0x00002000UL
-#define F_ALLOW_TAGS     0x00004000UL
-#define F_BINARY         0x00008000UL
-#define F_ALLOW_BAREKEY  0x00010000UL
-#define F_ALLOW_SQUOTE   0x00020000UL
-#define F_ALLOW_BIGNUM   0x00040000UL
-#define F_ESCAPE_SLASH   0x00080000UL
-#define F_SORT_BY        0x00100000UL
-#define F_HOOK           0x80000000UL // some hooks exist, so slow-path processing
+#define F_ASCII           0x00000001UL
+#define F_LATIN1          0x00000002UL
+#define F_UTF8            0x00000004UL
+#define F_INDENT          0x00000008UL
+#define F_CANONICAL       0x00000010UL
+#define F_SPACE_BEFORE    0x00000020UL
+#define F_SPACE_AFTER     0x00000040UL
+#define F_ALLOW_NONREF    0x00000100UL
+#define F_SHRINK          0x00000200UL
+#define F_ALLOW_BLESSED   0x00000400UL
+#define F_CONV_BLESSED    0x00000800UL
+#define F_RELAXED         0x00001000UL
+#define F_ALLOW_UNKNOWN   0x00002000UL
+#define F_ALLOW_TAGS      0x00004000UL
+#define F_BINARY          0x00008000UL
+#define F_ALLOW_BAREKEY   0x00010000UL
+#define F_ALLOW_SQUOTE    0x00020000UL
+#define F_ALLOW_BIGNUM    0x00040000UL
+#define F_ESCAPE_SLASH    0x00080000UL
+#define F_SORT_BY         0x00100000UL
+#define F_ALLOW_STRINGIFY 0x00200000UL
+#define F_HOOK            0x80000000UL // some hooks exist, so slow-path processing
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
 #define SET_RELAXED (F_RELAXED | F_ALLOW_BAREKEY | F_ALLOW_SQUOTE)
@@ -892,8 +893,11 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
 
   if (isref && SvAMAGIC(sv))
     ;
-  /* if no string overload found, check allow_blessed */
-  else if (!MyAMG(sv) && !(enc->json.flags & F_ALLOW_BLESSED)) {
+  /* if no string overload found, check allow_stringify */
+  else if (!MyAMG(sv) && !(enc->json.flags & F_ALLOW_STRINGIFY)) {
+    if (isref && !(enc->json.flags & F_ALLOW_UNKNOWN))
+      croak ("cannot encode reference to scalar '%s' unless the scalar is 0 or 1",
+             SvPV_nolen (sv_2mortal (newRV_inc (sv))));
     encode_str (aTHX_ enc, "null", 4, 0);
     return;
   }
@@ -994,7 +998,8 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
           else
             encode_str (aTHX_ enc, "false", 5, 0);
         }
-      else if ((enc->json.flags & F_ALLOW_TAGS) && (method = gv_fetchmethod_autoload (stash, "FREEZE", 0)))
+      else if ((enc->json.flags & F_ALLOW_TAGS)
+            && (method = gv_fetchmethod_autoload (stash, "FREEZE", 0)))
         {
           dMY_CXT;
           dSP;
@@ -1012,7 +1017,8 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
 
           /* catch this surprisingly common error */
           if (SvROK (TOPs) && SvRV (TOPs) == sv)
-            croak ("%s::FREEZE method returned same object as was passed instead of a new one", HvNAME (SvSTASH (sv)));
+            croak ("%s::FREEZE method returned same object as was passed instead of a new one",
+                   HvNAME (SvSTASH (sv)));
 
           encode_ch (aTHX_ enc, '(');
           encode_ch (aTHX_ enc, '"');
@@ -1037,7 +1043,8 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
 
           FREETMPS; LEAVE;
         }
-      else if ((enc->json.flags & F_CONV_BLESSED) && (method = gv_fetchmethod_autoload (stash, "TO_JSON", 0)))
+      else if ((enc->json.flags & F_CONV_BLESSED)
+            && (method = gv_fetchmethod_autoload (stash, "TO_JSON", 0)))
         {
           dSP;
 
@@ -1087,7 +1094,7 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
         encode_str (aTHX_ enc, "true", 4, 0);
       else if (len == 1 && *pv == '0')
         encode_str (aTHX_ enc, "false", 5, 0);
-      else if (enc->json.flags & F_CONV_BLESSED)
+      else if (enc->json.flags & F_ALLOW_STRINGIFY)
         encode_stringify(aTHX_ enc, sv, SvROK(sv));
       else if (enc->json.flags & F_ALLOW_UNKNOWN)
         encode_str (aTHX_ enc, "null", 4, 0);
@@ -3008,6 +3015,7 @@ void ascii (JSON *self, int enable = 1)
         allow_singlequote = F_ALLOW_SQUOTE
         allow_bignum    = F_ALLOW_BIGNUM
         escape_slash    = F_ESCAPE_SLASH
+        allow_stringify = F_ALLOW_STRINGIFY
 	PPCODE:
 {
         if (enable)
@@ -3039,6 +3047,7 @@ void get_ascii (JSON *self)
         get_allow_singlequote = F_ALLOW_SQUOTE
         get_allow_bignum    = F_ALLOW_BIGNUM
         get_escape_slash    = F_ESCAPE_SLASH
+        get_allow_stringify  = F_ALLOW_STRINGIFY
 	PPCODE:
         XPUSHs (boolSV (self->flags & ix));
 

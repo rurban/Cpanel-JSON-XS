@@ -631,6 +631,19 @@ OBJECT-ORIENTED INTERFACE
         recommended to leave it off unless you know your communications
         partner.
 
+    $json = $json->allow_stringify ([$enable])
+    $enabled = $json->get_allow_stringify
+        If $enable is true (or missing), then "encode" will stringify the
+        non-object perl value or reference. Note that blessed objects are
+        not included here and are handled separately by "allow_blessed" and
+        "convert_blessed". String references are stringified to the string
+        value, other references as in perl.
+
+        This option does not affect "decode" in any way.
+
+        This option is special to this module, it is not supported by other
+        encoders. So it is not recommended to use it.
+
     $json = $json->allow_blessed ([$enable])
     $enabled = $json->get_allow_blessed
         If $enable is true (or missing), then the "encode" method will not
@@ -1210,14 +1223,19 @@ MAPPING
     other references
         Other unblessed references are generally not allowed and will cause
         an exception to be thrown, except for references to the integers 0
-        and 1, which get turned into "false" and "true" atoms in JSON. With
-        the option "allow_unknown", you can ignore the exception and return
-        "null" instead.
+        and 1, which get turned into "false" and "true" atoms in JSON.
+
+        With the option "allow_stringify", you can ignore the exception and
+        return the stringification of the perl value.
+
+        With the option "allow_unknown", you can ignore the exception and
+        return "null" instead.
 
            encode_json [\"x"]        # => cannot encode reference to scalar 'SCALAR(0x..)'
                                      # unless the scalar is 0 or 1
            encode_json [\0, \1]      # yields [false,true]
 
+           allow_stringify->encode_json [\"x"] # yields "x"
            allow_unknown->encode_json [\"x"] # yields null
 
     Cpanel::JSON::XS::true, Cpanel::JSON::XS::false
