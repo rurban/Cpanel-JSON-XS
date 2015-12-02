@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 16;
+use Test::More tests => 17;
 use Cpanel::JSON::XS ();
 
 my $booltrue  = q({"is_true":true});
@@ -46,3 +46,6 @@ ok ($js->[0] == $true,  "decode true to yes");
 ok ($js->[1] == $false, "decode false to no");
 ok( Cpanel::JSON::XS::is_bool($js->[0]) );
 ok( Cpanel::JSON::XS::is_bool($js->[1]) );
+
+# GH #53
+ok( !Cpanel::JSON::XS::is_bool( [] ) );
