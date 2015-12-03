@@ -1,5 +1,5 @@
 
-use Test::More tests => 5;
+use Test::More tests => 8;
 use strict;
 use Cpanel::JSON::XS;
 #########################
@@ -17,3 +17,10 @@ is($json->decode(q|{'foo':'bar'}|)->{foo}, 'bar');
 is($json->allow_barekey->decode(q|{foo:'bar'}|)->{foo}, 'bar');
 
 is($json->decode(q|{'foo baz':'bar'}|)->{"foo baz"}, 'bar');
+
+# GH 54 from Locale::Wolowitz
+is($json->decode(q|{xo:"how's it hangin 1"}|)->{"xo"}, q(how's it hangin 1));
+$json->allow_barekey(0);
+is($json->decode(q|{"xo":"how's it hangin 1"}|)->{"xo"}, q(how's it hangin 1));
+$json->allow_singlequote(0);
+is($json->decode(q|{"xo":"how's it hangin 1"}|)->{"xo"}, q(how's it hangin 1));
