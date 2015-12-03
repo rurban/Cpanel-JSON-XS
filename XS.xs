@@ -1926,7 +1926,7 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
   int utf8 = 0;
   char *dec_cur = dec->cur;
   unsigned char ch;
-  int allow_squote = dec->json.flags & F_ALLOW_SQUOTE;
+  int allow_squote = (dec->json.flags & F_ALLOW_SQUOTE) && (endstr == 0x27);
 
   do
     {
@@ -1935,7 +1935,7 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
 
       do
         {
-          ch = *(unsigned char *)dec_cur++; /* also the end char */
+          ch = *(unsigned char *)dec_cur++;
 
           if (expect_false (ch == endstr))
             {
