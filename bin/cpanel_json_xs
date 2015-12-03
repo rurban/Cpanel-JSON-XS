@@ -1,4 +1,4 @@
-#!/opt/bin/perl
+#!/usr/bin/perl
 
 =head1 NAME
 
@@ -34,6 +34,12 @@ C<fromformat> can be one of:
 
 =item json - a json text encoded, either utf-8, utf16-be/le, utf32-be/le
 
+=item json-nonref - json according to RFC 7159
+
+=item json-relaxed - json with all relaxed options
+
+=item json-unknown - json with allow_unknown
+
 =item storable - a Storable frozen value
 
 =item storable-file - a Storable file (Storable has two incompatible formats)
@@ -62,7 +68,14 @@ C<toformat> can be one of:
 
 =item json, json-utf-8 - json, utf-8 encoded
 
-=item json-pretty - as above, but pretty-printed
+=item json-pretty - as above, but pretty-printed with sorted object keys
+
+=item json-stringify - as json-pretty with allow_stringify
+
+=item json-relaxed  - as json-pretty, but with the additional options
+
+->allow_stringify->allow_blessed->convert_blessed->allow_unknown
+->allow_tags->stringify_infnan(1)
 
 =item json-utf-16le, json-utf-16be - little endian/big endian utf-16
 
@@ -113,7 +126,7 @@ Prettify the JSON file F<src.json> to F<dst.json>.
 
    cpanel_json_xs -f storable-file <file
 
-Read the serialised Storable file F<file> and print a human-readable JSON
+Read the serialized Storable file F<file> and print a human-readable JSON
 version of it to STDOUT.
 
    cpanel_json_xs -f storable-file -t yaml <file
@@ -128,7 +141,7 @@ Dump the perl array as UTF-8 encoded JSON text.
 
 Print the tracker list inside a torrent file.
 
-   lwp-request http://cpantesters.perl.org/show/JSON-XS.json | cpanel_json_xs
+   lwp-request http://cpantesters.perl.org/show/Cpanel-JSON-XS.json | cpanel_json_xs
 
 Fetch the cpan-testers result summary C<Cpanel::JSON::XS> and pretty-print it.
 
@@ -160,18 +173,32 @@ GetOptions(
    "e=s" => \$opt_eval,
 ) or die "Usage: $0 [-v] -f fromformat [-e code] [-t toformat]\n";
 
+sub enc {
+  $_ = shift;
+  my $enc =
+    /^\x00\x00\x00/s    ? "utf-32be"
+    : /^\x00.\x00/s     ? "utf-16be"
+    : /^.\x00\x00\x00/s ? "utf-32le"
+    : /^.\x00.\x00/s    ? "utf-16le"
+    :                     "utf-8";
+  warn "input text encoding is $enc\n" if $opt_verbose;
+  $enc;
+}
+
 my %F = (
    "none"          => sub { undef },
    "string"        => sub { $_ },
    "json"          => sub {
-      my $enc =
-         /^\x00\x00\x00/s  ? "utf-32be"
-       : /^\x00.\x00/s     ? "utf-16be"
-       : /^.\x00\x00\x00/s ? "utf-32le"
-       : /^.\x00.\x00/s    ? "utf-16le"
-       :                     "utf-8";
-      warn "input text encoding is $enc\n" if $opt_verbose;
-      Cpanel::JSON::XS->new->decode (decode $enc, $_)
+      Cpanel::JSON::XS->new->decode (decode enc($_), $_)
+   },
+   "json-nonref"   => sub {
+      Cpanel::JSON::XS->new->allow_nonref->decode (decode enc($_), $_)
+   },
+   "json-relaxed"   => sub {
+      Cpanel::JSON::XS->new->relaxed->decode (decode enc($_), $_)
+   },
+   "json-unknown"   => sub {
+      Cpanel::JSON::XS->new->allow_unknown->decode (decode enc($_), $_)
    },
    "storable"      => sub { Storable::thaw $_ },
    "storable-file" => sub { open my $fh, "<", \$_; Storable::fd_retrieve $fh },
@@ -186,7 +213,12 @@ my %T = (
    "string"        => sub { $_ },
    "json"          => sub { encode_json $_ },
    "json-utf-8"    => sub { encode_json $_ },
-   "json-pretty"   => sub { Cpanel::JSON::XS->new->utf8->pretty->encode ($_) },
+   "json-pretty"   => sub { Cpanel::JSON::XS->new->utf8->pretty->canonical->encode ($_) },
+   "json-stringify"=> sub { Cpanel::JSON::XS->new->utf8->pretty->canonical->allow_stringify->encode ($_) },
+   "json-relaxed"  => sub { Cpanel::JSON::XS->new->utf8->pretty->canonical
+                              ->allow_stringify->allow_blessed->convert_blessed
+                              ->allow_unknown->allow_tags->stringify_infnan(1)
+                              ->encode ($_) },
    "json-utf-16le" => sub { encode "utf-16le", Cpanel::JSON::XS->new->encode ($_) },
    "json-utf-16be" => sub { encode "utf-16be", Cpanel::JSON::XS->new->encode ($_) },
    "json-utf-32le" => sub { encode "utf-32le", Cpanel::JSON::XS->new->encode ($_) },
