@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '3.0209';
+our $VERSION = '3.0210';
 
 =pod
 
