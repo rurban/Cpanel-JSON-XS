@@ -1,5 +1,5 @@
 NAME
-    Cpanel::JSON::XS - Cpanel fork of JSON::XS, fast and correct serialising
+    Cpanel::JSON::XS - cPanel fork of JSON::XS, fast and correct serializing
 
 SYNOPSIS
      use Cpanel::JSON::XS;
@@ -38,7 +38,7 @@ DESCRIPTION
     cases their maintainers are unresponsive, gone missing, or not listening
     to bug reports for other reasons.
 
-    See below for the Cpanel fork.
+    See below for the cPanel fork.
 
     See MAPPING, below, on how Cpanel::JSON::XS maps perl values to JSON
     values and vice versa.
@@ -52,8 +52,8 @@ DESCRIPTION
 
     *   round-trip integrity
 
-        When you serialise a perl data structure using only data types
-        supported by JSON and Perl, the deserialised data structure is
+        When you serialize a perl data structure using only data types
+        supported by JSON and Perl, the deserialized data structure is
         identical on the Perl level. (e.g. the string "2.0" doesn't suddenly
         become "2" just because it looks like a number). There *are* minor
         exceptions to this, read the MAPPING section below to learn about
@@ -67,7 +67,7 @@ DESCRIPTION
 
     *   fast
 
-        Compared to other JSON modules and other serialisers such as
+        Compared to other JSON modules and other serializers such as
         Storable, this module usually compares favourably in terms of speed,
         too.
 
@@ -130,7 +130,7 @@ DESCRIPTION
 
     - is_bool can be called as method, JSON::XS::is_bool not.
 
-    - performance optimizations for threaded Perls
+    - Performance Optimizations for threaded Perls
 
     - additional fixes for:
 
@@ -275,7 +275,7 @@ OBJECT-ORIENTED INTERFACE
     $json = $json->latin1 ([$enable])
     $enabled = $json->get_latin1
         If $enable is true (or missing), then the "encode" method will
-        encode the resulting JSON text as latin1 (or iso-8859-1), escaping
+        encode the resulting JSON text as latin1 (or ISO-8859-1), escaping
         any characters outside the code range 0..255. The resulting string
         can be treated as a latin1-encoded JSON text or a native Unicode
         string. The "decode" method will not be affected in any way by this
@@ -583,7 +583,7 @@ OBJECT-ORIENTED INTERFACE
         integer Perl cannot handle as integer into a Math::BigInt object and
         convert a floating number (any) into a Math::BigFloat.
 
-        On the contary, "encode" converts "Math::BigInt" objects and
+        On the contrary, "encode" converts "Math::BigInt" objects and
         "Math::BigFloat" objects into JSON numbers with "allow_blessed"
         enable.
 
@@ -592,8 +592,7 @@ OBJECT-ORIENTED INTERFACE
            print $json->encode($bigfloat);
            # => 2.000000000000000000000000001
 
-        See "MAPPING" in JSON::XS about the normal conversion of JSON
-        number.
+        See "MAPPING" about the normal conversion of JSON number.
 
     $json = $json->allow_bigint ([$enable])
         This option is obsolete and replaced by allow_bignum.
@@ -683,16 +682,16 @@ OBJECT-ORIENTED INTERFACE
 
     $json = $json->allow_tags ([$enable])
     $enabled = $json->get_allow_tags
-        See "OBJECT SERIALISATION" for details.
+        See "OBJECT SERIALIZATION" for details.
 
         If $enable is true (or missing), then "encode", upon encountering a
         blessed object, will check for the availability of the "FREEZE"
-        method on the object's class. If found, it will be used to serialise
+        method on the object's class. If found, it will be used to serialize
         the object into a nonstandard tagged JSON value (that JSON decoders
         cannot decode).
 
         It also causes "decode" to parse such tagged JSON values and
-        deserialise them via a call to the "THAW" method.
+        deserialize them via a call to the "THAW" method.
 
         If $enable is false (the default), then "encode" will not consider
         this type of conversion, and tagged JSON values will cause a parse
@@ -703,13 +702,13 @@ OBJECT-ORIENTED INTERFACE
         time it decodes a JSON object. The only argument is a reference to
         the newly-created hash. If the code references returns a single
         scalar (which need not be a reference), this value (i.e. a copy of
-        that scalar to avoid aliasing) is inserted into the deserialised
+        that scalar to avoid aliasing) is inserted into the deserialized
         data structure. If it returns an empty list (NOTE: *not* "undef",
-        which is a valid scalar), the original deserialised hash will be
+        which is a valid scalar), the original deserialized hash will be
         inserted. This setting can slow down decoding considerably.
 
         When $coderef is omitted or undefined, any existing callback will be
-        removed and "decode" will not change the deserialised hash in any
+        removed and "decode" will not change the deserialized hash in any
         way.
 
         Example, convert all JSON objects into the integer 5:
@@ -739,11 +738,11 @@ OBJECT-ORIENTED INTERFACE
         As this callback gets called less often then the
         "filter_json_object" one, decoding speed will not usually suffer as
         much. Therefore, single-key objects make excellent targets to
-        serialise Perl objects into, especially as single-key JSON objects
+        serialize Perl objects into, especially as single-key JSON objects
         are as close to the type-tagged value concept as JSON gets (it's
         basically an ID/VALUE tuple). Of course, JSON does not support this
         in any way, so you need to make sure your data never looks like a
-        serialised Perl hash.
+        serialized Perl hash.
 
         Typical names for the single object key are "__class_whatever__", or
         "$__dollars_are_rarely_used__$" or "}ugly_brace_placement", or even
@@ -762,7 +761,7 @@ OBJECT-ORIENTED INTERFACE
               ->decode ('{"__widget__": 5')
 
            # this can be used with a TO_JSON method in some "widget" class
-           # for serialisation to json:
+           # for serialization to json:
            sub WidgetBase::TO_JSON {
               my ($self) = @_;
 
@@ -1198,7 +1197,7 @@ MAPPING
         and the *value* must be a JSON array encoding optional constructor
         arguments.
 
-        See "OBJECT SERIALISATION", below, for details.
+        See "OBJECT SERIALIZATION", below, for details.
 
   PERL -> JSON
     The mapping from Perl to JSON is slightly more difficult, as Perl is a
@@ -1212,7 +1211,7 @@ MAPPING
         same program but stays generally the same within a single run of a
         program. Cpanel::JSON::XS can optionally sort the hash keys
         (determined by the *canonical* flag), so the same datastructure will
-        serialise to the same JSON text (given same settings and version of
+        serialize to the same JSON text (given same settings and version of
         Cpanel::JSON::XS), but this incurs a runtime overhead and is only
         rarely useful, e.g. when you want to compare some JSON text against
         another for equality.
@@ -1249,13 +1248,13 @@ MAPPING
     blessed objects
         Blessed objects are not directly representable in JSON, but
         "Cpanel::JSON::XS" allows various optional ways of handling objects.
-        See "OBJECT SERIALISATION", below, for details.
+        See "OBJECT SERIALIZATION", below, for details.
 
         See the "allow_blessed" and "convert_blessed" methods on various
         options on how to deal with this: basically, you can choose between
         throwing an exception, encoding the reference as if it weren't
         blessed, use the objects overloaded stringification method or
-        provide your own serialiser method.
+        provide your own serializer method.
 
     simple scalars
         Simple Perl scalars (any scalar that is not a reference) are the
@@ -1306,26 +1305,26 @@ MAPPING
         in JSON, and thus null is returned instead. Optionally you can
         configure it to stringify inf and nan values.
 
-  OBJECT SERIALISATION
+  OBJECT SERIALIZATION
     As JSON cannot directly represent Perl objects, you have to choose
-    between a pure JSON representation (without the ability to deserialise
+    between a pure JSON representation (without the ability to deserialize
     the object automatically again), and a nonstandard extension to the JSON
     syntax, tagged values.
 
-   SERIALISATION
+   SERIALIZATION
     What happens when "Cpanel::JSON::XS" encounters a Perl object depends on
     the "allow_blessed", "convert_blessed" and "allow_tags" settings, which
     are used in this order:
 
     1. "allow_tags" is enabled and the object has a "FREEZE" method.
         In this case, "Cpanel::JSON::XS" uses the Types::Serialiser object
-        serialisation protocol to create a tagged JSON value, using a
+        serialization protocol to create a tagged JSON value, using a
         nonstandard extension to the JSON syntax.
 
         This works by invoking the "FREEZE" method on the object, with the
-        first argument being the object to serialise, and the second
+        first argument being the object to serialize, and the second
         argument being the constant string "JSON" to distinguish it from
-        other serialisers.
+        other serializers.
 
         The "FREEZE" method can return any number of values (i.e. zero or
         more). These values and the paclkage/classname of the object will
@@ -1343,7 +1342,7 @@ MAPPING
         the objects "type" and "id" members to encode the object:
 
            sub My::Object::FREEZE {
-              my ($self, $serialiser) = @_;
+              my ($self, $serializer) = @_;
 
               ($self->{type}, $self->{id})
            }
@@ -1354,7 +1353,7 @@ MAPPING
         encoded into JSON. This scalar replaces the object in the JSON text.
 
         For example, the following "TO_JSON" method will convert all URI
-        objects to JSON strings when serialised. The fatc that these values
+        objects to JSON strings when serialized. The fact that these values
         originally were URI objects is lost.
 
            sub URI::TO_JSON {
@@ -1369,23 +1368,23 @@ MAPPING
         encoded into JSON. This scalar replaces the object in the JSON text.
 
         For example, the following "" method will convert all URI objects to
-        JSON strings when serialised. The fact that these values originally
+        JSON strings when serialized. The fact that these values originally
         were URI objects is lost.
 
             package URI;
             use overload '""' => sub { shift->as_string };
 
     3. "allow_blessed" is enabled.
-        The object will be serialised as a JSON null value.
+        The object will be serialized as a JSON null value.
 
     4. none of the above
         If none of the settings are enabled or the respective methods are
         missing, "Cpanel::JSON::XS" throws an exception.
 
-   DESERIALISATION
-    For deserialisation there are only two cases to consider: either
+   DESERIALIZATION
+    For deserialization there are only two cases to consider: either
     nonstandard tagging was used, in which case "allow_tags" decides, or
-    objects cannot be automatically be deserialised, in which case you can
+    objects cannot be automatically be deserialized, in which case you can
     use postprocessing or the "filter_json_object" or
     "filter_json_single_key_object" callbacks to get some real objects our
     of your JSON.
@@ -1396,7 +1395,7 @@ MAPPING
     grammar).
 
     If "allow_tags" is enabled, "Cpanel::JSON::XS" will look up the "THAW"
-    method of the package/classname used during serialisation (it will not
+    method of the package/classname used during serialization (it will not
     attempt to load the package as a Perl module). If there is no such
     method, the decoding will fail with an error.
 
@@ -1414,7 +1413,7 @@ MAPPING
     "My::Object" from the "FREEZE" example earlier:
 
        sub My::Object::THAW {
-          my ($class, $serialiser, $type, $id) = @_;
+          my ($class, $serializer, $type, $id) = @_;
 
           $class->new (type => $type, id => $id)
        }
@@ -1521,7 +1520,7 @@ ENCODING/CODESET FLAG NOTES
 
   JSON and ECMAscript
     JSON syntax is based on how literals are represented in javascript (the
-    not-standardised predecessor of ECMAscript) which is presumably why it
+    not-standardized predecessor of ECMAscript) which is presumably why it
     is called "JavaScript Object Notation".
 
     However, JSON is not a subset (and also not a superset of course) of
@@ -1616,8 +1615,8 @@ ENCODING/CODESET FLAG NOTES
 
     It shows the number of encodes/decodes per second (JSON::XS uses the
     functional interface, while Cpanel::JSON::XS/2 uses the OO interface
-    with pretty-printing and hashkey sorting enabled, Cpanel::JSON::XS/3
-    enables shrink. JSON::DWIW/DS uses the deserialise function, while
+    with pretty-printing and hash key sorting enabled, Cpanel::JSON::XS/3
+    enables shrink. JSON::DWIW/DS uses the deserialize function, while
     JSON::DWIW::FJ uses the from_json method). Higher is better:
 
        module        |     encode |     decode |
@@ -1672,7 +1671,7 @@ INTEROP with JSON and JSON::XS and other JSON modules
     work with those objects, especially when encoding a booleans like
     "{"is_true":true}". So you need to load these modules before.
 
-    true/false overloading and boolean representions are supported.
+    true/false overloading and boolean representations are supported.
 
     JSON::XS and JSON::PP representations are accepted and older JSON::XS
     accepts Cpanel::JSON::XS booleans. All JSON modules JSON, JSON, PP,
@@ -1745,7 +1744,7 @@ SECURITY CONSIDERATIONS
     with the "max_depth" method.
 
     Also keep in mind that Cpanel::JSON::XS might leak contents of your Perl
-    data structures in its error messages, so when you serialise sensitive
+    data structures in its error messages, so when you serialize sensitive
     information you might want to make sure that exceptions thrown by
     JSON::XS will not end up in front of untrusted eyes.
 
@@ -1765,16 +1764,16 @@ THREADS
 BUGS
     While the goal of the Cpanel::JSON::XS module is to be correct, that
     unfortunately does not mean it's bug-free, only that the author thinks
-    its design is bug-free. If you keep reporting bugs they will be fixed
-    swiftly, though.
+    its design is bug-free. If you keep reporting bugs and tests they will
+    be fixed swiftly, though.
 
     Since the JSON::XS author refuses to use a public bugtracker and prefers
     private emails, we've setup a tracker at RT, so you might want to report
     any issues twice. Once in private to MLEHMANN to be fixed in JSON::XS
-    for the masses and one to our the public tracker. Issues fixed by
-    JSON::XS with a new release will also be backported to Cpanel::JSON::XS
-    and 5.6.2, as long as Cpanel relies on 5.6.2 and Cpanel::JSON::XS as our
-    serializer of choice.
+    and one to our the public tracker. Issues fixed by JSON::XS with a new
+    release will also be backported to Cpanel::JSON::XS and 5.6.2, as long
+    as cPanel relies on 5.6.2 and Cpanel::JSON::XS as our serializer of
+    choice.
 
     <https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
@@ -1786,7 +1785,12 @@ SEE ALSO
     The cpanel_json_xs command line utility for quick experiments.
 
     JSON, JSON::XS, JSON::MaybeXS, Mojo::JSON, Mojo::JSON::MaybeXS,
-    JSON::SL, JSON::DWIW, JSON::YAJL, <https://metacpan.org/search?q=JSON>
+    JSON::SL, JSON::DWIW, JSON::YAJL, JSON::Any, Test::JSON,
+    Locale::Wolowitz, <https://metacpan.org/search?q=JSON>
+
+    <https://tools.ietf.org/html/rfc7159>
+
+    <https://tools.ietf.org/html/rfc4627>
 
 AUTHOR
     Marc Lehmann <schmorp@schmorp.de>, http://home.schmorp.de/
