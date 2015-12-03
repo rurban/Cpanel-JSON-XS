@@ -5,6 +5,7 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 3.0210 2015-12-03 (rurban)
        - improve cpanel_json_xs: more input and output formats
        - improved various spellings and add test
+       - much faster t/99_binary.t test
 
 3.0209 2015-12-03 (rurban)
        - Fix nasty regression bug with allow_singlequote or relaxed,
