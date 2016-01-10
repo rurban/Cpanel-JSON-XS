@@ -7,7 +7,7 @@ use Config;
 plan skip_all => 'requires Test::More 0.88' if Test::More->VERSION < 0.88;
 
 plan skip_all => 'This test is only run for the module author'
-  unless -d '.git' || $ENV{AUTHOR_TESTING};
+  unless -d '.git' || $ENV{AUTHOR_TESTING} || $ENV{RELEASE_TESTING};
 
 # Missing XS dependencies are usually not caught by EUMM
 # And they are usually only XS-loaded by the importer, not require.
