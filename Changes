@@ -2,6 +2,20 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0212 2016-02-27 (rurban)
+	- merge with JSON-XS-3.02:
+	  - docs: add some INTEROP, stricter nonref RFC 7159 and
+	          TAGGED VALUE SYNTAX AND STANDARD JSON EN/DECODERS paragraphs
+	  - use 7159 nonref detection from JSON-XS: json_nonref()
+	  - add some SAVESTACK_POS calls
+	  - add -f cbor decode option (via CBOR::XS) to cpanel_json_xs
+	- fixed many spelling errors in the new docs
+	- fixed errors with threaded perls
+	- improved code quality in new merged code and fixed
+          new warnings found with gcc-5
+
+	- add -f and -t yaml-xs and yaml-syck options to cpanel_json_xs
+
 3.0211 2016-01-10 (rurban)
        - relax Mojo interop test strictness ('' or 0 for false)
        - t/z_pod.t as author test (Ether)
