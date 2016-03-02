@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0213 2016-03-02 (rurban)
+	- silence JSON::PP::Boolean redefine warnings #60
+
 3.0212 2016-02-27 (rurban)
 	- merge with JSON-XS-3.02:
 	  - docs: add some INTEROP, stricter nonref RFC 7159 and
