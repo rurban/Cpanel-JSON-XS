@@ -30,6 +30,7 @@ BMP
 BSON
 CVE
 Crockford
+Cpanel
 ECMAscript
 GPL
 Iceweasel
