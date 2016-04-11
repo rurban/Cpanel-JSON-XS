@@ -2,6 +2,13 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0213_01 2016-04-11 (rurban)
+	- Preserve numbers as numbers, enforce an added .0 (dagolden).
+          Also note that 42+"bar" will result >=5.10 in numbers not integers,
+          => 42.0
+        - 5.6 compilation fixes
+        - add yaml-tiny formats to cpanel_json_xs
+
 3.0213 2016-03-02 (rurban)
 	- silence JSON::PP::Boolean redefine warnings #60
 
