@@ -57,4 +57,4 @@ is encode_json({test => [$num, $str]}), '{"test":[1,"0 but true"]}', 'int/string
 
 $str = 'bar';
 { no warnings "numeric"; $num = 23 + $str }
-is encode_json({test => [$num, $str]}), '{"test":[23,"bar"]}', , 'int/string dualvar';
+is encode_json({test => [$num, $str]}), '{"test":[23.0,"bar"]}', , 'int/string dualvar';

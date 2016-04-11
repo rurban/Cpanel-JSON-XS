@@ -1177,6 +1177,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
   else if (SvNOKp (sv))
     {
       char *savecur, *saveend;
+      char inf_or_nan = 0;
       /* trust that perl will do the right thing w.r.t. JSON syntax. */
       need (aTHX_ enc, NV_DIG + 32);
       savecur = enc->cur;
@@ -1193,6 +1194,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
                || strEQ(enc->cur+1, STR_QNAN)
 #endif
                ))) {
+        inf_or_nan = 1;
         if (enc->json.infnan_mode == 0) {
           strncpy(enc->cur, "null\0", 5);
         }
@@ -1218,6 +1220,13 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         *enc->cur = 0;
       }
       else {
+        double intpart;
+        if (!( inf_or_nan || modf(SvNVX(sv), &intpart) || SvIOK(sv)
+            || strchr(enc->cur,'e') || strchr(enc->cur,'E') ) )
+          {
+            char *tempend = enc->cur + strlen(enc->cur);
+            strncpy(tempend, ".0\0", 3);
+        }
         enc->cur += strlen (enc->cur);
       }
     }

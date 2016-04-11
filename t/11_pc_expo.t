@@ -20,7 +20,7 @@ $js  = q|[-1.234e5]|;
 $obj = $pc->decode($js);
 is($obj->[0], -123400, 'digit -1.234e5');
 $js = $pc->encode($obj);
-is($js,'[-123400]', 'digit -1.234e5');
+is($js,'[-123400.0]', 'digit -1.234e5');
 
 $js  = q|[1.23E-4]|;
 $obj = $pc->decode($js);
