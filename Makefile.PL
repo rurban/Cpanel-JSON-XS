@@ -13,7 +13,6 @@ WriteMakefile(
   NAME         => "Cpanel::JSON::XS",
   PREREQ_PM    => {
     'Pod::Text'     => '2.08',
-    'Pod::Usage'    => '1.33',
   },
   LICENSE  => 'perl',
   ($] >= 5.005 ?
