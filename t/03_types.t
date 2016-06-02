@@ -50,7 +50,7 @@ ok ('[1,2,3,4]' eq encode_json decode_json ('[1,2, 3,4]'));
 ok ('[{},[],[],{}]' eq encode_json decode_json ('[{},[], [ ] ,{ }]'));
 ok ('[{"1":[5]}]' eq encode_json [{1 => [5]}]);
 ok ('{"1":2,"3":4}' eq Cpanel::JSON::XS->new->canonical (1)->encode (decode_json '{ "1" : 2, "3" : 4 }'));
-ok ('{"1":2,"3":1.2}' eq Cpanel::JSON::XS->new->canonical (1)->encode (decode_json '{ "1" : 2, "3" : 1.2 }'));
+ok ('{"1":2,"3":1.2}' eq Cpanel::JSON::XS->new->canonical (1)->encode (decode_json '{ "1" : 2, "3" : 1.2 }')); #24
 
 ok ('[true]'  eq encode_json [Cpanel::JSON::XS::true]);
 ok ('[false]' eq encode_json [Cpanel::JSON::XS::false]);

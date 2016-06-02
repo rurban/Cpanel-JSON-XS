@@ -36,5 +36,8 @@ $js  = q|[1.01e+30]|;
 $obj = $pc->decode($js);
 is($obj->[0], 1.01e+30, 'digit 1.01e+30');
 $js = $pc->encode($obj);
-like($js,qr/\[1.01[Ee]\+0?30\]/, 'digit 1.01e+30');
-
+if ($Config::Config{usequadmath}) {
+   is($js,'[1010000000000000000000000000000.0]', 'digit 1010000000000000000000000000000.0 (quadmath)');
+} else {
+   like($js,qr/\[1.01[Ee]\+0?30\]/, 'digit 1.01e+30');
+}
