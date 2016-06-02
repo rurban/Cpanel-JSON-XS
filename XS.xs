@@ -1195,7 +1195,11 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
       need (aTHX_ enc, NV_DIG + 32);
       savecur = enc->cur;
       saveend = enc->end;
+#ifdef USE_QUADMATH
+      quadmath_snprintf(enc->cur, enc->end - enc->cur, "%.*Qg", (int)NV_DIG, SvNVX(sv));
+#else
       (void)Gconvert (SvNVX (sv), NV_DIG, 0, enc->cur);
+#endif
 
       if (strEQ(enc->cur, STR_INF) || strEQ(enc->cur, STR_NAN)
 #if defined(_WIN32)
@@ -1233,7 +1237,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         *enc->cur = 0;
       }
       else {
-        double intpart;
+        NV intpart;
         if (!( inf_or_nan || Perl_modf(SvNVX(sv), &intpart) || SvIOK(sv)
             || strchr(enc->cur,'e') || strchr(enc->cur,'E')
 #if PERL_VERSION < 10
