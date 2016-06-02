@@ -2299,7 +2299,7 @@ decode_num (pTHX_ dec_t *dec)
         if (numtype & IS_NUMBER_IN_UV) {
           if (numtype & IS_NUMBER_NEG)
             {
-              if (uv < (UV)IV_MIN)
+              if (uv <= (UV)(IV_MAX) + 1)
                 return newSViv (-(IV)uv);
             }
           else

@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0214 2016-06-02 (rurban)
+	- Fix a off-by-one IV_MIN -> NV overflow in decode_json. #67 (xdg)
+
 3.0213_02 2016-04-13 (rurban)
 	- Remove author-only Pod::Usage dependency (karenetheridge).
 
