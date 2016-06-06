@@ -2,6 +2,12 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0215 2016-06-03 (rurban)
+	- Fix wrong test 117 (pghmcfc)
+        - TODO the fragile mojo boolean interop test.
+	- Improve error message with class based method calls,
+          when forgetting ->new. #66
+
 3.0214 2016-06-02 (rurban)
 	- Fix a off-by-one IV_MIN -> NV overflow in decode_json. #67 (xdg)
         - Avoid encode_sv SEGV with -Dusequadmath #62
