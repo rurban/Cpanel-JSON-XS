@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0217 2016-06-18 (rurban)
+	- Improve test t/20_unknown.t for older JSON::PP (Christopher J. Madsen)
+
 3.0216 2016-06-12 (rurban)
 	- Fix wrong test 117 for 5.10.0 (pghmcfc)
 
