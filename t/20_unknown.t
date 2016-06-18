@@ -2,8 +2,8 @@
 use strict;
 use Test::More;
 BEGIN {
-  eval 'require JSON;'
-    or plan skip_all => 'JSON required for cross testing';
+  eval 'require JSON 2.09;'
+    or plan skip_all => 'JSON 2.09 required for cross testing';
   $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
 }
 plan tests => 32;
