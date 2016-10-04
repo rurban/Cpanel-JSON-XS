@@ -1,5 +1,7 @@
 package Cpanel::JSON::XS;
-our $VERSION = '3.0217';
+our $VERSION = '3.0217_01';
+our $XS_VERSION = $VERSION;
+$VERSION = eval $VERSION;
 
 =pod
 
@@ -2110,7 +2112,7 @@ sub is_bool($) {
   or (exists $INC{'Types/Serializer.pm'} and Types::Serialiser::is_bool($_[0]))
 }
 
-XSLoader::load 'Cpanel::JSON::XS', $VERSION;
+XSLoader::load 'Cpanel::JSON::XS', $XS_VERSION;
 
 package
   JSON::PP::Boolean;

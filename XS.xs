@@ -35,15 +35,18 @@
 #define STR_INF "1.#INF"
 #define STR_NAN "1.#IND"
 #define STR_QNAN "1.#QNAN"
-#else
-#if defined(sun) || defined(__sun)
+#elif defined(sun) || defined(__sun)
 #define STR_INF "Infinity"
 #define STR_NAN "NaN"
+#elif defined(__hpux)
+#define STR_INF "++"
+#define STR_NAN "-?"
+#define STR_NEG_INF "---"
+#define STR_NEG_NAN "?"
 #else
 #define STR_INF "inf"
 #define STR_NAN "nan"
 #define STR_QNAN "1.#QNAN"
-#endif
 #endif
 
 /* some old perls do not have this, try to make it work, no */
@@ -1204,6 +1207,10 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
       if (strEQ(enc->cur, STR_INF) || strEQ(enc->cur, STR_NAN)
 #if defined(_WIN32)
           || strEQ(enc->cur, STR_QNAN)
+#endif
+#if defined(__hpux)
+          || strEQ(enc->cur, STR_NEG_NAN)
+          || strEQ(enc->cur, STR_NEG_INF)
 #endif
           || (*enc->cur == '-' &&
               (strEQ(enc->cur+1, STR_INF) || strEQ(enc->cur+1, STR_NAN)
