@@ -32,7 +32,7 @@
 /* strawberry 5.22 with USE_MINGW_ANSI_STDIO and USE_LONG_DOUBLE have now 
    a proper inf/nan */
 #if defined(_WIN32) && !defined(__USE_MINGW_ANSI_STDIO) && !defined(USE_LONG_DOUBLE)
-#Define STR_INF "1.#INF"
+#define STR_INF "1.#INF"
 #define STR_NAN "1.#IND"
 #define STR_QNAN "1.#QNAN"
 #define HAVE_QNAN
@@ -1200,44 +1200,57 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
     {
       char *savecur, *saveend;
       char inf_or_nan = 0;
+      NV nv = SvNVX(sv);
       /* trust that perl will do the right thing w.r.t. JSON syntax. */
       need (aTHX_ enc, NV_DIG + 32);
       savecur = enc->cur;
       saveend = enc->end;
 
 #if defined(HAVE_ISINF) && defined(HAVE_ISNAN)
+      /* With no stringify_infnan we can skip the conversion, returning null. */
+      if (enc->json.infnan_mode == 0) {
 # if defined(USE_QUADMATH) && defined(HAVE_ISINFL) && defined(HAVE_ISNANL)
-      if (isinfl(SvNVX(sv)) || isnanl(SvNVX(sv)))
-#else
-      if (isinf(SvNVX(sv)) || isnan(SvNVX(sv)))
-#endif
-        {
-          goto is_inf_or_nan;
-        }
-      else
+        if (isinfl(nv) || isnanl(nv))
+# else
+        if (isinf(nv) || isnan(nv))
+# endif
+          {
+            goto is_inf_or_nan;
+          }
+      }
 #endif
 #ifdef USE_QUADMATH
-      quadmath_snprintf(enc->cur, enc->end - enc->cur, "%.*Qg", (int)NV_DIG, SvNVX(sv));
+      quadmath_snprintf(enc->cur, enc->end - enc->cur, "%.*Qg", (int)NV_DIG, nv);
 #else
-      (void)Gconvert (SvNVX (sv), NV_DIG, 0, enc->cur);
+      (void)Gconvert (nv, NV_DIG, 0, enc->cur);
 #endif
 
-      if (strEQ(enc->cur, STR_INF) || strEQ(enc->cur, STR_NAN)
-#ifdef HAVE_QNAN
-          || strEQ(enc->cur, STR_QNAN)
-#endif
+      if (strEQ(enc->cur, STR_INF))
+        inf_or_nan = 1;
 #if defined(__hpux)
-          || strEQ(enc->cur, STR_NEG_NAN)
-          || strEQ(enc->cur, STR_NEG_INF)
+      else if (strEQ(enc->cur, STR_NEG_INF))
+        inf_or_nan = 2;
+      else if strEQ(enc->cur, STR_NEG_NAN))
+        inf_or_nan = 3;
 #endif
-          || (*enc->cur == '-' &&
-              (strEQ(enc->cur+1, STR_INF) || strEQ(enc->cur+1, STR_NAN)
+      else if (strEQ(enc->cur, STR_NAN)
+#ifdef HAVE_QNAN
+               || strEQ(enc->cur, STR_QNAN)
+#endif
+               )
+        inf_or_nan = 3;
+      else if (*enc->cur == '-') {
+        if (strEQ(enc->cur+1, STR_INF))
+          inf_or_nan = 2;
+        else if (strEQ(enc->cur+1, STR_NAN)
 #ifdef HAVE_QNAN
                || strEQ(enc->cur+1, STR_QNAN)
 #endif
-               ))) {
+                )
+          inf_or_nan = 3;
+      }
+      if (inf_or_nan) {
       is_inf_or_nan:
-        inf_or_nan = 1;
         if (enc->json.infnan_mode == 0) {
           strncpy(enc->cur, "null\0", 5);
         }
@@ -1248,8 +1261,16 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
           *(enc->cur + l+1) = '"';
           *(enc->cur + l+2) = 0;
         }
+        else if (enc->json.infnan_mode == 3) {
+          if (inf_or_nan == 1)
+            strncpy(enc->cur, "\"inf\"\0", 6);
+          else if (inf_or_nan == 2)
+            strncpy(enc->cur, "\"-inf\"\0", 7);
+          else if (inf_or_nan == 3)
+            strncpy(enc->cur, "\"nan\"\0", 6);
+        }
         else if (enc->json.infnan_mode != 2) {
-          croak ("invalid stringify_infnan mode %c. Must be 0, 1 or 2", enc->json.infnan_mode);
+          croak ("invalid stringify_infnan mode %c. Must be 0, 1, 2 or 3", enc->json.infnan_mode);
         }
       }
       if (SvPOKp (sv) && !strEQ(enc->cur, SvPVX (sv))) {
@@ -3187,8 +3208,8 @@ int get_max_size (JSON *self)
 void stringify_infnan (JSON *self, IV infnan_mode = 1)
 	PPCODE:
         self->infnan_mode = (unsigned char)infnan_mode;
-        if (self->infnan_mode > 2) {
-          croak ("invalid stringify_infnan mode %c. Must be 0, 1 or 2", self->infnan_mode);
+        if (self->infnan_mode > 3 || self->infnan_mode < 0) {
+          croak ("invalid stringify_infnan mode %c. Must be 0, 1, 2 or 3", self->infnan_mode);
         }
         XPUSHs (ST (0));
         

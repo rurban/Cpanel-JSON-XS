@@ -4,6 +4,9 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
 3.0217_01 2016-10-04 (rurban)
 	- Detect INF/NAN: ?/++/-?/--- on HP-UX (#56)
+        - New stringify_infnan(3) infnan_mode. Easy to detect platform
+          independent "inf", "-inf" or "nan" strings with double quotes,
+          with qnan, snan or negative nan unified to "nan".
 
 3.0217 2016-06-18 (rurban)
 	- Improve test t/20_unknown.t for older JSON::PP (Christopher J. Madsen)

@@ -68,10 +68,14 @@ parsable
 postprocessing
 ppport
 queryable
+QNAN
+qnan
 recursing
 resizes
 roundtripping
 sanify
+SNAN
+snan
 src
 superset
 testsuite
