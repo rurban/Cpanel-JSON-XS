@@ -32,9 +32,10 @@
 /* strawberry 5.22 with USE_MINGW_ANSI_STDIO and USE_LONG_DOUBLE have now 
    a proper inf/nan */
 #if defined(_WIN32) && !defined(__USE_MINGW_ANSI_STDIO) && !defined(USE_LONG_DOUBLE)
-#define STR_INF "1.#INF"
+#Define STR_INF "1.#INF"
 #define STR_NAN "1.#IND"
 #define STR_QNAN "1.#QNAN"
+#define HAVE_QNAN
 #elif defined(sun) || defined(__sun)
 #define STR_INF "Infinity"
 #define STR_NAN "NaN"
@@ -46,7 +47,12 @@
 #else
 #define STR_INF "inf"
 #define STR_NAN "nan"
-#define STR_QNAN "1.#QNAN"
+#endif
+
+#if defined(_AIX)
+#define HAVE_QNAN
+#undef STR_QNAN
+#define STR_QNAN "NANQ"
 #endif
 
 /* some old perls do not have this, try to make it work, no */
@@ -1198,6 +1204,18 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
       need (aTHX_ enc, NV_DIG + 32);
       savecur = enc->cur;
       saveend = enc->end;
+
+#if defined(HAVE_ISINF) && defined(HAVE_ISNAN)
+# if defined(USE_QUADMATH) && defined(HAVE_ISINFL) && defined(HAVE_ISNANL)
+      if (isinfl(SvNVX(sv)) || isnanl(SvNVX(sv)))
+#else
+      if (isinf(SvNVX(sv)) || isnan(SvNVX(sv)))
+#endif
+        {
+          goto is_inf_or_nan;
+        }
+      else
+#endif
 #ifdef USE_QUADMATH
       quadmath_snprintf(enc->cur, enc->end - enc->cur, "%.*Qg", (int)NV_DIG, SvNVX(sv));
 #else
@@ -1205,7 +1223,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
 #endif
 
       if (strEQ(enc->cur, STR_INF) || strEQ(enc->cur, STR_NAN)
-#if defined(_WIN32)
+#ifdef HAVE_QNAN
           || strEQ(enc->cur, STR_QNAN)
 #endif
 #if defined(__hpux)
@@ -1214,10 +1232,11 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
 #endif
           || (*enc->cur == '-' &&
               (strEQ(enc->cur+1, STR_INF) || strEQ(enc->cur+1, STR_NAN)
-#if defined(_WIN32)
+#ifdef HAVE_QNAN
                || strEQ(enc->cur+1, STR_QNAN)
 #endif
                ))) {
+      is_inf_or_nan:
         inf_or_nan = 1;
         if (enc->json.infnan_mode == 0) {
           strncpy(enc->cur, "null\0", 5);

@@ -2,6 +2,7 @@ use strict;
 use Cpanel::JSON::XS;
 use Test::More;
 use Config;
+skip_all "Yet unhandled inf/nan with $^O" if $^O qe 'dec_osf';
 plan tests => 19;
 
 is encode_json([9**9**9]),         '[null]', "inf -> null";
@@ -11,23 +12,27 @@ is encode_json([sin(9**9**9)]),    '[null]', "-nan -> null";
 is encode_json([9**9**9/9**9**9]), '[null]', "-nan -> null";
 
 my $json = Cpanel::JSON::XS->new->stringify_infnan;
+my $have_qnan = ($^O eq 'MSWin32' || $^O eq 'aix') ? 1 : 0;
+# TODO dec_osf
 my ($inf, $nan) =
   ($^O eq 'MSWin32') ? ('1.#INF','1.#QNAN') :
   ($^O eq 'solaris') ? ('Infinity','NaN') :
+  ($^O eq 'aix')     ? ('inf','NANQ') :
   ($^O eq 'hpux')    ? ('++','-?') :
                        ('inf','nan');
 my $neg_nan =
   ($^O eq 'MSWin32') ? "-1.#IND" :
-  ($^O eq 'hpux') ? "?" :
-  "-".$nan;
+  ($^O eq 'hpux')    ? "?" :
+                       "-".$nan;
 my $neg_inf =
   ($^O eq 'hpux') ? "---" :
-  "-".$inf;
+                    "-".$inf;
 
 if ($^O eq 'MSWin32'
     and $Config{ccflags} =~ /-D__USE_MINGW_ANSI_STDIO/
     and $Config{uselongdouble})
 {
+  $have_qnan = 0;
   ($inf, $neg_inf, $nan, $neg_nan) = ('inf','-inf','nan','-nan');
 }
 # newlib and glibc 2.5 have no -nan support, just nan. The BSD's neither, but they might
