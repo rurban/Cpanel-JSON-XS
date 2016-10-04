@@ -107,6 +107,27 @@
 # define memEQc(s, c) memEQ(s, ("" c ""), sizeof(c)-1)
 #endif
 
+/* av_len has 2 different possible types */
+#ifndef HVMAX_T
+# if PERL_VERSION >= 20
+#  define HVMAX_T SSize_t
+# else
+#  define HVMAX_T I32
+# endif
+#endif
+/* and riter 3 */
+#ifndef RITER_T
+# ifdef USE_CPERL
+#  if PERL_VERSION >= 25
+#   define RITER_T U32
+#  else
+#   define RITER_T SSize_t
+#  endif
+# else
+#   define RITER_T I32
+# endif
+#endif
+
 /* three extra for rounding, sign, and end of string */
 #define IVUV_MAXCHARS (sizeof (UV) * CHAR_BIT * 28 / 93 + 3)
 
@@ -743,7 +764,7 @@ static void encode_sv (pTHX_ enc_t *enc, SV *sv);
 static void
 encode_av (pTHX_ enc_t *enc, AV *av)
 {
-  int i, len = av_len (av);
+  HVMAX_T i, len = av_len (av);
 
   if (enc->indent >= enc->json.max_depth)
     croak (ERR_NESTING_EXCEEDED);
@@ -792,7 +813,7 @@ encode_hk (pTHX_ enc_t *enc, HE *he)
       encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
     }
   else
-    encode_str (aTHX_ enc, HeKEY (he), HeKLEN (he), HeKUTF8 (he));
+    encode_str (aTHX_ enc, HeKEY (he), (STRLEN)HeKLEN (he), HeKUTF8 (he));
 
   encode_ch (aTHX_ enc, '"');
 
@@ -841,7 +862,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv)
   /* caused by randomised hash orderings */
   if (enc->json.flags & F_CANONICAL && !SvTIED_mg((SV*)hv, PERL_MAGIC_tied))
     {
-      int count = hv_iterinit (hv);
+      RITER_T i, count = hv_iterinit (hv);
 
       if (SvMAGICAL (hv))
         {
@@ -859,7 +880,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv)
 
       if (count)
         {
-          int i, fast = 1;
+          int fast = 1;
           HE *hes_stack [STACK_HES];
           HE **hes = hes_stack;
 
@@ -1243,24 +1264,30 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
       else if (expect_false(strEQc(enc->cur, STR_NEG_NAN)))
         inf_or_nan = 3;
 #endif
-      else if (expect_false(strEQc(enc->cur, STR_NAN)
+      else if
 #ifdef HAVE_QNAN
-            || strEQc(enc->cur, STR_QNAN)
+        (expect_false(strEQc(enc->cur, STR_NAN)
+                   || strEQc(enc->cur, STR_QNAN)))
+#else
+        (expect_false(strEQc(enc->cur, STR_NAN)))
 #endif
-              ))
         inf_or_nan = 3;
       else if (*enc->cur == '-') {
         if (expect_false(strEQc(enc->cur+1, STR_INF)))
           inf_or_nan = 2;
-        else if (expect_false(strEQc(enc->cur+1, STR_NAN)
+        else if
 #ifdef HAVE_QNAN
-              || strEQc(enc->cur+1, STR_QNAN)
+          (expect_false(strEQc(enc->cur+1, STR_NAN)
+                     || strEQc(enc->cur+1, STR_QNAN)))
+#else
+          (expect_false(strEQc(enc->cur+1, STR_NAN)))
 #endif
-                ))
           inf_or_nan = 3;
       }
       if (expect_false(inf_or_nan)) {
+#if defined(HAVE_ISINF) && defined(HAVE_ISNAN)
       is_inf_or_nan:
+#endif
         if (enc->json.infnan_mode == 0) {
           strncpy(enc->cur, "null\0", 5);
         }
@@ -1322,7 +1349,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
           /* optimise the "small number case" */
           /* code will likely be branchless and use only a single multiplication */
           /* works for numbers up to 59074 */
-          I32 i = SvIVX (sv);
+          I32 i = (I32)SvIVX (sv);
           U32 u;
           char digit, nz = 0;
 
@@ -2523,6 +2550,7 @@ decode_hv (pTHX_ dec_t *dec)
                    || allow_squote))
                 {
                   /* slow path, back up and use decode_str */
+                  /* utf8 hash keys are handled here */
                   SV *key = _decode_str (aTHX_ dec, endstr);
                   if (!key)
                     goto fail;
@@ -2549,7 +2577,14 @@ decode_hv (pTHX_ dec_t *dec)
                 {
                   /* fast path, got a simple key */
                   char *key = dec->cur;
-                  int len = p - key;
+                  U32 len = p - key;
+                  assert(p >= key && p - key < I32_MAX);
+#if PTRSIZE >= 8
+                  /* hv_store can only handle I32 len, which might overflow */
+                  /* perl5 just silently truncates it, cperl panics */
+                  if (expect_false(p - key > I32_MAX))
+                    ERR ("Hash key too large");
+#endif
                   dec->cur = p + 1;
 
                   decode_ws (dec); if (*p != ':') EXPECT_CH (':');
@@ -2559,8 +2594,13 @@ decode_hv (pTHX_ dec_t *dec)
                   if (!value)
                     goto fail;
 
+                  /* Note: not a utf8 hash key */
+#if PERL_VERSION > 8 || (PERL_VERSION == 8 && PERL_SUBVERSION >= 9)
+                  hv_common (hv, NULL, key, len, 0,
+                             HV_FETCH_ISSTORE|HV_FETCH_JUST_SV, value, 0);
+#else
                   hv_store (hv, key, len, value, 0);
-
+#endif
                   break;
                 }
 
@@ -2611,7 +2651,7 @@ decode_hv (pTHX_ dec_t *dec)
           if (cb)
             {
               dSP;
-              int count;
+              I32 count;
 
               ENTER; SAVETMPS; SAVESTACK_POS (); PUSHMARK (SP);
               XPUSHs (HeVAL (he));
@@ -2635,7 +2675,7 @@ decode_hv (pTHX_ dec_t *dec)
       if (dec->json.cb_object)
         {
           dSP;
-          int count;
+          I32 count;
 
           ENTER; SAVETMPS; SAVESTACK_POS (); PUSHMARK (SP);
           XPUSHs (sv_2mortal (sv));
@@ -2702,7 +2742,7 @@ decode_tag (pTHX_ dec_t *dec)
   {
     dMY_CXT;
     AV *av = (AV *)SvRV (val);
-    int i, len = av_len (av) + 1;
+    HVMAX_T i, len = av_len (av) + 1;
     HV *stash = gv_stashsv (tag, 0);
     SV *sv;
     GV *method;
@@ -3217,10 +3257,10 @@ int get_max_size (JSON *self)
 
 void stringify_infnan (JSON *self, IV infnan_mode = 1)
 	PPCODE:
-        self->infnan_mode = (unsigned char)infnan_mode;
-        if (self->infnan_mode > 3 || self->infnan_mode < 0) {
-          croak ("invalid stringify_infnan mode %c. Must be 0, 1, 2 or 3", self->infnan_mode);
+        if (infnan_mode > 3 || infnan_mode < 0) {
+          croak ("invalid stringify_infnan mode %d. Must be 0, 1, 2 or 3", (int)infnan_mode);
         }
+        self->infnan_mode = (unsigned char)infnan_mode;
         XPUSHs (ST (0));
         
 int get_stringify_infnan (JSON *self)
