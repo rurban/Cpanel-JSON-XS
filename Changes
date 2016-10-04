@@ -2,6 +2,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0217_02 2016-10-04 (rurban)
+	- Use faster strEQc macros from cperl with constant strings.
+        - prefer memEQ for systems without memcmp, to use bcmp there.
+        - add more expect_false() to inf/nan branches.
+
 3.0217_01 2016-10-04 (rurban)
 	- Detect INF/NAN: ?/++/-?/--- on HP-UX (#56)
         - New stringify_infnan(3) infnan_mode. Easy to detect platform

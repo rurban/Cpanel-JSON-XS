@@ -96,6 +96,16 @@
 #ifndef HvNAMEUTF8
 # define HvNAMEUTF8(hv) 0
 #endif
+/* from cperl */
+#ifndef strEQc
+/* the buffer ends with \0, includes comparison of the \0.
+   better than strEQ as it uses memcmp, word-wise comparison. */
+# define strEQc(s, c) memEQ(s, ("" c ""), sizeof(c))
+#endif
+#ifndef memEQc
+/* excluding the final \0, so the string s may continue */
+# define memEQc(s, c) memEQ(s, ("" c ""), sizeof(c)-1)
+#endif
 
 /* three extra for rounding, sign, and end of string */
 #define IVUV_MAXCHARS (sizeof (UV) * CHAR_BIT * 28 / 93 + 3)
@@ -1210,9 +1220,9 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
       /* With no stringify_infnan we can skip the conversion, returning null. */
       if (enc->json.infnan_mode == 0) {
 # if defined(USE_QUADMATH) && defined(HAVE_ISINFL) && defined(HAVE_ISNANL)
-        if (isinfl(nv) || isnanl(nv))
+        if (expect_false(isinfl(nv) || isnanl(nv)))
 # else
-        if (isinf(nv) || isnan(nv))
+        if (expect_false(isinf(nv) || isnan(nv)))
 # endif
           {
             goto is_inf_or_nan;
@@ -1225,31 +1235,31 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
       (void)Gconvert (nv, NV_DIG, 0, enc->cur);
 #endif
 
-      if (strEQ(enc->cur, STR_INF))
+      if (expect_false(strEQc(enc->cur, STR_INF)))
         inf_or_nan = 1;
 #if defined(__hpux)
-      else if (strEQ(enc->cur, STR_NEG_INF))
+      else if (expect_false(strEQc(enc->cur, STR_NEG_INF)))
         inf_or_nan = 2;
-      else if strEQ(enc->cur, STR_NEG_NAN))
+      else if (expect_false(strEQc(enc->cur, STR_NEG_NAN)))
         inf_or_nan = 3;
 #endif
-      else if (strEQ(enc->cur, STR_NAN)
+      else if (expect_false(strEQc(enc->cur, STR_NAN)
 #ifdef HAVE_QNAN
-               || strEQ(enc->cur, STR_QNAN)
+            || strEQc(enc->cur, STR_QNAN)
 #endif
-               )
+              ))
         inf_or_nan = 3;
       else if (*enc->cur == '-') {
-        if (strEQ(enc->cur+1, STR_INF))
+        if (expect_false(strEQc(enc->cur+1, STR_INF)))
           inf_or_nan = 2;
-        else if (strEQ(enc->cur+1, STR_NAN)
+        else if (expect_false(strEQc(enc->cur+1, STR_NAN)
 #ifdef HAVE_QNAN
-               || strEQ(enc->cur+1, STR_QNAN)
+              || strEQc(enc->cur+1, STR_QNAN)
 #endif
-                )
+                ))
           inf_or_nan = 3;
       }
-      if (inf_or_nan) {
+      if (expect_false(inf_or_nan)) {
       is_inf_or_nan:
         if (enc->json.infnan_mode == 0) {
           strncpy(enc->cur, "null\0", 5);
@@ -1289,7 +1299,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
             || strchr(enc->cur,'e') || strchr(enc->cur,'E')
 #if PERL_VERSION < 10
                /* !!1 with 5.8 */
-               || (SvPOKp(sv) && strEQ(SvPVX(sv), "1")
+               || (SvPOKp(sv) && strEQc(SvPVX(sv), "1")
                    && SvNVX(sv) == 1.0) /* yes */
 #endif
                ) )
@@ -2760,7 +2770,7 @@ decode_sv (pTHX_ dec_t *dec)
         return decode_num (aTHX_ dec);
 
       case 't':
-        if (dec->end - dec->cur >= 4 && !memcmp (dec->cur, "true", 4))
+        if (dec->end - dec->cur >= 4 && memEQc(dec->cur, "true"))
           {
             dMY_CXT;
             dec->cur += 4;
@@ -2772,7 +2782,7 @@ decode_sv (pTHX_ dec_t *dec)
         break;
 
       case 'f':
-        if (dec->end - dec->cur >= 5 && !memcmp (dec->cur, "false", 5))
+        if (dec->end - dec->cur >= 5 && memEQc(dec->cur, "false"))
           {
             dMY_CXT;
             dec->cur += 5;
@@ -2784,7 +2794,7 @@ decode_sv (pTHX_ dec_t *dec)
         break;
 
       case 'n':
-        if (dec->end - dec->cur >= 4 && !memcmp (dec->cur, "null", 4))
+        if (dec->end - dec->cur >= 4 && memEQc(dec->cur, "null"))
           {
             dec->cur += 4;
             return newSVsv(&PL_sv_undef);
@@ -3121,7 +3131,7 @@ void new (char *klass)
         json_init ((JSON *)SvPVX (pv));
         XPUSHs (sv_2mortal (sv_bless (
            newRV_noinc (pv),
-           strEQ (klass, "Cpanel::JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1)
+           strEQc (klass, "Cpanel::JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1)
         )));
 }
 
