@@ -2,12 +2,13 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-3.0217_03 2016-10-04 (rurban)
+3.0217_03 2016-10-06 (rurban)
 	- expect_false() macro fix for MSVC
         - fix av and hv length types: protect from security sensitive overflows,
           add HVMAX_T and RITER_T
         - add new "Hash key too large" error. perl5 silently truncates it, we
           prefer errors, cperl 5.25.1 does error also.
+        - fix broken 5.8.1 SvPOK_only, i.e. assert_not_ROK
 
 3.0217_02 2016-10-04 (rurban)
 	- Use faster strEQc macros from cperl with constant strings.

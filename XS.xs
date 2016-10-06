@@ -86,6 +86,15 @@
 #ifndef SvIsCOW_shared_hash
 #define SvIsCOW_shared_hash(pv) 0
 #endif
+/* 5.8.1 has a broken assert_not_ROK */
+#if PERL_VERSION == 8 && PERL_SUBVERSION == 1
+# undef assert_not_ROK
+# if defined(__GNUC__) && !defined(PERL_GCC_BRACE_GROUPS_FORBIDDEN)
+#  define assert_not_ROK(sv)	({assert(!SvROK(sv) || !SvRV(sv));}),
+# else
+#  define assert_not_ROK(sv)
+# endif
+#endif
 /* compatibility with perl <5.14 */
 #ifndef HvNAMELEN_get
 # define HvNAMELEN_get(hv) strlen (HvNAME (hv))
