@@ -3,5 +3,10 @@
 # GH #70
 
 use Test::Simple tests => 1;
-package J { use base "Cpanel::JSON::XS"; }; J->new;
-ok 1;
+
+package J;
+use base "Cpanel::JSON::XS";
+J->new;
+
+package main;
+ok(1);

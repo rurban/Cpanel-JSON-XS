@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0217_05 2016-10-07 (rurban)
+	- fix t/gh70-asan.t for older perls < 5.14
+
 3.0217_04 2016-10-07 (rurban)
 	- fix and document wrong strEQc usage in new(). #70 (ilmari)
 
