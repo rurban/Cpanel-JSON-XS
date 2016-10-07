@@ -60,6 +60,7 @@ t/114_decode_prefix.t
 t/115_tie_ixhash.t
 t/116_incr_parse_fixed.t
 t/117_numbers.t
+t/gh70-asan.t
 t/_unicode_handling.pm
 t/zero-mojibake.t
 t/z_kwalitee.t

@@ -108,7 +108,8 @@
 /* from cperl */
 #ifndef strEQc
 /* the buffer ends with \0, includes comparison of the \0.
-   better than strEQ as it uses memcmp, word-wise comparison. */
+   better than strEQ as it uses memcmp, word-wise comparison.
+   But the left side must be big enough. See GH #70 */
 # define strEQc(s, c) memEQ(s, ("" c ""), sizeof(c))
 #endif
 #ifndef memEQc
@@ -3180,7 +3181,7 @@ void new (char *klass)
         json_init ((JSON *)SvPVX (pv));
         XPUSHs (sv_2mortal (sv_bless (
            newRV_noinc (pv),
-           strEQc (klass, "Cpanel::JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1)
+           strEQ (klass, "Cpanel::JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1)
         )));
 }
 
