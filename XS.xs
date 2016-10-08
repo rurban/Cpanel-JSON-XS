@@ -2,7 +2,6 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
-#define NEED_PL_parser
 #define NEED_grok_number
 #define NEED_grok_numeric_radix
 #define NEED_newRV_noinc
@@ -108,8 +107,7 @@
 /* from cperl */
 #ifndef strEQc
 /* the buffer ends with \0, includes comparison of the \0.
-   better than strEQ as it uses memcmp, word-wise comparison.
-   But the left side must be big enough. See GH #70 */
+   better than strEQ as it uses memcmp, word-wise comparison. */
 # define strEQc(s, c) memEQ(s, ("" c ""), sizeof(c))
 #endif
 #ifndef memEQc
@@ -3181,7 +3179,7 @@ void new (char *klass)
         json_init ((JSON *)SvPVX (pv));
         XPUSHs (sv_2mortal (sv_bless (
            newRV_noinc (pv),
-           strEQ (klass, "Cpanel::JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1)
+           strEQc (klass, "Cpanel::JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1)
         )));
 }
 

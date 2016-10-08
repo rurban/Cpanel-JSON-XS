@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0217_06 2016-10-08 (rurban)
+	- fix DPPP_dummy_PL_parser warnings
+
 3.0217_05 2016-10-07 (rurban)
 	- fix t/gh70-asan.t for older perls < 5.14
 
