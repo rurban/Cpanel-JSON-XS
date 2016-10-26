@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0219 2016-10-26 (rurban)
+	- workaround mingw 4.0 modfl() bug [perl #125924]
+
 3.0218 2016-10-13 (rurban)
 	- no changes
 
