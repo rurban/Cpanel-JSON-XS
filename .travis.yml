@@ -50,6 +50,7 @@ matrix:
       env: COVERAGE=1 AUTHOR_TESTING=1  # enables coverage+coveralls reporting
   allow_failures:
     - env: COVERAGE=1 AUTHOR_TESTING=1
+    - perl: "blead"
 
 # Hack to not run on tag pushes:
 branches:
