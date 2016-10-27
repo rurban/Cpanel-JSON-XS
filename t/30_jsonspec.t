@@ -40,7 +40,7 @@ my %i_pass = map{$_ => 1}
       i_structure_500_nested_arrays
       i_structure_UTF-8_BOM_empty_object
    );
-# also fail with relaxed
+# should also fail with relaxed
 my %i_parseerr = map{$_ => 1}
   qw(
       i_object_key_lone_2nd_surrogate
@@ -66,7 +66,7 @@ my %i_empty    = map{$_ => 1}
   qw(
    );
 
-# result undefined
+# result undefined, relaxed may vary
 sub i_undefined {
   my ($str, $name) = @_;
   my $result = eval { $json->decode($str) };

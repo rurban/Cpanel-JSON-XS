@@ -28,6 +28,13 @@
 #define HAVE_BAD_POWL
 #endif
 
+#undef HAVE_DECODE_BOM
+#define UTF8BOM     "\357\273\277"      /* EF BB BF */
+#define UTF16BOM    "\377\376"          /* FF FE */
+#define UTF16BOM_BE "\376\377"          /* FE FF */
+#define UTF32BOM    "\377\376\000\000"  /* FF FE 00 00 */
+#define UTF32BOM_BE "\000\000\376\377"  /* 00 00 FE FF */
+
 /* strawberry 5.22 with USE_MINGW_ANSI_STDIO and USE_LONG_DOUBLE have now 
    a proper inf/nan */
 #if defined(_WIN32) && !defined(__USE_MINGW_ANSI_STDIO) && !defined(USE_LONG_DOUBLE)
@@ -96,6 +103,12 @@ mingw_modfl(long double x, long double *ip)
 #ifndef HeKUTF8
 #define HeKUTF8(he) 0
 #endif
+#ifndef UNLIKELY
+# define UNLIKELY(expr) expr
+#endif
+#ifndef GV_NOADD_NOINIT
+#define GV_NOADD_NOINIT 0
+#endif
 /* since 5.8.1 */
 #ifndef SvIsCOW_shared_hash
 #define SvIsCOW_shared_hash(pv) 0
@@ -118,6 +131,14 @@ mingw_modfl(long double x, long double *ip)
 #endif
 #ifndef HvNAMEUTF8
 # define HvNAMEUTF8(hv) 0
+#endif
+/* since 5.16 */
+#ifndef GV_NO_SVGMAGIC
+#define GV_NO_SVGMAGIC 0
+#endif
+/* since 5.18 */
+#ifndef SvREFCNT_dec_NN
+#define SvREFCNT_dec_NN(sv) SvREFCNT_dec(sv)
 #endif
 /* from cperl */
 #ifndef strEQc
@@ -2876,11 +2897,37 @@ fail:
   return 0;
 }
 
+/* decode UTF32-LE/... to UTF-8:
+   $utf8 = Encode::decode("UTF32-BE", $string); */
+static SV *
+decode_bom(const char* encoding, SV* string, STRLEN offset)
+{
+  dSP;
+  SV* utf8;
+  SvPV_set(string, SvPVX_mutable (string) + offset);
+  SvCUR_set(string, SvCUR(string) - offset);
+  ENTER;
+  PUSHMARK(SP);
+  XPUSHs(newSVpvn(encoding, strlen(encoding)));
+  XPUSHs(string);
+  PUTBACK;
+  Perl_load_module(aTHX_ PERL_LOADMOD_NOIMPORT, newSVpvs("Encode"), NULL);
+  call_sv(MUTABLE_SV(get_cvs("Encode::decode", GV_NOADD_NOINIT|GV_NO_SVGMAGIC)), G_SCALAR);
+  SPAGAIN;
+  utf8 = TOPs;
+  PUTBACK;
+  LEAVE;
+  SvPV_set(string, SvPVX_mutable (string) - offset);
+  SvREFCNT_dec_NN(string);
+  return utf8;
+}
+
 static SV *
 decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
 {
   dec_t dec;
   SV *sv;
+  STRLEN len;
   dMY_CXT;
 
   /* work around bugs in 5.10 where manipulating magic values
@@ -2906,14 +2953,61 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
    */
   {
 #ifdef DEBUGGING
-    STRLEN offset = SvOK (string) ? sv_len (string) : 0;
+    len = SvOK (string) ? sv_len (string) : 0;
 #else
-    STRLEN offset = SvCUR (string);
+    len = SvCUR (string);
 #endif
 
-    if (offset > json->max_size && json->max_size)
+    if (len > json->max_size && json->max_size)
       croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
-             (unsigned long)SvCUR (string), (unsigned long)json->max_size);
+             (unsigned long)len, (unsigned long)json->max_size);
+  }
+
+  /* Detect BOM and possibly convert to UTF-8 and set UTF8 flag.
+
+     https://tools.ietf.org/html/rfc7159#section-8.1
+     JSON text SHALL be encoded in UTF-8, UTF-16, or UTF-32.
+     Byte Order Mark - While section 8.1 states "Implementations MUST
+     NOT add a byte order mark to the beginning of a JSON text",
+     "implementations (...) MAY ignore the presence of a byte order
+     mark rather than treating it as an error". */
+  if (UNLIKELY(len > 2 && SvPOK(string))) {
+    U8 *s = (U8*)SvPVX (string);
+    if (*s >= 0xEF) {
+      if (len >= 3 && memEQc(s, UTF8BOM)) {
+        json->flags |= F_UTF8;
+        SvPV_set(string, SvPVX_mutable (string) + 3);
+        SvCUR_set(string, len - 3);
+      } else if (len >= 4 && memEQc(s, UTF32BOM)) {
+#ifndef HAVE_DECODE_BOM
+        croak ("Cannot handle multibyte BOM yet");
+#else
+        string = decode_bom("UTF32-LE", string, sizeof(UTF32BOM)-1);
+        json->flags |= F_UTF8;
+#endif
+      } else if (memEQc(s, UTF16BOM)) {
+#ifndef HAVE_DECODE_BOM
+        croak ("Cannot handle multibyte BOM yet");
+#else
+        string = decode_bom("UTF16-LE", string, sizeof(UTF16BOM)-1);
+        json->flags |= F_UTF8;
+#endif
+      } else if (memEQc(s, UTF16BOM_BE)) {
+#ifndef HAVE_DECODE_BOM
+        croak ("Cannot handle multibyte BOM yet");
+#else
+        string = decode_bom("UTF16-BE", string, sizeof(UTF16BOM_BE)-1);
+        json->flags |= F_UTF8;
+#endif
+      }
+    } else if (UNLIKELY(len >= 4 && !*s && memEQc(s, UTF32BOM_BE))) {
+#ifndef HAVE_DECODE_BOM
+        croak ("Cannot handle multibyte BOM yet");
+#else
+        string = decode_bom("UTF32-BE", string, sizeof(UTF32BOM_BE)-1);
+        json->flags |= F_UTF8;
+#endif
+    }
   }
 
 #if PERL_VERSION >= 8

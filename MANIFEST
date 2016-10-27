@@ -39,6 +39,7 @@ t/23_array_ctx.t
 t/24_freeze_recursion.t
 t/25_boolean.t
 t/30_jsonspec.t
+t/31_bom.t
 t/52_object.t
 t/53_readonly.t
 t/54_stringify.t

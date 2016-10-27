@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0220 2016-10-?? (rurban)
+	- add comprehensive JSON decode testsuite from http://seriot.ch/parsing_json.html
+        - decode with BOM (UTF-8, UTF-16, or UTF-32). For now only UTF-8, the others error.
+
 3.0219 2016-10-26 (rurban)
 	- workaround mingw 4.0 modfl() bug [perl #125924]
 
