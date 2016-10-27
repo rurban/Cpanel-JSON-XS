@@ -28,11 +28,12 @@
 #define HAVE_BAD_POWL
 #endif
 
+/* TODO: still a refcount error */
 #undef HAVE_DECODE_BOM
 #define UTF8BOM     "\357\273\277"      /* EF BB BF */
-#define UTF16BOM    "\377\376"          /* FF FE */
+#define UTF16BOM    "\377\376"          /* FF FE or +UFEFF */
 #define UTF16BOM_BE "\376\377"          /* FE FF */
-#define UTF32BOM    "\377\376\000\000"  /* FF FE 00 00 */
+#define UTF32BOM    "\377\376\000\000"  /* FF FE 00 00 or +UFEFF */
 #define UTF32BOM_BE "\000\000\376\377"  /* 00 00 FE FF */
 
 /* strawberry 5.22 with USE_MINGW_ANSI_STDIO and USE_LONG_DOUBLE has now 
@@ -376,7 +377,7 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
 #elif PERL_VERSION >= 8
     UV c = utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
 #endif
-#if PERL_VERSION <= 12
+#if PERL_VERSION <= 12 && PERL_VERSION >= 8
     if (c > PERL_UNICODE_MAX && !relaxed)
       *clen = -1;
 #endif
@@ -2949,28 +2950,42 @@ fail:
 }
 
 /* decode UTF32-LE/... to UTF-8:
-   $utf8 = Encode::decode("UTF32-BE", $string); */
+   $utf8 = Encode::decode("UTF-32", $string); */
 static SV *
 decode_bom(pTHX_ const char* encoding, SV* string, STRLEN offset)
 {
   dSP;
-  SV* utf8;
-  SvPV_set(string, SvPVX_mutable (string) + offset);
-  SvCUR_set(string, SvCUR(string) - offset);
+  I32 items;
+  PERL_UNUSED_ARG(offset);
+
+#ifndef HAVE_DECODE_BOM
+  croak ("Cannot handle multibyte BOM yet");
+  return string;
+#else
   ENTER;
+  Perl_load_module(aTHX_ PERL_LOADMOD_NOIMPORT, newSVpvs("Encode"),
+                   NULL, NULL, NULL);
   PUSHMARK(SP);
   XPUSHs(newSVpvn(encoding, strlen(encoding)));
   XPUSHs(string);
   PUTBACK;
-  Perl_load_module(aTHX_ PERL_LOADMOD_NOIMPORT, newSVpvs("Encode"), NULL);
-  call_sv(MUTABLE_SV(get_cvs("Encode::decode", GV_NOADD_NOINIT|GV_NO_SVGMAGIC)), G_SCALAR);
+  /* Calling Encode::Unicode::decode_xs would be faster, but we'd need the blessed
+     enc hash from find_encoding() then. e.g. $Encode::Encoding{'UTF-16LE'}
+     bless {Name=>UTF-16,size=>2,endian=>'',ucs2=>undef}, 'Encode::Unicode';
+   */
+  items = call_sv(MUTABLE_SV(get_cvs("Encode::decode",
+              GV_NOADD_NOINIT|GV_NO_SVGMAGIC)), G_SCALAR);
   SPAGAIN;
-  utf8 = TOPs;
-  PUTBACK;
-  LEAVE;
-  SvPV_set(string, SvPVX_mutable (string) - offset);
-  SvREFCNT_dec_NN(string);
-  return utf8;
+  if (items >= 0 && SvPOK(TOPs)) {
+    LEAVE;
+    SvREFCNT_dec_NN(string);
+    SvUTF8_on(TOPs);
+    return POPs;
+  } else {
+    LEAVE;
+    return string;
+  }
+#endif
 }
 
 static SV *
@@ -2978,7 +2993,8 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
 {
   dec_t dec;
   SV *sv;
-  STRLEN len;
+  STRLEN len, offset = 0;
+  int converted = 0;
   dMY_CXT;
 
   /* work around bugs in 5.10 where manipulating magic values
@@ -3027,48 +3043,43 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
     if (*s >= 0xEF) {
       if (len >= 3 && memEQc(s, UTF8BOM)) {
         json->flags |= F_UTF8;
+        converted++;
+        offset = 3;
         SvPV_set(string, SvPVX_mutable (string) + 3);
         SvCUR_set(string, len - 3);
+        SvUTF8_on(string);
       } else if (len >= 4 && memEQc(s, UTF32BOM)) {
-#ifndef HAVE_DECODE_BOM
-        croak ("Cannot handle multibyte BOM yet");
-#else
-        string = decode_bom(aTHX_ "UTF32-LE", string, sizeof(UTF32BOM)-1);
+        string = decode_bom(aTHX_ "UTF-32LE", string, 4);
         json->flags |= F_UTF8;
-#endif
+        converted++;
       } else if (memEQc(s, UTF16BOM)) {
-#ifndef HAVE_DECODE_BOM
-        croak ("Cannot handle multibyte BOM yet");
-#else
-        string = decode_bom(aTHX_ "UTF16-LE", string, sizeof(UTF16BOM)-1);
+        string = decode_bom(aTHX_ "UTF-16LE", string, 2);
         json->flags |= F_UTF8;
-#endif
+        converted++;
       } else if (memEQc(s, UTF16BOM_BE)) {
-#ifndef HAVE_DECODE_BOM
-        croak ("Cannot handle multibyte BOM yet");
-#else
-        string = decode_bom(aTHX_ "UTF16-BE", string, sizeof(UTF16BOM_BE)-1);
+        string = decode_bom(aTHX_ "UTF-16BE", string, 2);
         json->flags |= F_UTF8;
-#endif
+        converted++;
       }
     } else if (UNLIKELY(len >= 4 && !*s && memEQc(s, UTF32BOM_BE))) {
-#ifndef HAVE_DECODE_BOM
-        croak ("Cannot handle multibyte BOM yet");
-#else
-        string = decode_bom(aTHX_ "UTF32-BE", string, sizeof(UTF32BOM_BE)-1);
+        string = decode_bom(aTHX_ "UTF-32BE", string, 4);
         json->flags |= F_UTF8;
-#endif
+        converted++;
     }
   }
 
 #if PERL_VERSION >= 8
-  if (DECODE_WANTS_OCTETS (json))
-    sv_utf8_downgrade (string, 0);
-  else
-    sv_utf8_upgrade (string);
+  if (LIKELY(!converted)) {
+    if (DECODE_WANTS_OCTETS (json))
+      sv_utf8_downgrade (string, 0);
+    else
+      sv_utf8_upgrade (string);
+  }
 #endif
 
-  SvGROW (string, SvCUR (string) + 1); /* should basically be a NOP */
+  /* should basically be a NOP but needed for 5.6 with undef */
+  if (!SvPOK(string))
+    SvGROW (string, SvCUR (string) + 1);
 
   dec.json  = *json;
   dec.cur   = SvPVX (string);
@@ -3099,6 +3110,11 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
           sv = NULL;
         }
     }
+  /* restore old utf8 string with BOM */
+  if (UNLIKELY(offset)) {
+    SvPV_set(string, SvPVX_mutable (string) - offset);
+    SvCUR_set(string, len);
+  }
 
   if (!sv)
     {

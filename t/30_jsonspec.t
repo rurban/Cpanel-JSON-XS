@@ -2,7 +2,7 @@
 # detected by http://seriot.ch/json/parsing.html
 use Test::More tests => 678;
 use Cpanel::JSON::XS;
-my $json = Cpanel::JSON::XS->new->utf8->allow_nonref;
+my $json    = Cpanel::JSON::XS->new->utf8->allow_nonref;
 my $relaxed = Cpanel::JSON::XS->new->utf8->allow_nonref->relaxed;
 
 # fixme:
@@ -114,11 +114,12 @@ sub i_pass {
   my $result = $todo{$name} ? eval { $json->decode($str) } : $json->decode($str);
   TODO: {
     local $TODO = "$name" if exists $todo{$name};
-    is($@, '', "no parsing error with undefined $name".substr($@,0,40));
+    is($@, '', "no parsing error with undefined $name ".substr($@,0,40));
     isnt($result, undef, "valid result with undefined $name");
     $@ = '';
+    #diag "$name $str";
     $result    = eval { $relaxed->decode($str) };
-    is($@, '', "no parsing error with undefined $name relaxed".substr($@,0,40));
+    is($@, '', "no parsing error with undefined $name relaxed ".substr($@,0,40));
     isnt($result, undef, "valid result with undefined $name relaxed");
   }
 }
@@ -134,7 +135,7 @@ sub i_error {
     $@ = '';
     $result = eval { $relaxed->decode($str) };
     if ($name eq 'i_string_not_in_unicode_range') {
-      is($@, '', "no parsing error with undefined $name relaxed".substr($@,0,40));
+      is($@, '', "no parsing error with undefined $name relaxed ".substr($@,0,40));
       isnt($result, undef, "valid result with undefined $name relaxed");
     } else {
       isnt($@, '', "parsing error with undefined $name relaxed ".substr($@,0,40));
