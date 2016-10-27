@@ -2900,7 +2900,7 @@ fail:
 /* decode UTF32-LE/... to UTF-8:
    $utf8 = Encode::decode("UTF32-BE", $string); */
 static SV *
-decode_bom(const char* encoding, SV* string, STRLEN offset)
+decode_bom(pTHX_ const char* encoding, SV* string, STRLEN offset)
 {
   dSP;
   SV* utf8;
@@ -2982,21 +2982,21 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
 #ifndef HAVE_DECODE_BOM
         croak ("Cannot handle multibyte BOM yet");
 #else
-        string = decode_bom("UTF32-LE", string, sizeof(UTF32BOM)-1);
+        string = decode_bom(aTHX_ "UTF32-LE", string, sizeof(UTF32BOM)-1);
         json->flags |= F_UTF8;
 #endif
       } else if (memEQc(s, UTF16BOM)) {
 #ifndef HAVE_DECODE_BOM
         croak ("Cannot handle multibyte BOM yet");
 #else
-        string = decode_bom("UTF16-LE", string, sizeof(UTF16BOM)-1);
+        string = decode_bom(aTHX_ "UTF16-LE", string, sizeof(UTF16BOM)-1);
         json->flags |= F_UTF8;
 #endif
       } else if (memEQc(s, UTF16BOM_BE)) {
 #ifndef HAVE_DECODE_BOM
         croak ("Cannot handle multibyte BOM yet");
 #else
-        string = decode_bom("UTF16-BE", string, sizeof(UTF16BOM_BE)-1);
+        string = decode_bom(aTHX_ "UTF16-BE", string, sizeof(UTF16BOM_BE)-1);
         json->flags |= F_UTF8;
 #endif
       }
@@ -3004,7 +3004,7 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
 #ifndef HAVE_DECODE_BOM
         croak ("Cannot handle multibyte BOM yet");
 #else
-        string = decode_bom("UTF32-BE", string, sizeof(UTF32BOM_BE)-1);
+        string = decode_bom(aTHX_ "UTF32-BE", string, sizeof(UTF32BOM_BE)-1);
         json->flags |= F_UTF8;
 #endif
     }

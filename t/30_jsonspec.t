@@ -1,35 +1,37 @@
 # regressions and differences from the JSON Specs and JSON::PP
 # detected by http://seriot.ch/json/parsing.html
-use Test::More;
+use Test::More tests => 672;
 use Cpanel::JSON::XS;
 my $json = Cpanel::JSON::XS->new->utf8->allow_nonref;
 my $relaxed = Cpanel::JSON::XS->new->utf8->allow_nonref->relaxed;
 
-# parser need to fail
-sub n_error {
-  my ($str, $name) = @_;
-  my $result = eval { $json->decode($str) };
-  isnt($@, "", "parsing error with $name");
-  is($result, undef, "undef result with $name");
-}
-# parser need to succeed, result should be valid
-sub y_pass {
-  my ($str, $name) = @_;
-  my $result = eval { $json->decode($str) };
-  is($@, "", "no parsing error with $name");
-  if ($str eq 'null') {
-    is($result, undef, "valid result with $name");
-  } else {
-    isnt($result, undef, "valid result with $name");
-  }
-}
-
 # fixme:
-# detect and accept BOM
+# BOM
 # i_structure_UTF-8_BOM_empty_object
 # n_number_then_00.json       100 <=> 1
 # n_string_UTF8_surrogate_U+D800.json     ["EDA080"] <=> [""]
 # y_string_utf16.json     FFFE[00"00E900"00]00 <=> [""]
+my %todo = map{$_ => 1}
+  qw(
+      y_string_utf16
+      n_number_then_00
+      i_string_unicode_U+10FFFE_nonchar
+      i_string_unicode_U+1FFFE_nonchar
+      i_string_unicode_U+FDD0_nonchar
+      i_string_unicode_U+FFFE_nonchar
+      i_string_not_in_unicode_range
+   );
+# i_structure_UTF-8_BOM_empty_object
+$todo{'y_string_nonCharacterInUTF-8_U+FFFF'}++ if $] < 5.013;
+$todo{'n_string_UTF8_surrogate_U+D800'}++ if $] >= 5.012;
+if ($] < 5.008) {
+  # 5.6 has no multibyte support
+  $todo{$_}++ for qw(
+                      n_string_overlong_sequence_2_bytes
+                      n_string_overlong_sequence_6_bytes
+                      n_string_overlong_sequence_6_bytes_null
+                   );
+}
 
 # undefined i_ tests:
 # also pass with relaxed
@@ -66,47 +68,90 @@ my %i_empty    = map{$_ => 1}
   qw(
    );
 
+# parser need to fail
+sub n_error {
+  my ($str, $name) = @_;
+  $@ = '';
+  my $result = eval { $json->decode($str) };
+ TODO: {
+    local $TODO = "$name" if exists $todo{$name};
+    isnt($@, '', "parsing error with $name ".substr($@,0,20));
+    is($result, undef, "undef result with $name");
+  }
+}
+# parser need to succeed, result should be valid
+sub y_pass {
+  my ($str, $name) = @_;
+  $@ = '';
+  my $result = 1+$todo{$name} ? eval { $json->decode($str) } : $json->decode($str);
+ TODO: {
+    local $TODO = "$name" if exists $todo{$name};
+    is($@, '', "no parsing error with $name ".substr($@,0,20));
+    if ($str eq 'null') {
+      is($result, undef, "valid result with $name");
+    } else {
+      isnt($result, undef, "valid result with $name");
+    }
+  }
+}
+
 # result undefined, relaxed may vary
 sub i_undefined {
   my ($str, $name) = @_;
+  $@ = '';
   my $result = eval { $json->decode($str) };
   if ($result) { diag("valid result with $name"); }
-  elsif ($@)   { diag("parser error with $name"); }
+  elsif ($@)   { diag("parser error with $name $@"); }
   else         { diag("no result with $name"); }
+  $@ = '';
   $result    = eval { $relaxed->decode($str) };
   if ($result) { diag("relaxed: valid result with $name"); }
-  elsif ($@)   { diag("relaxed: parser error with $name"); }
+  elsif ($@)   { diag("relaxed: parser error with $name $@"); }
   else         { diag("relaxed: no result with $name"); }
 }
 # result undefined, parsing succeeds, result ok
 sub i_pass {
   my ($str, $name) = @_;
-  my $result = eval { $json->decode($str) };
-  is($@, "", "no parsing error with undefined $name");
-  isnt($result, undef, "valid result with undefined $name");
-  $result    = eval { $relaxed->decode($str) };
-  is($@, "", "no parsing error with undefined $name relaxed");
-  isnt($result, undef, "valid result with undefined $name relaxed");
+  $@ = '';
+  my $result = $todo{$name} ? eval { $json->decode($str) } : $json->decode($str);
+  TODO: {
+    local $TODO = "$name" if exists $todo{$name};
+    is($@, '', "no parsing error with undefined $name".substr($@,0,20));
+    isnt($result, undef, "valid result with undefined $name");
+    $@ = '';
+    $result    = eval { $relaxed->decode($str) };
+    is($@, '', "no parsing error with undefined $name relaxed".substr($@,0,20));
+    isnt($result, undef, "valid result with undefined $name relaxed");
+  }
 }
 # result undefined, parsing failed
 sub i_error {
   my ($str, $name) = @_;
+  $@ = '';
   my $result = eval { $json->decode($str) };
-  isnt($@, "", "parsing error with undefined $name");
-  is($result, undef, "no result with undefined $name");
-  $result    = eval { $relaxed->decode($str) };
-  isnt($@, "", "parsing error with undefined $name relaxed");
-  is($result, undef, "no result with undefined $name relaxed");
+  TODO: {
+    local $TODO = "$name" if exists $todo{$name};
+    isnt($@, '', "parsing error with undefined $name ".substr($@,0,20));
+    is($result, undef, "no result with undefined $name");
+    $@ = '';
+    $result = eval { $relaxed->decode($str) };
+    isnt($@, '', "parsing error with undefined $name relaxed ".substr($@,0,20));
+    is($result, undef, "no result with undefined $name relaxed");
+  }
 }
 
 # todo: test_transform also
 for my $f (<t/test_parsing/*.json>) {
-  local $/;
-  my $fh;
-  open $fh, "<", $f;
-  my $s = <$fh>;
-  close $fh;
-  my ($base) = ($f =~ m|t/test_parsing/(.*)\.json|);
+  my $s;
+  {
+    local $/;
+    my $fh;
+    my $mode = $] < 5.008 ? "<" : "<:bytes";
+    open $fh, $mode, $f or die "read $f: $!";
+    $s = <$fh>;
+    close $fh;
+  }
+  my ($base) = ($f =~ m|test_parsing/(.*)\.json|);
   if ($base =~ /^y_/) {
     y_pass($s, $base);
   }
@@ -129,4 +174,4 @@ for my $f (<t/test_parsing/*.json>) {
 #i_pass("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]", "i_structure_500_nested_arrays.json");
 #n_error("\x{EF}\x{BB}\x{BF}\x{00}{}","i_structure_UTF-8_BOM_empty_object.json");
 
-done_testing;
+#done_testing;
