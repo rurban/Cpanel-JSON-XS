@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0222 2016-10-30 (rurban)
+        - enable decode_bom for multibyte encodings UTF16 and UTF32.
+          encode internally to UTF-8.
+
 3.0221 2016-10-30 (rurban)
         - fixed documentation of decode for unicode noncharacters.
           added correct code to warn as in core.

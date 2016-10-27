@@ -28,8 +28,8 @@
 #define HAVE_BAD_POWL
 #endif
 
-/* TODO: still a refcount error */
-#undef HAVE_DECODE_BOM
+/* FIXME: still a refcount error */
+#define HAVE_DECODE_BOM
 #define UTF8BOM     "\357\273\277"      /* EF BB BF */
 #define UTF16BOM    "\377\376"          /* FF FE or +UFEFF */
 #define UTF16BOM_BE "\376\377"          /* FE FF */
@@ -2988,8 +2988,15 @@ decode_bom(pTHX_ const char* encoding, SV* string, STRLEN offset)
   return string;
 #else
   ENTER;
+#if PERL_VERSION > 1
+  /* on older perls (<5.20) this may corrupt ax */
   Perl_load_module(aTHX_ PERL_LOADMOD_NOIMPORT, newSVpvs("Encode"),
                    NULL, NULL, NULL);
+#else
+  eval_pv("require Encode;", 1);
+#endif
+  LEAVE;
+  ENTER;
   PUSHMARK(SP);
   XPUSHs(newSVpvn(encoding, strlen(encoding)));
   XPUSHs(string);
@@ -2997,13 +3004,14 @@ decode_bom(pTHX_ const char* encoding, SV* string, STRLEN offset)
   /* Calling Encode::Unicode::decode_xs would be faster, but we'd need the blessed
      enc hash from find_encoding() then. e.g. $Encode::Encoding{'UTF-16LE'}
      bless {Name=>UTF-16,size=>2,endian=>'',ucs2=>undef}, 'Encode::Unicode';
+     And currenty we enjoy the simplicity of the BOM offset advance by 
+     endianness autodetection.
    */
   items = call_sv(MUTABLE_SV(get_cvs("Encode::decode",
               GV_NOADD_NOINIT|GV_NO_SVGMAGIC)), G_SCALAR);
   SPAGAIN;
   if (items >= 0 && SvPOK(TOPs)) {
     LEAVE;
-    SvREFCNT_dec_NN(string);
     SvUTF8_on(TOPs);
     return POPs;
   } else {
@@ -3073,21 +3081,22 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
         SvPV_set(string, SvPVX_mutable (string) + 3);
         SvCUR_set(string, len - 3);
         SvUTF8_on(string);
+        /* omitting the endian name will skip the BOM in the result */
       } else if (len >= 4 && memEQc(s, UTF32BOM)) {
-        string = decode_bom(aTHX_ "UTF-32LE", string, 4);
+        string = decode_bom(aTHX_ "UTF-32", string, 4);
         json->flags |= F_UTF8;
         converted++;
       } else if (memEQc(s, UTF16BOM)) {
-        string = decode_bom(aTHX_ "UTF-16LE", string, 2);
+        string = decode_bom(aTHX_ "UTF-16", string, 2);
         json->flags |= F_UTF8;
         converted++;
       } else if (memEQc(s, UTF16BOM_BE)) {
-        string = decode_bom(aTHX_ "UTF-16BE", string, 2);
+        string = decode_bom(aTHX_ "UTF-16", string, 2);
         json->flags |= F_UTF8;
         converted++;
       }
     } else if (UNLIKELY(len >= 4 && !*s && memEQc(s, UTF32BOM_BE))) {
-        string = decode_bom(aTHX_ "UTF-32BE", string, 4);
+        string = decode_bom(aTHX_ "UTF-32", string, 4);
         json->flags |= F_UTF8;
         converted++;
     }
@@ -3368,8 +3377,7 @@ void END(...)
 	PPCODE:
         sv = MY_CXT.sv_json;
         MY_CXT.sv_json = NULL;
-        /* todo use SvREFCNT_dec_NN once ppport is fixed */
-        SvREFCNT_dec(sv);
+        SvREFCNT_dec_NN(sv);
         return; /* skip implicit PUTBACK, returning @_ to caller, more efficient*/
 
 void new (char *klass)

@@ -10,16 +10,9 @@ my $json = Cpanel::JSON::XS->new->utf8->allow_nonref;
 # parser need to succeed, result should be valid
 sub y_pass {
   my ($str, $name) = @_;
-  my ($result, $expected);
-  if ($name eq 'UTF-8') {
-    $result = $json->decode($str);
-    $expected = ["é"];
-    is_deeply($result, $expected, "bom $name");
-  } else {
-    $result = eval { $json->decode($str) };
-    $expected = undef;
-    is($result, $expected, "TODO bom $name throws $@");
-  }
+  my $result = $json->decode($str);
+  my $expected = ["é"];
+  is_deeply($result, $expected, "bom $name");
 }
 
 my @bom =
