@@ -124,7 +124,7 @@ B<Changes to JSON::XS>
   as integer.
 
 - different handling of inf/nan. Default now to null, optionally with
-  -DSTRINGIFY_INFNAN to "inf"/"nan". [#28, #32]
+  stringify_infnan() to "inf"/"nan". [#28, #32]
 
 - added C<binary> extension, non-JSON and non JSON parsable, allows
   C<\xNN> and C<\NNN> sequences.
@@ -151,6 +151,8 @@ B<Changes to JSON::XS>
 
 - Performance Optimizations for threaded Perls
 
+- relaxed mode, allowing many popular extensions
+
 - additional fixes for:
 
   - [cpan #88061] AIX atof without USE_LONG_DOUBLE
@@ -162,6 +164,10 @@ B<Changes to JSON::XS>
 
   - #41 overloading of booleans, use the object not the reference.
 
+  - #62 -Dusequadmath conversion and no SEGV.
+
+  - #72 parsing of values followed \0, like 1\0 does fail.
+
 - public maintenance and bugtracker
 
 - use ppport.h, sanify XS.xs comment styles, harness C coding style
@@ -169,10 +175,14 @@ B<Changes to JSON::XS>
 - common::sense is optional. When available it is not used in the published
   production module, just during development and testing.
 
-- extended testsuite
+- extended testsuite, passes all http://seriot.ch/parsing_json.html tests
 
-- support many more options and methods from JSON::PP
+- support many more options and methods from JSON::PP:
+  stringify_infnan, allow_unknown, allow_stringify, allow_barekey,
+  encode_stringify, allow_bignum, allow_singlequote, sort_by (partially),
+  escape_slash, convert_blessed, ...
 
+  optional decode_json(, allow_nonref) arg
 
 =cut
 
@@ -1762,6 +1772,11 @@ output for these property strings, e.g.:
 
 This works because C<__proto__> is not valid outside of strings, so every
 occurrence of C<"__proto__"\s*:> must be a string used as property name.
+
+Unicode noncharacters between U+FFFD and U+10FFFF are decoded either
+to the recommended U+FFFD REPLACEMENT CHARACTER (see Unicode PR #121:
+Recommended Practice for Replacement Characters), or in the binary or
+relaxed mode left as is, keeping the illegal noncharacters as before.
 
 If you know of other incompatibilities, please let me know.
 

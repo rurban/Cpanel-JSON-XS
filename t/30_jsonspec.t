@@ -6,24 +6,21 @@ my $json = Cpanel::JSON::XS->new->utf8->allow_nonref;
 my $relaxed = Cpanel::JSON::XS->new->utf8->allow_nonref->relaxed;
 
 # fixme:
-# BOM
-# i_structure_UTF-8_BOM_empty_object
-# n_number_then_00.json       100 <=> 1
-# n_string_UTF8_surrogate_U+D800.json     ["EDA080"] <=> [""]
-# y_string_utf16.json     FFFE[00"00E900"00]00 <=> [""]
+#  n_string_UTF8_surrogate_U+D800     ["EDA080"] <=> [""] unicode
+#  y_string_utf*                      FFFE["é"] <=> ["é"] BOM
+# done:
+#  i_string_unicode_U+10FFFE_nonchar  ["\uDBFF\uDFFE"]
+#  i_string_unicode_U+1FFFE_nonchar
+#  i_string_unicode_U+FDD0_nonchar
+#  i_string_unicode_U+FFFE_nonchar
 my %todo = map{$_ => 1}
   qw(
       y_string_utf16
       y_string_utf16be
       y_string_utf32
       y_string_utf32be
-      i_string_unicode_U+10FFFE_nonchar
-      i_string_unicode_U+1FFFE_nonchar
-      i_string_unicode_U+FDD0_nonchar
-      i_string_unicode_U+FFFE_nonchar
       i_string_not_in_unicode_range
    );
-# i_structure_UTF-8_BOM_empty_object
 $todo{'y_string_nonCharacterInUTF-8_U+FFFF'}++ if $] < 5.013;
 $todo{'n_string_UTF8_surrogate_U+D800'}++ if $] >= 5.012;
 if ($] < 5.008) {
@@ -43,6 +40,10 @@ my %i_pass = map{$_ => 1}
       i_number_pos_double_huge_exp
       i_structure_500_nested_arrays
       i_structure_UTF-8_BOM_empty_object
+      i_string_unicode_U+10FFFE_nonchar
+      i_string_unicode_U+1FFFE_nonchar
+      i_string_unicode_U+FDD0_nonchar
+      i_string_unicode_U+FFFE_nonchar
    );
 # should also fail with relaxed
 my %i_parseerr = map{$_ => 1}
@@ -60,10 +61,6 @@ my %i_parseerr = map{$_ => 1}
       i_string_UTF-16_invalid_surrogate
       i_string_UTF-8_invalid_sequence
       i_string_not_in_unicode_range
-      i_string_unicode_U+10FFFE_nonchar
-      i_string_unicode_U+1FFFE_nonchar
-      i_string_unicode_U+FDD0_nonchar
-      i_string_unicode_U+FFFE_nonchar
    );
 # should parse and return undef:
 my %i_empty    = map{$_ => 1}

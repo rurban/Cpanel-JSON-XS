@@ -9,6 +9,9 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
           the others error.
         - fixed detection of final \0 as illegal non-whitespace garbage. Fixes
           spectest 'n_number_then_00'. #72
+        - changed decode of unicode noncharacters between U+FFFD and U+10FFFF
+          to the recommended U+FFFD REPLACEMENT CHARACTER, when not in the binary
+          or relaxed mode.
 
 3.0219 2016-10-26 (rurban)
 	- workaround mingw 4.0 modfl() bug [perl #125924]

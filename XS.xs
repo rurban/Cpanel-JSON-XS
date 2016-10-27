@@ -2228,6 +2228,30 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
                               ERR ("surrogate pair expected");
 
                             hi = (hi - 0xD800) * 0x400 + (lo - 0xDC00) + 0x10000;
+
+           /* nonchars +UFDD0-10FFFF
+              https://www.rfc-editor.org/errata_search.php?rfc=7159&eid=3984
+              The WG's consensus was to leave the full range present
+              in the ABNF and add the interoperability guidance about
+              values outside the Unicode accepted range.
+
+              http://seriot.ch/parsing_json.html#25 According to the
+              Unicode standard, invalid codepoints should be replaced
+              by U+FFFD REPLACEMENT CHARACTER. People familiar with
+              Unicode complexity won't be surprised that this
+              replacement is not mandatory, and can be done in several
+              ways (see Unicode PR #121: Recommended Practice for
+              Replacement Characters). So several parsers use
+              replacement characters, while other keep the escaped
+              form or produce an non-Unicode character (see Section 5
+              - Parsing Contents).
+              Most parsers accept this.
+           */
+                            /* in non-relaxed, non-binary mode replace nonchars
+                               with U+FFFD */
+                            if (hi > 0xfdd0 && hi < 0x10ffff
+                                && !(dec->json.flags & F_RELAXED|F_BINARY))
+                              hi = 0xFFFD;
                           }
                         else if (hi < 0xe000) {
                           ERR ("missing high surrogate character in surrogate pair");
@@ -2237,7 +2261,6 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
                       if (hi >= 0x80)
                         {
                           utf8 = 1;
-
                           cur = (char*)encode_utf8 ((U8*)cur, hi);
                         }
                       else
