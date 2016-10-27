@@ -123,6 +123,9 @@ mingw_modfl(long double x, long double *ip)
 # endif
 #endif
 /* compatibility with perl <5.14 */
+#ifndef PERL_UNICODE_MAX
+#define PERL_UNICODE_MAX 0x10FFFF
+#endif
 #ifndef HvNAMELEN_get
 # define HvNAMELEN_get(hv) strlen (HvNAME (hv))
 #endif
@@ -355,7 +358,7 @@ shrink (pTHX_ SV *sv)
 /* but use the very good perl function to parse anything else. */
 /* note that we never call this function for a ascii codepoints */
 INLINE UV
-decode_utf8 (pTHX_ unsigned char *s, STRLEN len, STRLEN *clen)
+decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
 {
   if (expect_true (len >= 2
                    && IN_RANGE_INC (char, s[0], 0xc2, 0xdf)
@@ -366,10 +369,26 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, STRLEN *clen)
     }
   else {
 #if PERL_VERSION >= 8
-    return utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
+    UV c = utf8n_to_uvuni (s, len, clen,
+               UTF8_CHECK_ONLY
+/* Since perl 5.14 we can disallow illegal unicode above U+10FFFF.
+   Before we could only warn with warnings 'utf8'.
+   We accept only valid unicode, unless we are in the relaxed mode. */
+#if PERL_VERSION > 12
+               | (relaxed ? 0 : UTF8_DISALLOW_SUPER)
+#endif
+                           );
+#if PERL_VERSION <= 12
+    if (c > PERL_UNICODE_MAX && !relaxed)
+      *clen = -1;
+#endif
+    return c;
 #else
     /* for perl 5.6 */
-    return utf8_to_uv(s, len, clen, UTF8_CHECK_ONLY);
+    UV c = utf8_to_uv(s, len, clen, UTF8_CHECK_ONLY);
+    if (c > PERL_UNICODE_MAX && !relaxed)
+      *clen = -1;
+    return c;
 #endif
   }
 }
@@ -684,7 +703,8 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
 
                   if (is_utf8 && !(enc->json.flags & F_BINARY))
                     {
-                      uch = decode_utf8 (aTHX_ (unsigned char *)str, end - str, &clen);
+                      uch = decode_utf8 (aTHX_ (unsigned char *)str, end - str,
+                                         enc->json.flags & F_RELAXED, &clen);
                       if (clen == (STRLEN)-1)
                         croak ("malformed or illegal unicode character in string [%.11s], cannot convert to JSON", str);
                     }
@@ -2286,7 +2306,8 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
 
               --dec_cur;
 
-              decode_utf8 (aTHX_ (U8*)dec_cur, dec->end - dec_cur, &clen);
+              decode_utf8 (aTHX_ (U8*)dec_cur, dec->end - dec_cur,
+                           dec->json.flags & F_RELAXED, &clen);
               if (clen == (STRLEN)-1)
                 ERR ("malformed UTF-8 character in JSON string");
 

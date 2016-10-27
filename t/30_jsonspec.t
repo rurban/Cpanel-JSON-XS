@@ -9,17 +9,17 @@ my $relaxed = Cpanel::JSON::XS->new->utf8->allow_nonref->relaxed;
 #  n_string_UTF8_surrogate_U+D800     ["EDA080"] <=> [""] unicode
 #  y_string_utf*                      FFFE["é"] <=> ["é"] BOM
 # done:
-#  i_string_unicode_U+10FFFE_nonchar  ["\uDBFF\uDFFE"]
+#  i_string_unicode_U+10FFFE_nonchar  ["\uDBFF\uDFFE"] => U+FFFD
 #  i_string_unicode_U+1FFFE_nonchar
 #  i_string_unicode_U+FDD0_nonchar
 #  i_string_unicode_U+FFFE_nonchar
+#  i_string_not_in_unicode_range      Code point 0x13FFFF is not Unicode UTF8_DISALLOW_SUPER
 my %todo = map{$_ => 1}
   qw(
       y_string_utf16
       y_string_utf16be
       y_string_utf32
       y_string_utf32be
-      i_string_not_in_unicode_range
    );
 $todo{'y_string_nonCharacterInUTF-8_U+FFFF'}++ if $] < 5.013;
 $todo{'n_string_UTF8_surrogate_U+D800'}++ if $] >= 5.012;
@@ -27,7 +27,6 @@ if ($] < 5.008) {
   # 5.6 has no multibyte support
   $todo{$_}++ for qw(
                       n_string_overlong_sequence_2_bytes
-                      n_string_overlong_sequence_6_bytes
                       n_string_overlong_sequence_6_bytes_null
                    );
 }
@@ -45,7 +44,7 @@ my %i_pass = map{$_ => 1}
       i_string_unicode_U+FDD0_nonchar
       i_string_unicode_U+FFFE_nonchar
    );
-# should also fail with relaxed
+# should also fail with relaxed, except i_string_not_in_unicode_range
 my %i_parseerr = map{$_ => 1}
   qw(
       i_object_key_lone_2nd_surrogate
@@ -74,7 +73,7 @@ sub n_error {
   my $result = eval { $json->decode($str) };
  TODO: {
     local $TODO = "$name" if exists $todo{$name};
-    isnt($@, '', "parsing error with $name ".substr($@,0,20));
+    isnt($@, '', "parsing error with $name ".substr($@,0,40));
     is($result, undef, "undef result with $name");
   }
 }
@@ -82,10 +81,10 @@ sub n_error {
 sub y_pass {
   my ($str, $name) = @_;
   $@ = '';
-  my $result = 1+$todo{$name} ? eval { $json->decode($str) } : $json->decode($str);
+  my $result = $todo{$name} ? eval { $json->decode($str) } : $json->decode($str);
  TODO: {
     local $TODO = "$name" if exists $todo{$name};
-    is($@, '', "no parsing error with $name ".substr($@,0,20));
+    is($@, '', "no parsing error with $name ".substr($@,0,40));
     if ($str eq 'null') {
       is($result, undef, "valid result with $name");
     } else {
@@ -115,11 +114,11 @@ sub i_pass {
   my $result = $todo{$name} ? eval { $json->decode($str) } : $json->decode($str);
   TODO: {
     local $TODO = "$name" if exists $todo{$name};
-    is($@, '', "no parsing error with undefined $name".substr($@,0,20));
+    is($@, '', "no parsing error with undefined $name".substr($@,0,40));
     isnt($result, undef, "valid result with undefined $name");
     $@ = '';
     $result    = eval { $relaxed->decode($str) };
-    is($@, '', "no parsing error with undefined $name relaxed".substr($@,0,20));
+    is($@, '', "no parsing error with undefined $name relaxed".substr($@,0,40));
     isnt($result, undef, "valid result with undefined $name relaxed");
   }
 }
@@ -130,12 +129,17 @@ sub i_error {
   my $result = eval { $json->decode($str) };
   TODO: {
     local $TODO = "$name" if exists $todo{$name};
-    isnt($@, '', "parsing error with undefined $name ".substr($@,0,20));
+    isnt($@, '', "parsing error with undefined $name ".substr($@,0,40));
     is($result, undef, "no result with undefined $name");
     $@ = '';
     $result = eval { $relaxed->decode($str) };
-    isnt($@, '', "parsing error with undefined $name relaxed ".substr($@,0,20));
-    is($result, undef, "no result with undefined $name relaxed");
+    if ($name eq 'i_string_not_in_unicode_range') {
+      is($@, '', "no parsing error with undefined $name relaxed".substr($@,0,40));
+      isnt($result, undef, "valid result with undefined $name relaxed");
+    } else {
+      isnt($@, '', "parsing error with undefined $name relaxed ".substr($@,0,40));
+      is($result, undef, "no result with undefined $name relaxed");
+    }
   }
 }
 
