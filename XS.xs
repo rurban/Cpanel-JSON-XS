@@ -2958,7 +2958,7 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
     len = SvCUR (string);
 #endif
 
-    if (len > json->max_size && json->max_size)
+    if (UNLIKELY(len > json->max_size && json->max_size))
       croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
              (unsigned long)len, (unsigned long)json->max_size);
   }
@@ -3512,7 +3512,7 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
                 {
                   incr_parse (self);
 
-                  if (self->incr_pos > self->max_size && self->max_size)
+                  if (UNLIKELY(self->incr_pos > self->max_size && self->max_size))
                     croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
                            (unsigned long)self->incr_pos, (unsigned long)self->max_size);
 
@@ -3550,7 +3550,7 @@ SV *incr_text (JSON *self)
         ATTRS: lvalue
 	CODE:
 {
-        if (self->incr_pos)
+        if (UNLIKELY(self->incr_pos))
           croak ("incr_text can not be called when the incremental parser already started parsing");
 
         RETVAL = self->incr_text ? SvREFCNT_inc (self->incr_text) : &PL_sv_undef;
@@ -3563,7 +3563,7 @@ SV *incr_text (JSON *self)
 SV *incr_text (JSON *self)
 	CODE:
 {
-        if (self->incr_pos)
+        if (UNLIKELY(self->incr_pos))
           croak ("incr_text can not be called when the incremental parser already started parsing");
 
         RETVAL = self->incr_text ? SvREFCNT_inc (self->incr_text) : &PL_sv_undef;

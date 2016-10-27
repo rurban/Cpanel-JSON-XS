@@ -367,6 +367,9 @@ t/test_parsing/y_string_unicode_U+200B_ZERO_WIDTH_SPACE.json
 t/test_parsing/y_string_unicode_U+2064_invisible_plus.json
 t/test_parsing/y_string_unicode_escaped_double_quote.json
 t/test_parsing/y_string_utf16.json
+t/test_parsing/y_string_utf16be.json
+t/test_parsing/y_string_utf32.json
+t/test_parsing/y_string_utf32be.json
 t/test_parsing/y_string_utf8.json
 t/test_parsing/y_string_with_del_character.json
 t/test_parsing/y_structure_lonely_false.json

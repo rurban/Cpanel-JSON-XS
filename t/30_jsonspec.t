@@ -1,6 +1,6 @@
 # regressions and differences from the JSON Specs and JSON::PP
 # detected by http://seriot.ch/json/parsing.html
-use Test::More tests => 672;
+use Test::More tests => 678;
 use Cpanel::JSON::XS;
 my $json = Cpanel::JSON::XS->new->utf8->allow_nonref;
 my $relaxed = Cpanel::JSON::XS->new->utf8->allow_nonref->relaxed;
@@ -14,6 +14,9 @@ my $relaxed = Cpanel::JSON::XS->new->utf8->allow_nonref->relaxed;
 my %todo = map{$_ => 1}
   qw(
       y_string_utf16
+      y_string_utf16be
+      y_string_utf32
+      y_string_utf32be
       n_number_then_00
       i_string_unicode_U+10FFFE_nonchar
       i_string_unicode_U+1FFFE_nonchar
