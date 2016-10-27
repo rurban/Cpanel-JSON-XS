@@ -17,7 +17,6 @@ my %todo = map{$_ => 1}
       y_string_utf16be
       y_string_utf32
       y_string_utf32be
-      n_number_then_00
       i_string_unicode_U+10FFFE_nonchar
       i_string_unicode_U+1FFFE_nonchar
       i_string_unicode_U+FDD0_nonchar

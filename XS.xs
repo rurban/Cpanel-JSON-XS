@@ -3041,11 +3041,11 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
       /* check for trailing garbage */
       decode_ws (&dec);
 
-      if (*dec.cur)
+      if ((dec.end - dec.cur) || *dec.cur)
         {
           dec.err = "garbage after JSON object";
           SvREFCNT_dec (sv);
-          sv = 0;
+          sv = NULL;
         }
     }
 
