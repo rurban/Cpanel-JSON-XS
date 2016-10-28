@@ -2,7 +2,7 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-3.0220 2016-10-?? (rurban)
+3.0220 2016-10-28 (rurban)
 	- add comprehensive JSON decode spectests from
           http://seriot.ch/parsing_json.html. #72
         - decode with BOM (UTF-8, UTF-16, or UTF-32). For now only UTF-8,
@@ -12,6 +12,8 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
         - changed decode of unicode noncharacters between U+FFFD and U+10FFFF
           to the recommended U+FFFD REPLACEMENT CHARACTER, when not in the binary
           or relaxed mode.
+        - fail decode of non-unicode raw characters above U+10FFFF
+          when not in relaxed mode.
 
 3.0219 2016-10-26 (rurban)
 	- workaround mingw 4.0 modfl() bug [perl #125924]
