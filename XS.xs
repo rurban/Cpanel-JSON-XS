@@ -35,10 +35,11 @@
 #define UTF32BOM    "\377\376\000\000"  /* FF FE 00 00 */
 #define UTF32BOM_BE "\000\000\376\377"  /* 00 00 FE FF */
 
-/* strawberry 5.22 with USE_MINGW_ANSI_STDIO and USE_LONG_DOUBLE have now 
+/* strawberry 5.22 with USE_MINGW_ANSI_STDIO and USE_LONG_DOUBLE has now 
    a proper inf/nan */
-#if defined(_WIN32) && !defined(__USE_MINGW_ANSI_STDIO) && !defined(USE_LONG_DOUBLE)
+#if defined(WIN32) && !defined(__USE_MINGW_ANSI_STDIO) && !defined(USE_LONG_DOUBLE)
 #define STR_INF "1.#INF"
+#define STR_INF2 "1.#INF.0"
 #define STR_NAN "1.#IND"
 #define STR_QNAN "1.#QNAN"
 #define HAVE_QNAN
@@ -368,20 +369,20 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
       return ((s[0] & 0x1f) << 6) | (s[1] & 0x3f);
     }
   else {
-#if PERL_VERSION >= 8
-    UV c = utf8n_to_uvuni (s, len, clen,
-               UTF8_CHECK_ONLY
 /* Since perl 5.14 we can disallow illegal unicode above U+10FFFF.
    Before we could only warn with warnings 'utf8'.
    We accept only valid unicode, unless we are in the relaxed mode. */
 #if PERL_VERSION > 12
-               | (relaxed ? 0 : UTF8_DISALLOW_SUPER)
+    UV c = utf8n_to_uvuni (s, len, clen,
+               UTF8_CHECK_ONLY | (relaxed ? 0 : UTF8_DISALLOW_SUPER));
+#elif PERL_VERSION >= 8
+    UV c = utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
 #endif
-                           );
 #if PERL_VERSION <= 12
     if (c > PERL_UNICODE_MAX && !relaxed)
       *clen = -1;
 #endif
+#if PERL_VERSION >= 8
     return c;
 #else
     /* for perl 5.6 */
@@ -1322,6 +1323,10 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
 
       if (expect_false(strEQc(enc->cur, STR_INF)))
         inf_or_nan = 1;
+#ifdef STR_INF2
+      else if (expect_false(strEQc(enc->cur, STR_INF2)))
+        inf_or_nan = 1;
+#endif
 #if defined(__hpux)
       else if (expect_false(strEQc(enc->cur, STR_NEG_INF)))
         inf_or_nan = 2;
@@ -1331,7 +1336,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
       else if
 #ifdef HAVE_QNAN
         (expect_false(strEQc(enc->cur, STR_NAN)
-                   || strEQc(enc->cur, STR_QNAN)))
+                  || strEQc(enc->cur, STR_QNAN)))
 #else
         (expect_false(strEQc(enc->cur, STR_NAN)))
 #endif
@@ -1339,14 +1344,18 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
       else if (*enc->cur == '-') {
         if (expect_false(strEQc(enc->cur+1, STR_INF)))
           inf_or_nan = 2;
+#ifdef STR_INF2
+        else if (expect_false(strEQc(enc->cur+1, STR_INF2)))
+          inf_or_nan = 2;
+#endif
         else if
 #ifdef HAVE_QNAN
           (expect_false(strEQc(enc->cur+1, STR_NAN)
-                     || strEQc(enc->cur+1, STR_QNAN)))
+                    || strEQc(enc->cur+1, STR_QNAN)))
 #else
           (expect_false(strEQc(enc->cur+1, STR_NAN)))
 #endif
-          inf_or_nan = 3;
+            inf_or_nan = 3;
       }
       if (expect_false(inf_or_nan)) {
 #if defined(HAVE_ISINF) && defined(HAVE_ISNAN)
