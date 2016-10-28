@@ -195,9 +195,9 @@ t/test_parsing/n_object_unterminated-value.json
 t/test_parsing/n_object_with_single_string.json
 t/test_parsing/n_object_with_trailing_garbage.json
 t/test_parsing/n_single_space.json
-t/test_parsing/n_string_1_surrogate_then_escape u.json
-t/test_parsing/n_string_1_surrogate_then_escape u1.json
-t/test_parsing/n_string_1_surrogate_then_escape u1x.json
+t/test_parsing/n_string_1_surrogate_then_escape_u.json
+t/test_parsing/n_string_1_surrogate_then_escape_u1.json
+t/test_parsing/n_string_1_surrogate_then_escape_u1x.json
 t/test_parsing/n_string_1_surrogate_then_escape.json
 t/test_parsing/n_string_UTF-16_incomplete_surrogate.json
 t/test_parsing/n_string_UTF8_surrogate_U+D800.json
@@ -232,8 +232,8 @@ t/test_parsing/n_string_unescaped_tab.json
 t/test_parsing/n_string_unicode_CapitalU.json
 t/test_parsing/n_string_with_trailing_garbage.json
 t/test_parsing/n_structure_100000_opening_arrays.json
-t/test_parsing/n_structure_<.>.json
-t/test_parsing/n_structure_<null>.json
+t/test_parsing/n_structure_lt.gt.json
+t/test_parsing/n_structure_ltnullgt.json
 t/test_parsing/n_structure_U+2060_word_joined.json
 t/test_parsing/n_structure_UTF8_BOM_no_data.json
 t/test_parsing/n_structure_array_trailing_garbage.json

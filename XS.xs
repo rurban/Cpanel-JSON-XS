@@ -104,9 +104,6 @@ mingw_modfl(long double x, long double *ip)
 #ifndef HeKUTF8
 #define HeKUTF8(he) 0
 #endif
-#ifndef UNLIKELY
-# define UNLIKELY(expr) expr
-#endif
 #ifndef GV_NOADD_NOINIT
 #define GV_NOADD_NOINIT 0
 #endif
@@ -226,9 +223,10 @@ mingw_modfl(long double x, long double *ip)
 # define _expect(expr,value)        (expr)
 # define INLINE                     static
 #endif
-
-#define expect_false(expr) _expect ((expr) != 0, 0)
-#define expect_true(expr)  _expect ((expr) != 0, 1)
+#ifndef LIKELY
+#define LIKELY(expr)   _expect ((expr) != 0, 1)
+#define UNLIKELY(expr) _expect ((expr) != 0, 0)
+#endif
 
 #define IN_RANGE_INC(type,val,beg,end) \
   ((unsigned type)((unsigned type)(val) - (unsigned type)(beg)) \
@@ -361,7 +359,7 @@ shrink (pTHX_ SV *sv)
 INLINE UV
 decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
 {
-  if (expect_true (len >= 2
+  if (LIKELY(len >= 2
                    && IN_RANGE_INC (char, s[0], 0xc2, 0xdf)
                    && IN_RANGE_INC (char, s[1], 0x80, 0xbf)))
     {
@@ -400,9 +398,9 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
 INLINE unsigned char *
 encode_utf8 (unsigned char *s, UV ch)
 {
-  if      (expect_false (ch < 0x000080))
+  if      (UNLIKELY(ch < 0x000080))
     *s++ = ch;
-  else if (expect_true  (ch < 0x000800))
+  else if (LIKELY(ch < 0x000800))
     *s++ = 0xc0 | ( ch >>  6),
     *s++ = 0x80 | ( ch        & 0x3f);
   else if (              ch < 0x010000)
@@ -468,7 +466,7 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
 #else
   /* if we recurse too deep, skip all remaining digits */
   /* to avoid a stack overflow attack */
-  if (expect_false (--maxdepth <= 0))
+  if (UNLIKELY(--maxdepth <= 0))
     while (((U8)*s - '0') < 10)
       ++s;
 
@@ -476,7 +474,7 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
     {
       U8 dig = (U8)*s - '0';
 
-      if (expect_false (dig >= 10))
+      if (UNLIKELY(dig >= 10))
         {
           if (dig == (U8)((U8)'.' - (U8)'0'))
             {
@@ -625,7 +623,7 @@ typedef struct
 INLINE void
 need (pTHX_ enc_t *enc, STRLEN len)
 {
-  if (expect_false (enc->cur + len >= enc->end))
+  if (UNLIKELY(enc->cur + len >= enc->end))
     {
       STRLEN cur = enc->cur - (char *)SvPVX (enc->sv);
       SvGROW (enc->sv, cur + (len < (cur >> 2) ? cur >> 2 : len) + 1);
@@ -662,21 +660,21 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
     {
       unsigned char ch = *(unsigned char *)str;
 
-      if (expect_true (ch >= 0x20 && ch < 0x80)) /* most common case */
+      if (LIKELY(ch >= 0x20 && ch < 0x80)) /* most common case */
         {
-          if (expect_false (ch == '"')) /* but with slow exceptions */
+          if (UNLIKELY(ch == '"')) /* but with slow exceptions */
             {
               need (aTHX_ enc, len += 1);
               *enc->cur++ = '\\';
               *enc->cur++ = '"';
             }
-          else if (expect_false (ch == '\\'))
+          else if (UNLIKELY(ch == '\\'))
             {
               need (aTHX_ enc, len += 1);
               *enc->cur++ = '\\';
               *enc->cur++ = '\\';
             }
-          else if (expect_false (ch == '/' && (enc->json.flags & F_ESCAPE_SLASH)))
+          else if (UNLIKELY(ch == '/' && (enc->json.flags & F_ESCAPE_SLASH)))
             {
               need (aTHX_ enc, len += 1);
               *enc->cur++ = '\\';
@@ -993,7 +991,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv)
               encode_indent (aTHX_ enc);
               he = hes [count];
               encode_hk (aTHX_ enc, he);
-              encode_sv (aTHX_ enc, expect_false (SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
+              encode_sv (aTHX_ enc, UNLIKELY(SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
 
               if (count)
                 encode_comma (aTHX_ enc);
@@ -1013,7 +1011,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv)
               {
                 encode_indent (aTHX_ enc);
                 encode_hk (aTHX_ enc, he);
-                encode_sv (aTHX_ enc, expect_false (SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
+                encode_sv (aTHX_ enc, UNLIKELY(SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he));
 
                 if (!(he = hv_iternext (hv)))
                   break;
@@ -1154,7 +1152,7 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
   SvGETMAGIC (sv);
   svt = SvTYPE (sv);
 
-  if (expect_false (SvOBJECT (sv)))
+  if (UNLIKELY(SvOBJECT (sv)))
     {
       dMY_CXT;
       HV *bstash   = MY_CXT.json_boolean_stash; /* JSON-XS-3.x interop (Types::Serialiser/JSON::PP::Boolean) */
@@ -1284,11 +1282,11 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
 {
   SvGETMAGIC (sv);
 
-  if (expect_false(sv == &PL_sv_yes ))
+  if (UNLIKELY(sv == &PL_sv_yes ))
     {
       encode_str (aTHX_ enc, "true", 4, 0);
     }
-  else if (expect_false(sv == &PL_sv_no ))
+  else if (UNLIKELY(sv == &PL_sv_no ))
     {
       encode_str (aTHX_ enc, "false", 5, 0);
     }
@@ -1306,9 +1304,9 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
       /* With no stringify_infnan we can skip the conversion, returning null. */
       if (enc->json.infnan_mode == 0) {
 # if defined(USE_QUADMATH) && defined(HAVE_ISINFL) && defined(HAVE_ISNANL)
-        if (expect_false(isinfl(nv) || isnanl(nv)))
+        if (UNLIKELY(isinfl(nv) || isnanl(nv)))
 # else
-        if (expect_false(isinf(nv) || isnan(nv)))
+        if (UNLIKELY(isinf(nv) || isnan(nv)))
 # endif
           {
             goto is_inf_or_nan;
@@ -1321,43 +1319,43 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
       (void)Gconvert (nv, NV_DIG, 0, enc->cur);
 #endif
 
-      if (expect_false(strEQc(enc->cur, STR_INF)))
+      if (UNLIKELY(strEQc(enc->cur, STR_INF)))
         inf_or_nan = 1;
 #ifdef STR_INF2
-      else if (expect_false(strEQc(enc->cur, STR_INF2)))
+      else if (UNLIKELY(strEQc(enc->cur, STR_INF2)))
         inf_or_nan = 1;
 #endif
 #if defined(__hpux)
-      else if (expect_false(strEQc(enc->cur, STR_NEG_INF)))
+      else if (UNLIKELY(strEQc(enc->cur, STR_NEG_INF)))
         inf_or_nan = 2;
-      else if (expect_false(strEQc(enc->cur, STR_NEG_NAN)))
+      else if (UNLIKELY(strEQc(enc->cur, STR_NEG_NAN)))
         inf_or_nan = 3;
 #endif
       else if
 #ifdef HAVE_QNAN
-        (expect_false(strEQc(enc->cur, STR_NAN)
+        (UNLIKELY(strEQc(enc->cur, STR_NAN)
                   || strEQc(enc->cur, STR_QNAN)))
 #else
-        (expect_false(strEQc(enc->cur, STR_NAN)))
+        (UNLIKELY(strEQc(enc->cur, STR_NAN)))
 #endif
         inf_or_nan = 3;
       else if (*enc->cur == '-') {
-        if (expect_false(strEQc(enc->cur+1, STR_INF)))
+        if (UNLIKELY(strEQc(enc->cur+1, STR_INF)))
           inf_or_nan = 2;
 #ifdef STR_INF2
-        else if (expect_false(strEQc(enc->cur+1, STR_INF2)))
+        else if (UNLIKELY(strEQc(enc->cur+1, STR_INF2)))
           inf_or_nan = 2;
 #endif
         else if
 #ifdef HAVE_QNAN
-          (expect_false(strEQc(enc->cur+1, STR_NAN)
+          (UNLIKELY(strEQc(enc->cur+1, STR_NAN)
                     || strEQc(enc->cur+1, STR_QNAN)))
 #else
-          (expect_false(strEQc(enc->cur+1, STR_NAN)))
+          (UNLIKELY(strEQc(enc->cur+1, STR_NAN)))
 #endif
             inf_or_nan = 3;
       }
-      if (expect_false(inf_or_nan)) {
+      if (UNLIKELY(inf_or_nan)) {
 #if defined(HAVE_ISINF) && defined(HAVE_ISNAN)
       is_inf_or_nan:
 #endif
@@ -1554,7 +1552,7 @@ decode_ws (dec_t *dec)
 
       if (ch > 0x20)
         {
-          if (expect_false (ch == '#'))
+          if (UNLIKELY(ch == '#'))
             {
               if (dec->json.flags & F_RELAXED)
                 decode_comment (dec);
@@ -2114,10 +2112,10 @@ decode_4hex (dec_t *dec)
   signed char d1, d2, d3, d4;
   unsigned char *cur = (unsigned char *)dec->cur;
 
-  d1 = decode_hexdigit [cur [0]]; if (expect_false (d1 < 0)) ERR ("exactly four hexadecimal digits expected");
-  d2 = decode_hexdigit [cur [1]]; if (expect_false (d2 < 0)) ERR ("exactly four hexadecimal digits expected");
-  d3 = decode_hexdigit [cur [2]]; if (expect_false (d3 < 0)) ERR ("exactly four hexadecimal digits expected");
-  d4 = decode_hexdigit [cur [3]]; if (expect_false (d4 < 0)) ERR ("exactly four hexadecimal digits expected");
+  d1 = decode_hexdigit [cur [0]]; if (UNLIKELY(d1 < 0)) ERR ("exactly four hexadecimal digits expected");
+  d2 = decode_hexdigit [cur [1]]; if (UNLIKELY(d2 < 0)) ERR ("exactly four hexadecimal digits expected");
+  d3 = decode_hexdigit [cur [2]]; if (UNLIKELY(d3 < 0)) ERR ("exactly four hexadecimal digits expected");
+  d4 = decode_hexdigit [cur [3]]; if (UNLIKELY(d4 < 0)) ERR ("exactly four hexadecimal digits expected");
 
   dec->cur += 4;
 
@@ -2136,8 +2134,8 @@ decode_2hex (dec_t *dec)
   signed char d1, d2;
   unsigned char *cur = (unsigned char *)dec->cur;
 
-  d1 = decode_hexdigit [cur [0]]; if (expect_false (d1 < 0)) ERR ("exactly two hexadecimal digits expected");
-  d2 = decode_hexdigit [cur [1]]; if (expect_false (d2 < 0)) ERR ("exactly two hexadecimal digits expected");
+  d1 = decode_hexdigit [cur [0]]; if (UNLIKELY(d1 < 0)) ERR ("exactly two hexadecimal digits expected");
+  d2 = decode_hexdigit [cur [1]]; if (UNLIKELY(d2 < 0)) ERR ("exactly two hexadecimal digits expected");
   dec->cur += 2;
   return ((UV)d1) << 4
        | ((UV)d2);
@@ -2178,12 +2176,12 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
         {
           ch = *(unsigned char *)dec_cur++;
 
-          if (expect_false (ch == endstr))
+          if (UNLIKELY(ch == endstr))
             {
               --dec_cur;
               break;
             }
-          else if (expect_false (ch == '\\'))
+          else if (UNLIKELY(ch == '\\'))
             {
               switch (*dec_cur)
                 {
@@ -2302,9 +2300,9 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
                     ERR ("illegal backslash escape sequence in string");
                 }
             }
-          else if (expect_true (ch >= 0x20 && ch < 0x80)) {
+          else if (LIKELY(ch >= 0x20 && ch < 0x80)) {
             *cur++ = ch;
-            if (expect_false (allow_squote && ch == 0x27)) {
+            if (UNLIKELY(allow_squote && ch == 0x27)) {
               --dec_cur;
               break;
             }
@@ -2613,10 +2611,10 @@ decode_hv (pTHX_ dec_t *dec)
       {
         int is_bare = allow_barekey;
 
-        if (expect_false(allow_barekey
+        if (UNLIKELY(allow_barekey
                          && *dec->cur >= 'A' && *dec->cur <= 'z'))
           ;
-        else if (expect_false(allow_squote)) {
+        else if (UNLIKELY(allow_squote)) {
           if (*dec->cur != '"' && *dec->cur != 0x27) {
             ERR ("'\"' or ''' expected");
           }
@@ -2679,7 +2677,7 @@ decode_hv (pTHX_ dec_t *dec)
 #if PTRSIZE >= 8
                   /* hv_store can only handle I32 len, which might overflow */
                   /* perl5 just silently truncates it, cperl panics */
-                  if (expect_false(p - key > I32_MAX))
+                  if (UNLIKELY(p - key > I32_MAX))
                     ERR ("Hash key too large");
 #endif
                   dec->cur = p + 1;

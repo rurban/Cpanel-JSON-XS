@@ -26,6 +26,7 @@ fromformat
 le
 toformat
 yaml
+BOM
 BMP
 BSON
 CVE
