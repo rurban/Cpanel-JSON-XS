@@ -1299,6 +1299,10 @@ the above example :).
 Detect all unicode B<Byte Order Marks> on decode.
 Which are UTF-8, UTF-16LE, UTF-16BE, UTF-32LE and UTF-32BE.
 
+B<Warning>: With perls older than 5.20 you need load the Encode module
+before loading a multibyte BOM, i.e. >= UTF-16. Otherwise an error is
+thrown. This is an implementation limitation and might get fixed later.
+
 See L<https://tools.ietf.org/html/rfc7159#section-8.1>
 I<"JSON text SHALL be encoded in UTF-8, UTF-16, or UTF-32.">
 

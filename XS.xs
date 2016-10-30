@@ -2988,12 +2988,13 @@ decode_bom(pTHX_ const char* encoding, SV* string, STRLEN offset)
   return string;
 #else
   ENTER;
-#if PERL_VERSION > 1
-  /* on older perls (<5.20) this may corrupt ax */
+#if PERL_VERSION > 18
+  /* on older perls (<5.20) this corrupts ax */
   Perl_load_module(aTHX_ PERL_LOADMOD_NOIMPORT, newSVpvs("Encode"),
                    NULL, NULL, NULL);
 #else
-  eval_pv("require Encode;", 1);
+  if (!get_cvs("Encode::decode", GV_NOADD_NOINIT|GV_NO_SVGMAGIC))
+    croak("Multibyte BOM needs to use Encode before");
 #endif
   LEAVE;
   ENTER;

@@ -4,6 +4,7 @@
 # JSON text SHALL be encoded in UTF-8, UTF-16, or UTF-32.
 use Test::More tests => 5;
 use Cpanel::JSON::XS;
+use Encode; # Currently required for <5.20
 use utf8;
 my $json = Cpanel::JSON::XS->new->utf8->allow_nonref;
 

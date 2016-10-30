@@ -2,6 +2,9 @@
 # detected by http://seriot.ch/json/parsing.html
 use Test::More tests => 686;
 use Cpanel::JSON::XS;
+BEGIN {
+  require Encode if $] < 5.020; # Currently required for <5.20
+}
 my $json    = Cpanel::JSON::XS->new->utf8->allow_nonref;
 my $relaxed = Cpanel::JSON::XS->new->utf8->allow_nonref->relaxed;
 
