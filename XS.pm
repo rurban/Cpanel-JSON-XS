@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '3.0220';
+our $VERSION = '3.0221';
 our $XS_VERSION = $VERSION;
 $VERSION = eval $VERSION;
 
@@ -309,15 +309,13 @@ Unicode string encoded in UTF-8, giving you a binary string.
 
 =item 5. A string containing "high" (> 255) character values is I<not> a UTF-8 string.
 
-=item 6. Unicode non-characters fail or are replaced.
+=item 6. Unicode noncharacters only warn, as in core.
 
-Unicode non-characters between U+FFFD and U+10FFFF are decoded either
-to the recommended U+FFFD REPLACEMENT CHARACTER (see Unicode PR #121:
-Recommended Practice for Replacement Characters), or in the binary or
-relaxed mode left as is, keeping the illegal non-characters as before.
-Illegal surrogate pairs fail to parse.
+The 66 Unicode noncharacters U+FDD0..U+FDEF, and U+*FFFE, U+*FFFF just warn,
+see L<http://www.unicode.org/versions/corrigendum9.html>.
+But illegal surrogate pairs fail to parse.
 
-=item 7. Raw non-Unicode characters above U+10FFFF is disallowed
+=item 7. Raw non-Unicode characters above U+10FFFF are disallowed.
 
 Raw non-Unicode characters outside the valid unicode range fail to
 parse, because "A string is a sequence of zero or more Unicode

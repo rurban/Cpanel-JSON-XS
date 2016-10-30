@@ -2,6 +2,17 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0221 2016-10-30 (rurban)
+        - fixed documentation of decode for unicode noncharacters.
+          added correct code to warn as in core.
+          no replacement, ignore warnings when in relaxed mode.
+          We used a wrong range also, but the wrong code from 3.02220
+          was never executed because of an coding error. #73, #74
+        - Fixed a perl 5.6 compilation regression from 3.0220.
+        - Improve decode_bom for multibyte encoding, but not yet enabled.
+          refcount error.
+        - Add 5.24 to travis tests
+
 3.0220 2016-10-28 (rurban)
 	- add comprehensive JSON decode spectests from
           http://seriot.ch/parsing_json.html. #72

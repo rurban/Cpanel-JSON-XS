@@ -250,14 +250,12 @@ A FEW NOTES ON UNICODE AND PERL
 
     5. A string containing "high" (> 255) character values is *not* a UTF-8
     string.
-    6. Unicode non-characters fail or are replaced.
-        Unicode non-characters between U+FFFD and U+10FFFF are decoded
-        either to the recommended U+FFFD REPLACEMENT CHARACTER (see Unicode
-        PR #121: Recommended Practice for Replacement Characters), or in the
-        binary or relaxed mode left as is, keeping the illegal
-        non-characters as before. Illegal surrogate pairs fail to parse.
+    6. Unicode noncharacters only warn, as in core.
+        The 66 Unicode noncharacters U+FDD0..U+FDEF, and U+*FFFE, U+*FFFF
+        just warn, see <http://www.unicode.org/versions/corrigendum9.html>.
+        But illegal surrogate pairs fail to parse.
 
-    7. Raw non-Unicode characters above U+10FFFF is disallowed
+    7. Raw non-Unicode characters above U+10FFFF are disallowed.
         Raw non-Unicode characters outside the valid unicode range fail to
         parse, because "A string is a sequence of zero or more Unicode
         characters" RFC 7159 section 1 and "JSON text SHALL be encoded in

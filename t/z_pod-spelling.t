@@ -18,6 +18,7 @@ cbor
 syck
 interop
 nonref
+noncharacters
 Lehmann
 bencode
 clzf

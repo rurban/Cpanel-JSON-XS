@@ -134,6 +134,24 @@ mingw_modfl(long double x, long double *ip)
 #ifndef HvNAMEUTF8
 # define HvNAMEUTF8(hv) 0
 #endif
+/* since 5.14 check use warnings 'nonchar' */
+#ifdef WARN_NONCHAR
+#define WARNER_NONCHAR(hi)                                      \
+  Perl_ck_warner_d(aTHX_ packWARN(WARN_NONCHAR),                \
+                   "Unicode non-character U+%04"UVXf" is not "  \
+                   "recommended for open interchange", hi)
+/* before check use warnings 'utf8' */
+#elif PERL_VERSION > 10
+#define WARNER_NONCHAR(hi)                                         \
+  Perl_ck_warner_d(aTHX_ packWARN(WARN_UTF8),                      \
+                   "Unicode non-character U+%04"UVXf" is illegal " \
+                   "for interchange", hi)
+#else
+#define WARNER_NONCHAR(hi)                                         \
+  Perl_warner(aTHX_ packWARN(WARN_UTF8),                           \
+              "Unicode non-character U+%04lX is illegal", (unsigned long)hi)
+#endif
+
 /* since 5.16 */
 #ifndef GV_NO_SVGMAGIC
 #define GV_NO_SVGMAGIC 0
@@ -377,7 +395,7 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
 #elif PERL_VERSION >= 8
     UV c = utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
 #endif
-#if PERL_VERSION <= 12 && PERL_VERSION >= 8
+#if PERL_VERSION >= 8 && PERL_VERSION <= 12
     if (c > PERL_UNICODE_MAX && !relaxed)
       *clen = -1;
 #endif
@@ -2239,53 +2257,60 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
 
                       /* possibly a surrogate pair */
                       if (hi >= 0xd800) {
-                        if (hi < 0xdc00)
-                          {
-                            if (dec_cur [0] != '\\' || dec_cur [1] != 'u')
-                              ERR ("missing low surrogate character in surrogate pair");
+                        if (hi < 0xdc00) {
+                          if (dec_cur [0] != '\\' || dec_cur [1] != 'u')
+                            ERR ("missing low surrogate character in surrogate pair");
 
-                            dec_cur += 2;
+                          dec_cur += 2;
 
-                            dec->cur = dec_cur;
-                            lo = decode_4hex (dec);
-                            dec_cur = dec->cur;
-                            if (lo == (UV)-1)
-                              goto fail;
+                          dec->cur = dec_cur;
+                          lo = decode_4hex (dec);
+                          dec_cur = dec->cur;
+                          if (lo == (UV)-1)
+                            goto fail;
 
-                            if (lo < 0xdc00 || lo >= 0xe000)
-                              ERR ("surrogate pair expected");
+                          if (lo < 0xdc00 || lo >= 0xe000)
+                            ERR ("surrogate pair expected");
 
-                            hi = (hi - 0xD800) * 0x400 + (lo - 0xDC00) + 0x10000;
-
-           /* nonchars +UFDD0-10FFFF
-              https://www.rfc-editor.org/errata_search.php?rfc=7159&eid=3984
-              The WG's consensus was to leave the full range present
-              in the ABNF and add the interoperability guidance about
-              values outside the Unicode accepted range.
-
-              http://seriot.ch/parsing_json.html#25 According to the
-              Unicode standard, invalid codepoints should be replaced
-              by U+FFFD REPLACEMENT CHARACTER. People familiar with
-              Unicode complexity won't be surprised that this
-              replacement is not mandatory, and can be done in several
-              ways (see Unicode PR #121: Recommended Practice for
-              Replacement Characters). So several parsers use
-              replacement characters, while other keep the escaped
-              form or produce an non-Unicode character (see Section 5
-              - Parsing Contents).
-              Most parsers accept this.
-           */
-                            /* in non-relaxed, non-binary mode replace nonchars
-                               with U+FFFD */
-                            if (hi > 0xfdd0 && hi < 0x10ffff
-                                && !(dec->json.flags & F_RELAXED|F_BINARY))
-                              hi = 0xFFFD;
+                          hi = (hi - 0xD800) * 0x400 + (lo - 0xDC00) + 0x10000;
+                          if (UNLIKELY(
+                                 !(dec->json.flags & F_RELAXED)
+                                 && (((hi & 0xfffe) == 0xfffe)
+                                  || ((hi & 0xffff) == 0xffff)))) {
+                            WARNER_NONCHAR(hi);
                           }
-                        else if (hi < 0xe000) {
+                        }
+                        else if (UNLIKELY(hi < 0xe000)) {
                           ERR ("missing high surrogate character in surrogate pair");
-			}
-		      }
+                        }
+                        else
 
+/* check 66 noncharacters U+FDD0..U+FDEF, U+FFFE, U+FFFF
+   and U+1FFFE, U+1FFFF, U+2FFFE, U+2FFFF, ... U+10FFFE, U+10FFFF (issue #74)
+   and warn as in core.
+   See http://www.unicode.org/versions/corrigendum9.html.
+
+   https://www.rfc-editor.org/errata_search.php?rfc=7159&eid=3984
+   The WG's consensus was to leave the full range present
+   in the ABNF and add the interoperability guidance about
+   values outside the Unicode accepted range.
+
+   http://seriot.ch/parsing_json.html#25 According to the Unicode
+   standard, illformed subsequences should be replaced by U+FFFD
+   REPLACEMENT CHARACTER. (See Unicode PR #121: Recommended Practice
+   for Replacement Characters). Several parsers use replacement
+   characters, while other keep the escaped form or produce an
+   non-Unicode character (see Section 5 - Parsing Contents).  This
+   values are not for interchange, only for application internal use.
+   They are different from private use.  Most parsers accept these.
+*/
+                          if (UNLIKELY(
+                                 !(dec->json.flags & F_RELAXED)
+                                 && ((hi >= 0xfdd0 && hi <= 0xfdef)
+                                  || (hi >= 0xfffe && hi <= 0xffff)))) {
+                            WARNER_NONCHAR(hi);
+                          }
+		      }
                       if (hi >= 0x80)
                         {
                           utf8 = 1;
@@ -3122,6 +3147,7 @@ decode_json (pTHX_ SV *string, JSON *json, U8 **offset_return)
 
 #if PERL_VERSION >= 8
       /* horrible hack to silence warning inside pv_uni_display */
+      /* TODO: Can be omitted with newer perls */
       COP cop = *PL_curcop;
       cop.cop_warnings = pWARN_NONE;
       ENTER;

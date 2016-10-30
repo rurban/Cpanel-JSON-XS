@@ -10,12 +10,21 @@ perl:
   - "5.18"
   - "5.20"
   - "5.22"
-  - "5.22-thr"
-  - "5.22-dbg"
-  - "5.22-thr-dbg"
-  - "5.22-mb"
+  - "5.24"
+  - "5.24-thr"
+  - "5.24-dbg"
+  - "5.24-thr-dbg"
+  - "5.24-mb"
   - "dev"
   - "blead"
+
+# slows down already cached versions by 3 (33s => 1m45s)
+# (i.e. cache download: 9s, setup: 45s-130s)
+# but speeds up building the non-cached versions (5.24-*) by 2 (3m50s => 1m45s)
+# overall: 25min => 35min, so disable the perl cache
+#cache:
+#  directories:
+#    - /home/travis/perl5/perlbrew/
 
 #addons:
 #  apt:
