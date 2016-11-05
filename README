@@ -542,6 +542,13 @@ OBJECT-ORIENTED INTERFACE
 
                 { foo:"bar" }
 
+        *   duplicate keys
+
+            With relaxed decoding of duplicate keys does not error and are
+            silently accepted. See <http://seriot.ch/parsing_json.php#24>:
+            RFC 7159 section 4: "The names within an object should be
+            unique."
+
     $json = $json->canonical ([$enable])
     $enabled = $json->get_canonical
         If $enable is true (or missing), then the "encode" method will
@@ -608,13 +615,6 @@ OBJECT-ORIENTED INTERFACE
         application-specific files written by humans.
 
             $json->allow_barekey->decode('{foo:"bar"}');
-
-    $json = $json->disallow_dupkeys ([$enable])
-    $enabled = $json->get_disallow_dupkeys
-            $json = $json->disallow_dupkeys([$enable])
-
-        If $enable is true (or missing), then "decode" will throw an error
-        if a JSON object repeats a key.
 
     $json = $json->allow_bignum ([$enable])
     $enabled = $json->get_allow_bignum

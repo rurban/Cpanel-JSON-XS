@@ -2,6 +2,17 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0235 2017-07-27 (rurban)
+        - Disallow duplicate keys by default, only allow them in relaxed
+          mode. (#75)
+          Analog to invalid unicode, which does error by default.
+          RFC 7159 section 4 says that "The names within an object should be unique."
+          So it's either i_ (undefined) or n_ (errors).
+          See http://seriot.ch/parsing_json.php#24
+          This is different to the other JSON modules, which do have a different
+          interpretation of the spec. Use relaxed for backcompat if you want to
+          allow duplicate keys.
+
 3.0234 2017-07-27 (rurban)
         - Fix and unify utf8 handling with 5.6.2
           and improve many utf8 tests. (pali #88)

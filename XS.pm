@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '3.0234';
+our $VERSION = '3.0235';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -624,6 +624,12 @@ L</allow_barekey> option.
 
     { foo:"bar" }
 
+=item * duplicate keys
+
+With relaxed decoding of duplicate keys does not error and are silently accepted.
+See L<http://seriot.ch/parsing_json.php#24>:
+RFC 7159 section 4: "The names within an object should be unique."
+
 =back
 
 
@@ -705,17 +711,6 @@ Same as with the C<relaxed> option, this option may be used to parse
 application-specific files written by humans.
 
     $json->allow_barekey->decode('{foo:"bar"}');
-
-
-=item $json = $json->disallow_dupkeys ([$enable])
-
-=item $enabled = $json->get_disallow_dupkeys
-
-    $json = $json->disallow_dupkeys([$enable])
-
-If C<$enable> is true (or missing), then C<decode> will throw an error
-if a JSON object repeats a key.
-
 
 =item $json = $json->allow_bignum ([$enable])
 
