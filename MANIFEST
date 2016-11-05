@@ -38,6 +38,7 @@ t/22_comment_at_eof.t
 t/23_array_ctx.t
 t/24_freeze_recursion.t
 t/25_boolean.t
+t/26_duplicate.t
 t/30_jsonspec.t
 t/31_bom.t
 t/52_object.t

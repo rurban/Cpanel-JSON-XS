@@ -608,6 +608,13 @@ OBJECT-ORIENTED INTERFACE
 
             $json->allow_barekey->decode('{foo:"bar"}');
 
+    $json = $json->disallow_dupkeys ([$enable])
+    $enabled = $json->get_disallow_dupkeys
+            $json = $json->disallow_dupkeys([$enable])
+
+        If $enable is true (or missing), then "decode" will throw an error
+        if a JSON object repeats a key.
+
     $json = $json->allow_bignum ([$enable])
     $enabled = $json->get_allow_bignum
             $json = $json->allow_bignum([$enable])

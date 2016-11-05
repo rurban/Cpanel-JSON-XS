@@ -706,6 +706,16 @@ application-specific files written by humans.
     $json->allow_barekey->decode('{foo:"bar"}');
 
 
+=item $json = $json->disallow_dupkeys ([$enable])
+
+=item $enabled = $json->get_disallow_dupkeys
+
+    $json = $json->disallow_dupkeys([$enable])
+
+If C<$enable> is true (or missing), then C<decode> will throw an error
+if a JSON object repeats a key.
+
+
 =item $json = $json->allow_bignum ([$enable])
 
 =item $enabled = $json->get_allow_bignum

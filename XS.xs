@@ -216,6 +216,7 @@ mingw_modfl(long double x, long double *ip)
 #define F_ESCAPE_SLASH    0x00080000UL
 #define F_SORT_BY         0x00100000UL
 #define F_ALLOW_STRINGIFY 0x00200000UL
+#define F_DISALLOW_DUPKEYS 0x00400000UL
 #define F_HOOK            0x80000000UL // some hooks exist, so slow-path processing
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
@@ -2625,6 +2626,7 @@ decode_hv (pTHX_ dec_t *dec)
   HV *hv = newHV ();
   int allow_squote = dec->json.flags & F_ALLOW_SQUOTE;
   int allow_barekey = dec->json.flags & F_ALLOW_BAREKEY;
+  int disallow_dupkeys = dec->json.flags & F_DISALLOW_DUPKEYS;
   char endstr = '"';
 
   DEC_INC_DEPTH;
@@ -2706,6 +2708,11 @@ decode_hv (pTHX_ dec_t *dec)
                   if (UNLIKELY(p - key > I32_MAX))
                     ERR ("Hash key too large");
 #endif
+
+                  if (disallow_dupkeys && hv_exists (hv, key, len)) {
+                    ERR ("Duplicate keys not allowed");
+                  }
+
                   dec->cur = p + 1;
 
                   decode_ws (dec); if (*p != ':') EXPECT_CH (':');
@@ -3413,6 +3420,7 @@ void ascii (JSON *self, int enable = 1)
         allow_unknown   = F_ALLOW_UNKNOWN
         allow_tags      = F_ALLOW_TAGS
         allow_barekey   = F_ALLOW_BAREKEY
+        disallow_dupkeys = F_DISALLOW_DUPKEYS
         allow_singlequote = F_ALLOW_SQUOTE
         allow_bignum    = F_ALLOW_BIGNUM
         escape_slash    = F_ESCAPE_SLASH
@@ -3445,6 +3453,7 @@ void get_ascii (JSON *self)
         get_allow_unknown   = F_ALLOW_UNKNOWN
         get_allow_tags      = F_ALLOW_TAGS
         get_allow_barekey   = F_ALLOW_BAREKEY
+        get_disallow_dupkeys = F_DISALLOW_DUPKEYS
         get_allow_singlequote = F_ALLOW_SQUOTE
         get_allow_bignum    = F_ALLOW_BIGNUM
         get_escape_slash    = F_ESCAPE_SLASH
