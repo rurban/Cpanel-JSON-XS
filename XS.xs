@@ -2529,7 +2529,7 @@ decode_num (pTHX_ dec_t *dec)
 
       if (dec->json.flags & F_ALLOW_BIGNUM) {
         SV* pv = newSVpvs("require Math::BigInt && return Math::BigInt->new(\"");
-        sv_catpv(pv, start);
+        sv_catpvn(pv, start, dec->cur - start);
         sv_catpvs(pv, "\");");
         eval_sv(pv, G_SCALAR);
         SvREFCNT_dec(pv);
@@ -2547,7 +2547,7 @@ decode_num (pTHX_ dec_t *dec)
 
   if (dec->json.flags & F_ALLOW_BIGNUM) {
     SV* pv = newSVpvs("require Math::BigFloat && return Math::BigFloat->new(\"");
-    sv_catpv(pv, start);
+    sv_catpvn(pv, start, dec->cur - start);
     sv_catpvs(pv, "\");");
     eval_sv(pv, G_SCALAR);
     SvREFCNT_dec(pv);
