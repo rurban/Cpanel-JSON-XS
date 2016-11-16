@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0223 2016-11-16 (rurban)
+        - fixed decode bignum with a string prefix. #76, patch by GilmarSantosJr.
+
 3.0222 2016-10-30 (rurban)
         - enable decode_bom for multibyte encodings UTF16 and UTF32.
           encode internally to UTF-8.
