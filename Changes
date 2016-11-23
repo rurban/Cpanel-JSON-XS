@@ -2,6 +2,14 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0225 2016-11-23 (rurban)
+        - decode utf8 security fixes for perl 5.6.
+          added extra detection code for overflows and non-continuations.
+          This broke one 5.6 test with an overlong multi-byte character,
+          which previously worked accidently.
+          i.e. decode "\ud801\udc02\x{10204}"
+        - Added tests for ill-formed utf8 sequences from Encode.
+
 3.0224 2016-11-20 (rurban)
         - fixes for g++-6, stricter -fpermissive and -Wc++11-compat
 
