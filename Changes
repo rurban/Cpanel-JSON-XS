@@ -2,10 +2,15 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0227 2017-02-13 (rurban)
+        - fix CLONE and END, broken with 3.0226 (#80 y).
+          These methods are usually called with arguments, which we ignore.
+
 3.0226 2017-02-11 (rurban)
         - relax longdouble Gconvert test on ppc64le and aarch64-linux-ld,
         with apparent HW quadmath without USE_QUADMATH (older perls).
         (detected by dgolden)
+        - Fixed 2 uninit warnings in the XS
 
 3.0225 2016-11-23 (rurban)
         - decode utf8 security fixes for perl 5.6.
