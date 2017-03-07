@@ -2147,8 +2147,19 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
 # endif
             }
 #endif
-
-#ifdef USE_QUADMATH
+          /* untested. see GH #83 */
+#if defined(__s390x__) && defined(USE_LONG_DOUBLE)
+          {
+            STRLEN len = enc->end - enc->cur;
+            SV* sv = newSVpvn_flags(enc->cur, len, 0);
+            sv_grow(sv, NV_DIG);
+            sv_upgrade(sv, SVt_PVNV);
+            SvNVX(sv) = nv;
+            sv_2pv_flags(sv, &len, 0);
+            enc->cur = SvPVX(sv);
+            enc->end = SvEND(ev);
+          }
+#elif defined(USE_QUADMATH)
           quadmath_snprintf(enc->cur, enc->end - enc->cur, "%.*Qg", (int)NV_DIG, nv);
 #else
           PERL_UNUSED_RESULT(Gconvert (nv, NV_DIG, 0, enc->cur));
