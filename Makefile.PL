@@ -59,7 +59,7 @@ WriteMakefile(
       },
     }
    ) : ()),
-  SIGN  => 1,
+  #SIGN  => 1,
 );
 
 package MY;
