@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '3.0227';
+our $VERSION = '3.0228';
 our $XS_VERSION = $VERSION;
 $VERSION = eval $VERSION;
 
@@ -2227,11 +2227,11 @@ L<https://tools.ietf.org/html/rfc4627>
 
 Marc Lehmann <schmorp@schmorp.de>, http://home.schmorp.de/
 
-Reini Urban <rurban@cpanel.net>, http://cpanel.net/
+Reini Urban <rurban@cpan.org>, http://cpanel.net/
 
 =head1 MAINTAINER
 
-Reini Urban <rurban@cpanel.net>
+Reini Urban <rurban@cpan.org>
 
 =cut
 
