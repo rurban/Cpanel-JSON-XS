@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0229 2017-03-10 (rurban)
+        - fix minor gcc compilation warnings.
+        - Add some core compat. warnings for gcc/clang compat. compilers.
+
 3.0228 2017-03-08 (rurban)
         - fix decode_prefix offset when the string was re-allocated.
         rather return the offset not the pointer to the old start. (#82 PaulGWebster)

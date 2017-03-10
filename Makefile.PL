@@ -1,6 +1,11 @@
 use 5.006002;
 use ExtUtils::MakeMaker;
-use Config ();
+use Config;
+
+my $define = '';
+if ($Config{gccversion}) {
+    $define = '-Wall -Werror=declaration-after-statement -Wextra -W';
+}
 
 WriteMakefile(
   dist	 => {
@@ -14,7 +19,8 @@ WriteMakefile(
   PREREQ_PM    => {
     'Pod::Text'     => '2.08',
   },
-  LICENSE  => 'perl',
+  DEFINE       => $define,
+  LICENSE      => 'perl',
   ($] >= 5.005 ?
    (ABSTRACT_FROM  => 'XS.pm',
     AUTHOR         => 'Reini Urban <rurban@cpanel.net>',
