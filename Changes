@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0230 2017-03-12 (rurban)
+        - Relax -Werror=declaration-after-statement for older gcc < 4.2
+
 3.0229 2017-03-10 (rurban)
         - fix minor gcc compilation warnings.
         - Add some core compat. warnings for gcc/clang compat. compilers.
