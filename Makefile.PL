@@ -3,8 +3,11 @@ use ExtUtils::MakeMaker;
 use Config;
 
 my $define = '';
-if ($Config{gccversion}) {
-    $define = '-Wall -Werror=declaration-after-statement -Wextra -W';
+# https://gcc.gnu.org/onlinedocs/gcc-4.0.0/gcc/Warning-Options.html
+if ($Config{gccversion} and $Config{gccversion} =~ /^(\d+\.\d+)\./) {
+    my $gccver = $1;
+    $define = '-Wall -Werror=declaration-after-statement -Wextra -W'
+      if $gccver >= 4.2;
 }
 
 WriteMakefile(
@@ -65,7 +68,7 @@ WriteMakefile(
       },
     }
    ) : ()),
-  #SIGN  => 1,
+  SIGN  => 1,
 );
 
 package MY;
