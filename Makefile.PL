@@ -6,8 +6,11 @@ my $define = '';
 # https://gcc.gnu.org/onlinedocs/gcc-4.0.0/gcc/Warning-Options.html
 if ($Config{gccversion} and $Config{gccversion} =~ /^(\d+\.\d+)\./) {
     my $gccver = $1;
-    $define = '-Wall -Werror=declaration-after-statement -Wextra -W'
-      if $gccver >= 4.2;
+    if ($gccver >= 4.3) {
+        $define = '-Wall -Werror=declaration-after-statement -Wextra -W';
+    } elsif ($gccver >= 3.4) {
+        $define = '-Wall -Wdeclaration-after-statement -Wextra -W';
+    }
 }
 
 WriteMakefile(
