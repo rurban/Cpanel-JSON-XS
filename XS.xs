@@ -681,6 +681,9 @@ typedef struct
 INLINE void
 need (pTHX_ enc_t *enc, STRLEN len)
 {
+  DEBUG_v(Perl_deb(aTHX_ "need enc: %p %p %4ld, want: %ld\n", enc->cur, enc->end,
+                   enc->end - enc->cur, (long)len));
+  assert(enc->cur <= enc->end);
   if (UNLIKELY(enc->cur + len >= enc->end))
     {
       STRLEN cur = enc->cur - (char *)SvPVX (enc->sv);
@@ -717,9 +720,12 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
   while (str < end)
     {
       unsigned char ch = *(unsigned char *)str;
+      DEBUG_v(Perl_deb(aTHX_ "str  enc: %p %p %4ld, want: %lu\n", enc->cur, enc->end,
+                       enc->end - enc->cur, (long unsigned)len));
 
       if (LIKELY(ch >= 0x20 && ch < 0x80)) /* most common case */
         {
+          assert(enc->cur <= enc->end);
           if (UNLIKELY(ch == '"')) /* but with slow exceptions */
             {
               need (aTHX_ enc, 2);
@@ -741,13 +747,16 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
               *enc->cur++ = '/';
               ++len;
             }
-          else
+          else {
+            need (aTHX_ enc, 1);
             *enc->cur++ = ch;
+          }
 
           ++str;
         }
       else
         {
+          assert(enc->cur <= enc->end);
           switch (ch)
             {
             case '\010': need (aTHX_ enc, 2);
@@ -819,13 +828,13 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
                     }
                   else if (enc->json.flags & F_LATIN1)
                     {
-                      need (enc, 1);
+                      need (aTHX_ enc, 1);
                       *enc->cur++ = uch;
                       str += clen;
                     }
                   else if (enc->json.flags & F_BINARY)
                     {
-                      need (enc, 1);
+                      need (aTHX_ enc, 1);
                       *enc->cur++ = uch;
                       str += clen;
                     }
@@ -876,7 +885,6 @@ encode_indent (pTHX_ enc_t *enc)
 INLINE void
 encode_space (pTHX_ enc_t *enc)
 {
-  need (aTHX_ enc, 1);
   encode_ch (aTHX_ enc, ' ');
 }
 
@@ -885,7 +893,6 @@ encode_nl (pTHX_ enc_t *enc)
 {
   if (enc->json.flags & F_INDENT)
     {
-      need (aTHX_ enc, 1);
       encode_ch (aTHX_ enc, '\n');
     }
 }
