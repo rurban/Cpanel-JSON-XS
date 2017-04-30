@@ -40,10 +40,10 @@
    a proper inf/nan */
 #if defined(WIN32) && !defined(__USE_MINGW_ANSI_STDIO) && !defined(USE_LONG_DOUBLE)
 # if _MSC_VER > 1800
-#  define STR_INF "inf.0"
-#  define STR_INF2 "-inf.0"
+#  define STR_INF "inf"
+#  define STR_INF2 "inf.0"
 #  define STR_NAN "nan"
-#  define STR_QNAN "-nan(ind)"
+#  define STR_QNAN "nan(ind)"
 #  define HAVE_QNAN
 # else
 #  define STR_INF "1.#INF"
@@ -691,8 +691,10 @@ typedef struct
 INLINE void
 need (pTHX_ enc_t *enc, STRLEN len)
 {
-  DEBUG_v(Perl_deb(aTHX_ "need enc: %p %p %4ld, want: %ld\n", enc->cur, enc->end,
-                   (long)(enc->end - enc->cur), (long)len));
+#if PERL_VERSION > 6
+  DEBUG_v(Perl_deb(aTHX_ "need enc: %p %p %4ld, want: %lu\n", enc->cur, enc->end,
+                   (long)(enc->end - enc->cur), (unsigned long)len));
+#endif
   assert(enc->cur <= enc->end);
   if (UNLIKELY(enc->cur + len >= enc->end))
     {
@@ -730,9 +732,10 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
   while (str < end)
     {
       unsigned char ch = *(unsigned char *)str;
+#if PERL_VERSION > 6
       DEBUG_v(Perl_deb(aTHX_ "str  enc: %p %p %4ld, want: %lu\n", enc->cur, enc->end,
                        (long)(enc->end - enc->cur), (long unsigned)len));
-
+#endif
       if (LIKELY(ch >= 0x20 && ch < 0x80)) /* most common case */
         {
           assert(enc->cur <= enc->end);

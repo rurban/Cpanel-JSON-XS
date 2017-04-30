@@ -2,6 +2,13 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0232 2017-04-30 (rurban)
+        - Fix for MSVC 2015/14.0 and newer with changed nan/inf. #85
+        - Added appveyor CI
+        - Silence 32bit debugging format warning
+        - stabilize decode_hv hook (Coverity)
+        - ignore sv_utf8_downgrade errors (Coverity)
+
 3.0231 2017-03-29 (rurban)
         - Fix need() overallocation (#84 Matthew Horsfall) and missing
         need() calls.
