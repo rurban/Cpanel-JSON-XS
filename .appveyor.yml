@@ -1,19 +1,18 @@
-version: 3.02.0.{build}
+version: 3.02.31.{build}
 skip_tags: true
 #os: MinGW
 #os: Visual Studio 2015
 #os: Default Azure
 #build:
 #  verbosity: minimal
+# there's no 32bit installer
 platform:
   - x64
-#  - x86
+  - x86
 environment:
   matrix:
     - STRAWBERRY: 1
-#    - MSVC_VERSION: 12
-#    - MSVC_VERSION: 10
-#    - MSVC_VERSION: 14
+    - MSVC_CPERL: 1
 clone_depth: 1
 init:
   - git config --global core.autocrlf input
@@ -33,15 +32,15 @@ init:
   #- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 install:
-  # TODO: 32bit
-  # http://strawberryperl.com/download/5.24.1.1/strawberry-perl-5.24.1.1-32bit.msi
-  # msicexec /qn /norestart strawberry-perl-5.24.1.1-32bit.msi
-  - if "%STRAWBERRY%" == "1" cinst strawberryperl -y
-  - if not "%STRAWBERRY%" == "1" cinst activeperl -y
-  - cd C:\projects\%APPVEYOR_PROJECT_NAME%
+  - cinst wget -y
+  - if "%PLATFORM%" == "x86" set BITS=32
+  - if "%PLATFORM%" == "x64" set BITS=64
+  - if "%STRAWBERRY%" == "1" wget -q http://strawberryperl.com/download/5.24.1.1/strawberry-perl-5.24.1.1-%BITS%bit.msi
+  - if "%STRAWBERRY%" == "1" msiexec /qn /norestart strawberry-perl-5.24.1.1-%BITS%bit.msi
+  - if "%MSVC_CPERL%" == "1" wget -q https://github.com/perl11/cperl/releases/download/cperl-5.26.0/cperl-5.26.0-win%BITS%.exe
+  - if "%MSVC_CPERL%" == "1" cperl-5.26.0-win%BITS%.exe -y -gm2 -InstallPath="C:\\cperl"
 
 build: off
 
 test_script:
   - 't\appveyor-test.bat'
-
