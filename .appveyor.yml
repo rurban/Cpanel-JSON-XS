@@ -1,0 +1,47 @@
+version: 3.02.0.{build}
+skip_tags: true
+#os: MinGW
+#os: Visual Studio 2015
+#os: Default Azure
+#build:
+#  verbosity: minimal
+platform:
+  - x64
+#  - x86
+environment:
+  matrix:
+    - STRAWBERRY: 1
+#    - MSVC_VERSION: 12
+#    - MSVC_VERSION: 10
+#    - MSVC_VERSION: 14
+clone_depth: 1
+init:
+  - git config --global core.autocrlf input
+  # Disable popups as they hang the build as there is nobody to click on the OK button...
+  # Hanging the build is a lot less user friendly than reporting a build failure.
+  #
+  # Disable of system hard error popup
+  # See: https://msdn.microsoft.com/en-us/library/bb513638%28VS.85%29.aspx
+  - reg add "HKLM\SYSTEM\CurrentControlSet\Control\Windows" /f /v ErrorMode /d 2
+  # Disable the following popup on program failure:
+  #     |       ** <program name> has stopped working **        |
+  #     | Windows can check online for a solution to the problem|
+  #     |  - Check online for a solution and close the program  |
+  #     |  - Close the program                                  |
+  # See: https://msdn.microsoft.com/en-us/library/bb513638%28VS.85%29.aspx
+  - reg add "HKLM\Software\Microsoft\Windows\Windows Error Reporting" /f /v DontShowUI /d 1  
+  #- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+install:
+  # TODO: 32bit
+  # http://strawberryperl.com/download/5.24.1.1/strawberry-perl-5.24.1.1-32bit.msi
+  # msicexec /qn /norestart strawberry-perl-5.24.1.1-32bit.msi
+  - if "%STRAWBERRY%" == "1" cinst strawberryperl -y
+  - if not "%STRAWBERRY%" == "1" cinst activeperl -y
+  - cd C:\projects\%APPVEYOR_PROJECT_NAME%
+
+build: off
+
+test_script:
+  - 't\appveyor-test.bat'
+
