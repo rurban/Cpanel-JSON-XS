@@ -1,9 +1,9 @@
 # regressions and differences from the JSON Specs and JSON::PP
 # detected by http://seriot.ch/json/parsing.html
-use Test::More tests => 686;
+use Test::More ($] >= 5.008) ? (tests => 686) : (skip_all => "needs 5.8");
 use Cpanel::JSON::XS;
 BEGIN {
-  require Encode if $] < 5.020; # Currently required for <5.20
+  require Encode if $] >= 5.008 && $] < 5.020; # Currently required for <5.20
 }
 my $json    = Cpanel::JSON::XS->new->utf8->allow_nonref;
 my $relaxed = Cpanel::JSON::XS->new->utf8->allow_nonref->relaxed;
