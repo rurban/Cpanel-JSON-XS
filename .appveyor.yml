@@ -35,10 +35,12 @@ install:
   - cinst wget -y
   - if "%PLATFORM%" == "x86" set BITS=32
   - if "%PLATFORM%" == "x64" set BITS=64
-  - if "%STRAWBERRY%" == "1" wget -q http://strawberryperl.com/download/5.24.1.1/strawberry-perl-5.24.1.1-%BITS%bit.msi
-  - if "%STRAWBERRY%" == "1" msiexec /qn /norestart strawberry-perl-5.24.1.1-%BITS%bit.msi
+  #- if "%STRAWBERRY%" == "1" wget -q http://strawberryperl.com/download/5.24.1.1/strawberry-perl-5.24.1.1-%BITS%bit.msi
+  # waits for input
+  #- if "%STRAWBERRY%" == "1" msiexec /qn /norestart strawberry-perl-5.24.1.1-%BITS%bit.msi
+  - if "%STRAWBERRY%" == "1" cinst strawberryperl -i
   - if "%MSVC_CPERL%" == "1" wget -q https://github.com/perl11/cperl/releases/download/cperl-5.26.0/cperl-5.26.0-win%BITS%.exe
-  - if "%MSVC_CPERL%" == "1" cperl-5.26.0-win%BITS%.exe -y -gm2 -InstallPath="C:\\cperl"
+  - if "%MSVC_CPERL%" == "1" cperl-5.26.0-win%BITS%.exe -y -o"C:\"
 
 build: off
 
