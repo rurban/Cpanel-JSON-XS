@@ -46,6 +46,7 @@ t/53_readonly.t
 t/54_stringify.t
 t/55_modifiable.t
 t/96_interop.t
+t/96_interop_pp.t
 t/96_mojo.t
 t/97_unshare_hek.t
 t/98_56only.t

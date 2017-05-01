@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0233 2017-05-01 (rurban)
+        - 5.6 test fixes, silence some cc warnings,
+          add coverage and release targets, fix appveyor
+
 3.0232 2017-04-30 (rurban)
         - Fix for MSVC 2015/14.0 and newer with changed nan/inf. #85
         - Added appveyor CI
