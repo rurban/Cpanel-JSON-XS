@@ -252,8 +252,8 @@ mingw_modfl(long double x, long double *ip)
 # define INLINE                     static
 #endif
 #ifndef LIKELY
-#define LIKELY(expr)   _expect ((expr) != 0, 1)
-#define UNLIKELY(expr) _expect ((expr) != 0, 0)
+#define LIKELY(expr)   _expect ((long)(expr) != 0, 1)
+#define UNLIKELY(expr) _expect ((long)(expr) != 0, 0)
 #endif
 
 #define IN_RANGE_INC(type,val,beg,end) \
@@ -3599,10 +3599,10 @@ void filter_json_single_key_object (JSON *self, SV *key, SV *cb = &PL_sv_undef)
           self->cb_sk_object = newHV ();
 
         if (SvOK (cb))
-          hv_store_ent (self->cb_sk_object, key, newSVsv (cb), 0);
+          (void)hv_store_ent (self->cb_sk_object, key, newSVsv (cb), 0);
         else
           {
-            hv_delete_ent (self->cb_sk_object, key, G_DISCARD, 0);
+            (void)hv_delete_ent (self->cb_sk_object, key, G_DISCARD, 0);
 
             if (!HvKEYS (self->cb_sk_object))
               {
