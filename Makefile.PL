@@ -94,5 +94,36 @@ sub depend {
   "
 README : \$(VERSION_FROM)
 	pod2text \$(VERSION_FROM) > README
+
+release : dist
+	git tag \$(VERSION)
+	cpan-upload \$(DISTVNAME).tar\$(SUFFIX)
+	git push
+	git push --tags
+
+const-c.inc const-xs.inc : Makefile.PL
+
+# versioned gcc needs overrides
+GCOV = gcov
+test_cover :: pure_all
+	\$(RM_RF) cover_db
+	+\$(PERLRUNINST) -S cover -test
+
+test_coveralls :: pure_all
+	+\$(PERLRUNINST) -S cover -test -report coveralls
+
+gcov : \$(BASEEXT).c.gcov \$(BASEEXT).gcov cover_db/\$(BASEEXT)-xs.html
+
+\$(BASEEXT).c.gcov \$(BASEEXT).xs.gcov : \$(BASEEXT).xs
+	\$(MAKE) CCFLAGS=\"\$(CCFLAGS) -fprofile-arcs -ftest-coverage\" LDDLFLAGS=\"\$(LDDLFLAGS) -fprofile-arcs -ftest-coverage\"
+	\$(GCOV) \$(BASEEXT).c \$(BASEEXT).xs
+
+cover_db/\$(BASEEXT)-xs.html : \$(BASEEXT).xs.gcov
+	PERL5OPT=-MDevel::Cover make test
+	-$^X -S gcov2perl \$(BASEEXT).c.gcov \$(BASEEXT).xs.gcov
+	$^X -S cover
+
+gprof :
+	\$(MAKE) CCFLAGS=\"\$(CCFLAGS) -pg\" LDDLFLAGS=\"\$(LDDLFLAGS) -pg\"
 "
 }

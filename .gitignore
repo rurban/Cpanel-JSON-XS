@@ -19,3 +19,9 @@ XS.o
 /pm_to_blib
 /nohup.out
 /Debian_CPANTS.txt
+XS.c.gcov
+inline.h.gcov
+XS.gcda
+XS.gcno
+XS.xs.gcov
+cover_db/
