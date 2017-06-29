@@ -15,6 +15,7 @@ echo cpan -T %REQS%
 call cpan -T %REQS% || exit /b 1
 echo perl Makefile.PL
 perl Makefile.PL || exit /b 1
+rem strawberry switched with 5.26 from dmake to gmake
 echo $Config{make}
 perl -MConfig -e "system({$Config{make}} $Config{make}); exit(($? < 0 || $? & 127) ? 1 : ($? >> 8));" || exit /b 1
 echo $Config{make} test
