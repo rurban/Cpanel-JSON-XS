@@ -237,11 +237,7 @@ mingw_modfl(long double x, long double *ip)
 
 #define SHORT_STRING_LEN 16384 // special-case strings of up to this size
 
-#if PERL_VERSION >= 8
 #define DECODE_WANTS_OCTETS(json) ((json)->flags & F_UTF8)
-#else
-#define DECODE_WANTS_OCTETS(json) (0)
-#endif
 
 #define SB do {
 #define SE } while (0)
@@ -3187,14 +3183,12 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return)
     }
   }
 
-#if PERL_VERSION >= 8
   if (LIKELY(!converted)) {
     if (DECODE_WANTS_OCTETS (json))
       sv_utf8_downgrade (string, 0);
     else
       sv_utf8_upgrade (string);
   }
-#endif
 
   /* should basically be a NOP but needed for 5.6 with undef */
   if (!SvPOK(string))
