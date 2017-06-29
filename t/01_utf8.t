@@ -35,7 +35,7 @@ SKIP: {
   require Encode;
   # [RT #84244] wrong complaint: JSON::XS double encodes to ["I â¤ perl"]
   #             and with utf8 triple encodes it to ["I Ã¢ÂÂ¤ perl"]
-  if ($Encode::VERSION < 2.40 or $Encode::VERSION >= 2.54) { # Encode stricter check: Cannot decode string with wide characters
+  if (not eval { Encode->VERSION(2.40) } or eval { Encode->VERSION(2.54) }) { # Encode stricter check: Cannot decode string with wide characters
     # see also http://stackoverflow.com/questions/12994100/perl-encode-pm-cannot-decode-string-with-wide-character
     $love = "I \342\235\244 perl";
   }
