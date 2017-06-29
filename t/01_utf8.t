@@ -2,6 +2,8 @@ use Test::More tests => 155;
 use utf8;
 use Cpanel::JSON::XS;
 
+BEGIN { require warnings }
+
 is(Cpanel::JSON::XS->new->allow_nonref (1)->utf8 (1)->encode ("ü"), "\"\xc3\xbc\"");
 is(Cpanel::JSON::XS->new->allow_nonref (1)->encode ("ü"), "\"ü\"");
 
@@ -49,24 +51,32 @@ is(Cpanel::JSON::XS->new->binary->encode ([$love]), '["I \xe2\x9d\xa4 perl"]', '
 
 # warn on the 66 non-characters as in core
 {
-  my $w;
-  require warnings;
-  warnings->unimport($] < 5.014 ? 'utf8' : 'nonchar');
+  BEGIN { 'warnings'->import($] < 5.014 ? 'utf8' : 'nonchar') }
+  my $w = '';
   $SIG{__WARN__} = sub { $w = shift };
   my $d = Cpanel::JSON::XS->new->allow_nonref->decode('"\ufdd0"');
   my $warn = $w;
-  is ($d, "\x{fdd0}", substr($warn,0,31)."...");
+  {
+    no warnings 'utf8';
+    is ($d, "\x{fdd0}", substr($warn,0,31)."...");
+  }
   like ($warn, qr/^Unicode non-character U\+FDD0 is/);
   $w = '';
   # higher planes
   $d = Cpanel::JSON::XS->new->allow_nonref->decode('"\ud83f\udfff"');
   $warn = $w;
-  is ($d, "\x{1ffff}", substr($warn,0,31)."...");
+  {
+    no warnings 'utf8';
+    is ($d, "\x{1ffff}", substr($warn,0,31)."...");
+  }
   like ($w, qr/^Unicode non-character U\+1FFFF is/);
   $w = '';
   $d = Cpanel::JSON::XS->new->allow_nonref->decode('"\ud87f\udffe"');
   $warn = $w;
-  is ($d, "\x{2fffe}", substr($warn,0,31)."...");
+  {
+    no warnings 'utf8';
+    is ($d, "\x{2fffe}", substr($warn,0,31)."...");
+  }
   like ($w, qr/^Unicode non-character U\+2FFFE is/);
 
   $w = '';
@@ -77,12 +87,15 @@ is(Cpanel::JSON::XS->new->binary->encode ([$love]), '["I \xe2\x9d\xa4 perl"]', '
 }
 {
   my $w;
-  warnings->unimport($] < 5.014 ? 'utf8' : 'nonchar');
+  BEGIN { 'warnings'->import($] < 5.014 ? 'utf8' : 'nonchar') }
   $SIG{__WARN__} = sub { $w = shift };
   # no warning with relaxed
   my $d = Cpanel::JSON::XS->new->allow_nonref->relaxed->decode('"\ufdd0"');
   my $warn = $w;
-  is ($d, "\x{fdd0}", "no warning with relaxed");
+  {
+    no warnings 'utf8';
+    is ($d, "\x{fdd0}", "no warning with relaxed");
+  }
   is($w, undef);
 }
 
@@ -144,9 +157,9 @@ my @ill =
 {
   # these are no multibyte codepoints, just raw utf8 bytes,
   # so most of them work with 5.6 also.
-  $^W = 1;
+  BEGIN { $^W = 1 }
+  BEGIN { 'warnings'->import($] < 5.014 ? 'utf8' : 'nonchar') }
   my $w;
-  warnings->import($] < 5.014 ? 'utf8' : 'nonchar');
   $SIG{__WARN__} = sub { $w = shift };
 
   for my $ill (@ill) {
