@@ -27,10 +27,10 @@ perl:
 #  directories:
 #    - /home/travis/perl5/perlbrew/
 
-#addons:
-#  apt:
-#    packages:
-#    - gperf
+addons:
+  apt:
+    packages:
+    - aspell
 
 # blead and 5.6 stumble over YAML and more missing dependencies
 # for Devel::Cover::Report::Coveralls
@@ -43,6 +43,9 @@ install:
   - export AUTOMATED_TESTING=1 HARNESS_TIMER=1
   - cpan-install --deps       # installs prereqs, including recommends
   - cpan-install JSON JSON::PP JSON::XS Mojo::JSON Test::LeakTrace Time::Piece
+  - test x$AUTHOR_TESTING = x1 && cpan-install Test::CPAN::Meta Test::MinimumVersion
+        Pod::Spell::CommonMistakes Class::XSAccessor Test::Kwalitee Test::Spelling
+        Text::CSV_XS Test::Pod Test::Pod::Coverage
   - cpan-install --coverage   # installs converage prereqs, if enabled
 
 before_script:
