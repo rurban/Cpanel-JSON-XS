@@ -11,10 +11,11 @@ perl:
   - "5.20"
   - "5.22"
   - "5.24"
-  - "5.24-thr"
-  - "5.24-dbg"
-  - "5.24-thr-dbg"
-  - "5.24-mb"
+  - "5.26"
+  - "5.26-thr"
+  - "5.26-dbg"
+  - "5.26-thr-dbg"
+  - "5.26-mb"
   - "dev"
 #  - "blead"
 
@@ -39,7 +40,7 @@ before_install:
   - ln -s `which true` /home/travis/bin/cpansign
   - eval $(curl https://travis-perl.github.io/init) --auto
 install:
-  - export AUTOMATED_TESTING=1 HARNESS_TIMER=1 AUTHOR_TESTING=0 RELEASE_TESTING=0
+  - export AUTOMATED_TESTING=1 HARNESS_TIMER=1
   - cpan-install --deps       # installs prereqs, including recommends
   - cpan-install JSON JSON::PP JSON::XS Mojo::JSON Test::LeakTrace Time::Piece
   - cpan-install --coverage   # installs converage prereqs, if enabled
@@ -55,7 +56,7 @@ notifications:
 matrix:
   fast_finish: true
   include:
-    - perl: "5.18"
+    - perl: "5.26"
       env: COVERAGE=1 AUTHOR_TESTING=1  # enables coverage+coveralls reporting
   allow_failures:
     - env: COVERAGE=1 AUTHOR_TESTING=1
