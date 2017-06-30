@@ -63,8 +63,8 @@ SKIP: {
 # GH #39
 # perl expression which evaluates to sv_no or sv_yes
 SKIP: {
-  # implemented in 5.16 but broken, work since 5.18
-  skip 'Perl 5.18 is needed for boolean tests based on !1 and !0', 4 if $] < 5.018;
+  # implemented in 5.16 but broken, works since 5.20
+  skip 'Perl 5.20 is needed for boolean tests based on !1 and !0', 4 if $] < 5.020;
   is( $nonref_cjson->encode( !1 ), "false", "map !1 to false");
   is( $nonref_cjson->encode( !1 ), "false", "map !1 to false");
   is( $nonref_cjson->encode( !0 ), "true", "map !0 to true");
