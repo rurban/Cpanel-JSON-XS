@@ -37,9 +37,11 @@
 #define UTF32BOM_BE "\000\000\376\377"  /* 00 00 FE FF */
 
 /* strawberry 5.22 with USE_MINGW_ANSI_STDIO and USE_LONG_DOUBLE has now 
-   a proper inf/nan */
+   a proper inf/nan. */
 #if defined(WIN32) && !defined(__USE_MINGW_ANSI_STDIO) && !defined(USE_LONG_DOUBLE)
-# if _MSC_VER > 1800
+/* TODO: we really need the msvcrt version, not the MSVC version.
+   strawberry 5.26 uses it also now. */
+# if (_MSC_VER > 1800) || (!defined(_MSC_VER) && PERL_VERSION >= 26)
 #  define STR_INF "inf"
 #  define STR_INF2 "inf.0"
 #  define STR_NAN "nan"
