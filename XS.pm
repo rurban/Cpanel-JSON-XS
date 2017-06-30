@@ -2178,7 +2178,7 @@ sub false() { $false }
 sub is_bool($) {
   shift if @_ == 2; # as method call
   (ref($_[0]) and UNIVERSAL::isa( $_[0], JSON::PP::Boolean::))
-  or (exists $INC{'Types/Serializer.pm'} and Types::Serialiser::is_bool($_[0]))
+  or (exists $INC{'Types/Serialiser.pm'} and Types::Serialiser::is_bool($_[0]))
 }
 
 XSLoader::load 'Cpanel::JSON::XS', $XS_VERSION;
