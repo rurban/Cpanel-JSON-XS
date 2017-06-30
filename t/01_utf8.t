@@ -1,44 +1,43 @@
 use Test::More tests => 162;
 use utf8;
 use Cpanel::JSON::XS;
+use warnings;
 
-BEGIN { require warnings }
+is(Cpanel::JSON::XS->new->allow_nonref->utf8->encode("ü"), "\"\xc3\xbc\"");
+is(Cpanel::JSON::XS->new->allow_nonref->encode("ü"), "\"ü\"");
 
-is(Cpanel::JSON::XS->new->allow_nonref (1)->utf8 (1)->encode ("ü"), "\"\xc3\xbc\"");
-is(Cpanel::JSON::XS->new->allow_nonref (1)->encode ("ü"), "\"ü\"");
+is(Cpanel::JSON::XS->new->allow_nonref->ascii->utf8->encode(chr 0x8000), '"\u8000"');
+is(Cpanel::JSON::XS->new->allow_nonref->ascii->utf8->pretty->encode(chr 0x10402), "\"\\ud801\\udc02\"\n");
 
-is(Cpanel::JSON::XS->new->allow_nonref (1)->ascii (1)->utf8 (1)->encode (chr 0x8000), '"\u8000"');
-is(Cpanel::JSON::XS->new->allow_nonref (1)->ascii (1)->utf8 (1)->pretty (1)->encode (chr 0x10402), "\"\\ud801\\udc02\"\n");
-
-ok not defined eval { Cpanel::JSON::XS->new->allow_nonref (1)->utf8 (1)->decode ('"ü"') };
+ok not defined eval { Cpanel::JSON::XS->new->allow_nonref->utf8->decode('"ü"') };
 like $@, qr/malformed UTF-8/;
 
-is(Cpanel::JSON::XS->new->allow_nonref (1)->decode ('"ü"'), "ü");
-is(Cpanel::JSON::XS->new->allow_nonref (1)->decode ('"\u00fc"'), "ü");
+is(Cpanel::JSON::XS->new->allow_nonref->decode('"ü"'), "ü");
+is(Cpanel::JSON::XS->new->allow_nonref->decode('"\u00fc"'), "ü");
 
 ok not defined eval { decode_json ('"\ud801\udc02' . "\x{10204}\"", 1) };
 like $@, qr/Wide character/;
 
 SKIP: {
   skip "5.6", 1 if $] < 5.008;
-  is(Cpanel::JSON::XS->new->allow_nonref (1)->decode ('"\ud801\udc02' . "\x{10204}\""), "\x{10402}\x{10204}");
+  is(Cpanel::JSON::XS->new->allow_nonref->decode('"\ud801\udc02' . "\x{10204}\""), "\x{10402}\x{10204}");
 }
 
-is(Cpanel::JSON::XS->new->allow_nonref (1)->decode ('"\"\n\\\\\r\t\f\b"'), "\"\012\\\015\011\014\010");
+is(Cpanel::JSON::XS->new->allow_nonref->decode('"\"\n\\\\\r\t\f\b"'), "\"\012\\\015\011\014\010");
 
 my $utf8_love = "I \342\235\244 perl";
-is(Cpanel::JSON::XS->new->ascii->encode ([$utf8_love]), '["I \u00e2\u009d\u00a4 perl"]', 'utf8 enc ascii');
-is(Cpanel::JSON::XS->new->latin1->encode ([$utf8_love]), "[\"I \342\235\244 perl\"]", 'utf8 enc latin1');
-is(Cpanel::JSON::XS->new->utf8->encode ([$utf8_love]), "[\"I \303\242\302\235\302\244 perl\"]", 'utf8 enc utf8');
-is(Cpanel::JSON::XS->new->binary->encode ([$utf8_love]), '["I \xe2\x9d\xa4 perl"]', 'utf8 enc binary');
+is(Cpanel::JSON::XS->new->ascii->encode([$utf8_love]), '["I \u00e2\u009d\u00a4 perl"]', 'utf8 enc ascii');
+is(Cpanel::JSON::XS->new->latin1->encode([$utf8_love]), "[\"I \342\235\244 perl\"]", 'utf8 enc latin1');
+is(Cpanel::JSON::XS->new->utf8->encode([$utf8_love]), "[\"I \303\242\302\235\302\244 perl\"]", 'utf8 enc utf8');
+is(Cpanel::JSON::XS->new->binary->encode([$utf8_love]), '["I \xe2\x9d\xa4 perl"]', 'utf8 enc binary');
 
 SKIP: {
   skip "5.6", 4 if $] < 5.008;
   my $unicode_love = "I ❤ perl";
-  is(Cpanel::JSON::XS->new->ascii->encode ([$unicode_love]), '["I \u2764 perl"]', 'unicode enc ascii');
-  is(Cpanel::JSON::XS->new->latin1->encode ([$unicode_love]), "[\"I \\u2764 perl\"]", 'unicode enc latin1');
-  is(Cpanel::JSON::XS->new->utf8->encode ([$unicode_love]), "[\"I \342\235\244 perl\"]", 'unicode enc utf8');
-  is(Cpanel::JSON::XS->new->binary->encode ([$unicode_love]), '["I \xe2\x9d\xa4 perl"]', 'unicode enc binary');
+  is(Cpanel::JSON::XS->new->ascii->encode([$unicode_love]), '["I \u2764 perl"]', 'unicode enc ascii');
+  is(Cpanel::JSON::XS->new->latin1->encode([$unicode_love]), "[\"I \\u2764 perl\"]", 'unicode enc latin1');
+  is(Cpanel::JSON::XS->new->utf8->encode([$unicode_love]), "[\"I \342\235\244 perl\"]", 'unicode enc utf8');
+  is(Cpanel::JSON::XS->new->binary->encode([$unicode_love]), '["I \xe2\x9d\xa4 perl"]', 'unicode enc binary');
 }
 
 # TODO: test utf8 hash keys,
