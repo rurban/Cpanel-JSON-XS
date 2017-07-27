@@ -14,7 +14,7 @@ my $relaxed = Cpanel::JSON::XS->new->utf8->allow_nonref->relaxed;
 #  i_string_unicode_*_nonchar  ["\uDBFF\uDFFE"] (add warning as in core)
 #  i_string_not_in_unicode_range  Code point 0x13FFFF is not Unicode UTF8_DISALLOW_SUPER
 #  y_string_utf16, y_string_utf16be, y_string_utf32, y_string_utf32be fixed with 3.0222
-my %todo = {};
+my %todo;
 $todo{'y_string_nonCharacterInUTF-8_U+FFFF'}++ if $] < 5.013;
 $todo{'n_string_UTF8_surrogate_U+D800'}++      if $] >= 5.012;
 if ($] < 5.008) {
