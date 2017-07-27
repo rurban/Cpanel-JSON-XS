@@ -12,6 +12,7 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
           This is different to the other JSON modules, which do have a different
           interpretation of the spec. Use relaxed for backcompat if you want to
           allow duplicate keys.
+        - De-fragilize t/96_mojo.t false test to "". It mostly is.
 
 3.0234 2017-07-27 (rurban)
         - Fix and unify utf8 handling with 5.6.2
