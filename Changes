@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0236 2017-07-27 (rurban)
+        - Stringify true again as "1", not as "true" due to popular demand.
+          (haarg #87)
+
 3.0235 2017-07-27 (rurban)
         - Disallow duplicate keys by default, only allow them in relaxed
           mode. (#75)
