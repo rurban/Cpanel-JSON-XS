@@ -67,7 +67,6 @@ WriteMakefile(
         bugtracker  => 'https://github.com/rurban/Cpanel-JSON-XS/issues',
         # Note: https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS is also observed
         repository  => 'https://github.com/rurban/Cpanel-JSON-XS',
-        homepage    => 'http://software.schmorp.de/pkg/JSON-XS.html',
       },
     }
    ) : ()),
