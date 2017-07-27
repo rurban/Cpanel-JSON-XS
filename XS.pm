@@ -1,7 +1,7 @@
 package Cpanel::JSON::XS;
-our $VERSION = '3.0233';
+our $VERSION = '3.0234';
 our $XS_VERSION = $VERSION;
-$VERSION = eval $VERSION;
+# $VERSION = eval $VERSION;
 
 =pod
 
@@ -136,7 +136,7 @@ B<Changes to JSON::XS>
   representations for booleans are accepted and JSON::XS accepts
   Cpanel::JSON::XS booleans [#13, #37]
   Fixed overloading of booleans. Cpanel::JSON::XS::true stringifies now
-  to true, not 1.
+  to "true", not "1". (different to JSON::XS)
 
 - native boolean mapping of yes and no to true and false, as in YAML::XS.
   In perl C<!0> is yes, C<!1> is no.
@@ -178,7 +178,8 @@ B<Changes to JSON::XS>
   production module, just during development and testing.
 
 - extended testsuite, passes all http://seriot.ch/parsing_json.html tests.
-  In fact it is the only know JSON decoder which does so, while being the fastest.
+  In fact it is the only know JSON decoder which does so, while also being
+  the fastest.
 
 - support many more options and methods from JSON::PP:
   stringify_infnan, allow_unknown, allow_stringify, allow_barekey,

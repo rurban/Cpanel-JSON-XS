@@ -123,7 +123,8 @@ DESCRIPTION
     - interop for true/false overloading. JSON::XS, JSON::PP and Mojo::JSON
     representations for booleans are accepted and JSON::XS accepts
     Cpanel::JSON::XS booleans [#13, #37] Fixed overloading of booleans.
-    Cpanel::JSON::XS::true stringifies now to true, not 1.
+    Cpanel::JSON::XS::true stringifies now to "true", not "1". (different to
+    JSON::XS)
 
     - native boolean mapping of yes and no to true and false, as in
     YAML::XS. In perl "!0" is yes, "!1" is no. The JSON value true maps to
@@ -166,7 +167,7 @@ DESCRIPTION
 
     - extended testsuite, passes all http://seriot.ch/parsing_json.html
     tests. In fact it is the only know JSON decoder which does so, while
-    being the fastest.
+    also being the fastest.
 
     - support many more options and methods from JSON::PP: stringify_infnan,
     allow_unknown, allow_stringify, allow_barekey, encode_stringify,

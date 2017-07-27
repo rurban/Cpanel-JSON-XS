@@ -2,6 +2,14 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0234 2017-07-27 (rurban)
+        - Fix and unify utf8 handling with 5.6.2
+          and improve many utf8 tests. (pali #88)
+        - Add tests for boolean sv_yes and sv_no (pali #88)
+        - Check for correct module in %INC (Patrick Cronin #89)
+        - Fix appveyor smoke with latest strawberry, use $Config{make} (pali #91)
+        - Fix inf/nan for strawberry 5.26
+
 3.0233 2017-05-01 (rurban)
         - 5.6 test fixes, silence some cc warnings,
           add coverage and release targets, fix appveyor
