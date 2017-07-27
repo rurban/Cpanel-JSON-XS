@@ -29,7 +29,7 @@ WriteMakefile(
   LICENSE      => 'perl',
   ($] >= 5.005 ?
    (ABSTRACT_FROM  => 'XS.pm',
-    AUTHOR         => 'Reini Urban <rurban@cpanel.net>',
+    AUTHOR         => 'Reini Urban <rurban@cpan.org>',
     # ORIGINAL_AUTHOR => 'Marc Lehmann <schmorp@schmorp.de>'
    ) : ()),
   ($ExtUtils::MakeMaker::VERSION gt '6.46'
