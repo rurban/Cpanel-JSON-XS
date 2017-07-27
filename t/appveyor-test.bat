@@ -1,7 +1,7 @@
 @echo off
 
-rem Test::MinimumVersion
-set REQS=Pod::Text Time::Piece common::sense Mojo::JSON JSON Test::LeakTrace Test::CPAN::Meta Test::Pod Test::Pod::Coverage
+rem Test::MinimumVersion JSON
+set REQS=Pod::Text Time::Piece common::sense Mojo::JSON Test::LeakTrace Test::CPAN::Meta Test::Pod Test::Pod::Coverage
 set PERL_MM_USE_DEFAULT=1
 
 if not "%PLATFORM%" == "x64" set WIN64=undef
