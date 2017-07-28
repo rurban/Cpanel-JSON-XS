@@ -1,6 +1,7 @@
 use strict;
 use Test::More tests => 32;
 use Cpanel::JSON::XS ();
+use Config;
 
 my $booltrue  = q({"is_true":true});
 my $boolfalse = q({"is_false":false});
@@ -60,16 +61,22 @@ SKIP: {
   is( $nonref_cjson->encode( do{utf8::is_utf8($utf8)} ), "true", "map do{utf8::is_utf8(\$utf8)} to true");
 }
 
-# GH #39 stringification
-my ($strue, $sfalse) = ("true", "false");
-if ($] < 5.010) {
-  ($strue, $sfalse) = ("1", "");
+# GH #39 stringification. enabled with 5.16, stable fix with 5.20
+if ($] < 5.020 && $Config{useithreads}) {
+  # random results threaded
+  my ($strue, $sfalse) = (qr/^(1|true)$/, qr/^(""||false)$/);
+  like( $nonref_cjson->encode( !1 ), $sfalse, "map !1 to false");
+  like( $nonref_cjson->encode( !1 ), $sfalse, "map !1 to false");
+  like( $nonref_cjson->encode( !0 ), $strue, "map !0 to 1/true");
+  like( $nonref_cjson->encode( !0 ), $strue, "map !0 to 1/true");
+} else {
+  # perl expression which evaluates to stable sv_no or sv_yes
+  my ($strue, $sfalse) = ("true", "false");
+  is( $nonref_cjson->encode( !1 ), $sfalse, "map !1 to false");
+  is( $nonref_cjson->encode( !1 ), $sfalse, "map !1 to false");
+  is( $nonref_cjson->encode( !0 ), $strue, "map !0 to true");
+  is( $nonref_cjson->encode( !0 ), $strue, "map !0 to true");
 }
-# perl expression which evaluates to sv_no or sv_yes
-is( $nonref_cjson->encode( !1 ), $sfalse, "map !1 to false");
-is( $nonref_cjson->encode( !1 ), $sfalse, "map !1 to false");
-is( $nonref_cjson->encode( !0 ), $strue, "map !0 to true");
-is( $nonref_cjson->encode( !0 ), $strue, "map !0 to true");
 
 $js = $cjson->decode( $truefalse );
 ok ($js->[0] == $true,  "decode true to yes");
