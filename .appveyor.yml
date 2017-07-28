@@ -45,4 +45,4 @@ install:
 build: off
 
 test_script:
-  - cmd: 'call t\appveyor-test.bat'
+  - 't\appveyor-test.bat'
