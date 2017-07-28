@@ -60,22 +60,22 @@ SKIP: {
   is( $nonref_cjson->encode( do{utf8::is_utf8($utf8)} ), "true", "map do{utf8::is_utf8(\$utf8)} to true");
 }
 
-# GH #39
-# perl expression which evaluates to sv_no or sv_yes
-SKIP: {
-  # implemented in 5.16 but broken, works since 5.20
-  skip 'Perl 5.20 is needed for boolean tests based on !1 and !0', 4 if $] < 5.020;
-  is( $nonref_cjson->encode( !1 ), "false", "map !1 to false");
-  is( $nonref_cjson->encode( !1 ), "false", "map !1 to false");
-  is( $nonref_cjson->encode( !0 ), "true", "map !0 to true");
-  is( $nonref_cjson->encode( !0 ), "true", "map !0 to true");
+# GH #39 stringification
+my ($strue, $sfalse) = ("true", "false");
+if ($] < 5.010) {
+  ($strue, $sfalse) = ("1", "");
 }
+# perl expression which evaluates to sv_no or sv_yes
+is( $nonref_cjson->encode( !1 ), $sfalse, "map !1 to false");
+is( $nonref_cjson->encode( !1 ), $sfalse, "map !1 to false");
+is( $nonref_cjson->encode( !0 ), $strue, "map !0 to true");
+is( $nonref_cjson->encode( !0 ), $strue, "map !0 to true");
 
 $js = $cjson->decode( $truefalse );
 ok ($js->[0] == $true,  "decode true to yes");
 ok ($js->[1] == $false, "decode false to no");
-ok( Cpanel::JSON::XS::is_bool($js->[0]) );
-ok( Cpanel::JSON::XS::is_bool($js->[1]) );
+ok( Cpanel::JSON::XS::is_bool($js->[0]), "true is_bool");
+ok( Cpanel::JSON::XS::is_bool($js->[1]), "false is_bool");
 
 # GH #53
-ok( !Cpanel::JSON::XS::is_bool( [] ) );
+ok( !Cpanel::JSON::XS::is_bool( [] ), "[] !is_bool");
