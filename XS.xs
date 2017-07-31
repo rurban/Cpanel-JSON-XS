@@ -963,7 +963,6 @@ encode_hk (pTHX_ enc_t *enc, HE *he)
       STRLEN len;
       char *str;
       
-      SvGETMAGIC (sv);
       str = SvPV (sv, len);
 
       encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
