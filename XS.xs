@@ -1605,7 +1605,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
 }
 
 static SV *
-encode_json (pTHX_ SV *scalar, JSON *json)
+encode_json (pTHX_ SV *scalar, JSON *json, SV *typesv)
 {
   enc_t enc;
 
@@ -3636,9 +3636,9 @@ void filter_json_single_key_object (JSON *self, SV *key, SV *cb = &PL_sv_undef)
         XPUSHs (ST (0));
 }
 
-void encode (JSON *self, SV *scalar)
+void encode (JSON *self, SV *scalar, SV *typesv = &PL_sv_undef)
     PPCODE:
-        PUTBACK; scalar = encode_json (aTHX_ scalar, self); SPAGAIN;
+        PUTBACK; scalar = encode_json (aTHX_ scalar, self, typesv); SPAGAIN;
         XPUSHs (scalar);
 
 void decode (JSON *self, SV *jsonstr)
@@ -3813,7 +3813,7 @@ void DESTROY (JSON *self)
 
 PROTOTYPES: ENABLE
 
-void encode_json (SV *scalar)
+void encode_json (SV *scalar, SV *typesv = &PL_sv_undef)
 	ALIAS:
         _to_json    = 0
         encode_json = F_UTF8
@@ -3822,7 +3822,7 @@ void encode_json (SV *scalar)
         JSON json;
         json_init (&json);
         json.flags |= ix;
-        PUTBACK; scalar = encode_json (aTHX_ scalar, &json); SPAGAIN;
+        PUTBACK; scalar = encode_json (aTHX_ scalar, &json, typesv); SPAGAIN;
         XPUSHs (scalar);
 }
 
