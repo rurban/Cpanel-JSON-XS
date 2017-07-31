@@ -1520,8 +1520,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         }
       }
       if (SvPOKp (sv) && !strEQ(enc->cur, SvPVX (sv))) {
-        STRLEN len;
-        char *str = SvPV (sv, len);
+        char *str = SvPVX (sv);
+        STRLEN len = SvCUR (sv);
         enc->cur = savecur;
         enc->end = saveend;
         encode_ch (aTHX_ enc, '"');
@@ -1597,8 +1597,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         }
 
       if (SvPOKp (sv) && !strEQ(savecur, SvPVX (sv))) {
-        STRLEN len;
-        char *str = SvPV (sv, len);
+        char *str = SvPVX (sv);
+        STRLEN len = SvCUR (sv);
         enc->cur = savecur;
         enc->end = saveend;
         encode_ch (aTHX_ enc, '"');
@@ -1609,8 +1609,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
     }
   else if (SvPOKp (sv))
     {
-      STRLEN len;
-      char *str = SvPV (sv, len);
+      char *str = SvPVX (sv);
+      STRLEN len = SvCUR (sv);
       encode_ch (aTHX_ enc, '"');
       encode_str (aTHX_ enc, str, len, SvUTF8 (sv));
       encode_ch (aTHX_ enc, '"');
