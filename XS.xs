@@ -1242,7 +1242,6 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
   GV *method;
   SV *sv = SvRV(rv);
 
-  SvGETMAGIC (sv);
   svt = SvTYPE (sv);
 
   if (UNLIKELY(SvOBJECT (sv)))
@@ -1255,7 +1254,7 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
 
       if (stash == bstash || stash == mstash || stash == oldstash)
         {
-          if (SvIV (sv))
+          if (SvIV_nomg (sv))
             encode_const_str (aTHX_ enc, "true", 4, 0);
           else
             encode_const_str (aTHX_ enc, "false", 5, 0);
