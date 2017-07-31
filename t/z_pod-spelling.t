@@ -26,6 +26,7 @@ DESERIALIZATION
 Deserializing
 ECMAscript
 GPL
+GoodData
 IETF
 Iceweasel
 JSON
