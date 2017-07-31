@@ -2192,8 +2192,13 @@ BEGIN {
   }
 }
 
-sub true()  { $true  }
-sub false() { $false }
+BEGIN {
+  my $const_true  = $true;
+  my $const_false = $false;
+  *true  = sub () { $const_true  };
+  *false = sub () { $const_false };
+}
+
 sub is_bool($) {
   shift if @_ == 2; # as method call
   (ref($_[0]) and UNIVERSAL::isa( $_[0], JSON::PP::Boolean::))
