@@ -628,7 +628,7 @@ ref_bool_type (pTHX_ SV *sv)
   if (svt < SVt_PVAV)
     {
       STRLEN len = 0;
-      char *pv = svt ? SvPV (sv, len) : 0;
+      char *pv = svt ? SvPV_nomg (sv, len) : 0;
 
       if (len == 1) {
         if (*pv == '1')
