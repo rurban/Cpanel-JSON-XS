@@ -2200,10 +2200,16 @@ BEGIN {
 }
 
 BEGIN {
+# For unknown reason prior to perl 5.10 overload does not work on inlined objects
+if ($] < '5.10') {
+  *true  = sub () { $true  };
+  *false = sub () { $false };
+} else {
   my $const_true  = $true;
   my $const_false = $false;
   *true  = sub () { $const_true  };
   *false = sub () { $const_false };
+}
 }
 
 sub is_bool($) {
