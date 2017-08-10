@@ -2186,46 +2186,12 @@ sub allow_bigint {
     Carp::carp("allow_bigint() is obsoleted. use allow_bignum() instead.");
 }
 
-our ($true, $false);
 BEGIN {
-  if ($INC{'JSON/XS.pm'}
-      and $INC{'Types/Serialiser.pm'}
-      and $JSON::XS::VERSION ge "3.00") {
-    $true  = $Types::Serialiser::true; # readonly if loaded by JSON::XS
-    $false = $Types::Serialiser::false;
-  } else {
-    $true  = do { bless \(my $dummy = 1), "JSON::PP::Boolean" };
-    $false = do { bless \(my $dummy = 0), "JSON::PP::Boolean" };
-  }
-}
+  package
+    JSON::PP::Boolean;
 
-BEGIN {
-# For unknown reason prior to perl 5.10 overload does not work on inlined objects
-if ($] < '5.10') {
-  *true  = sub () { $true  };
-  *false = sub () { $false };
-} else {
-  my $const_true  = $true;
-  my $const_false = $false;
-  *true  = sub () { $const_true  };
-  *false = sub () { $const_false };
-}
-}
+  require overload;
 
-sub is_bool($) {
-  shift if @_ == 2; # as method call
-  (ref($_[0]) and UNIVERSAL::isa( $_[0], JSON::PP::Boolean::))
-  or (exists $INC{'Types/Serialiser.pm'} and Types::Serialiser::is_bool($_[0]))
-}
-
-XSLoader::load 'Cpanel::JSON::XS', $XS_VERSION;
-
-package
-  JSON::PP::Boolean;
-
-use overload ();
-
-BEGIN {
   local $^W; # silence redefine warnings. no warnings 'redefine' does not help
   &overload::import( 'overload', # workaround 5.6 reserved keyword warning
     "0+"     => sub { ${$_[0]} },
@@ -2243,6 +2209,34 @@ BEGIN {
     },
     fallback => 1);
 }
+
+our ($true, $false);
+BEGIN {
+  if ($INC{'JSON/XS.pm'}
+      and $INC{'Types/Serialiser.pm'}
+      and $JSON::XS::VERSION ge "3.00") {
+    $true  = $Types::Serialiser::true; # readonly if loaded by JSON::XS
+    $false = $Types::Serialiser::false;
+  } else {
+    $true  = do { bless \(my $dummy = 1), "JSON::PP::Boolean" };
+    $false = do { bless \(my $dummy = 0), "JSON::PP::Boolean" };
+  }
+}
+
+BEGIN {
+  my $const_true  = $true;
+  my $const_false = $false;
+  *true  = sub () { $const_true  };
+  *false = sub () { $const_false };
+}
+
+sub is_bool($) {
+  shift if @_ == 2; # as method call
+  (ref($_[0]) and UNIVERSAL::isa( $_[0], JSON::PP::Boolean::))
+  or (exists $INC{'Types/Serialiser.pm'} and Types::Serialiser::is_bool($_[0]))
+}
+
+XSLoader::load 'Cpanel::JSON::XS', $XS_VERSION;
 
 1;
 
