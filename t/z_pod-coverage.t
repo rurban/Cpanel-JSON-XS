@@ -12,7 +12,7 @@ plan skip_all => "Test::Pod::Coverage 1.04 required for testing POD coverage"
     if $@;
 
 for (all_modules()) {
-  pod_coverage_ok($_) unless /XXX/;
+  pod_coverage_ok($_, { trustme => [qr/^JSON_TYPE_.*_(?:NULL|CLASS)$/] }) unless /XXX/;
 }
 
 done_testing();
