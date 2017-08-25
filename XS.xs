@@ -28,6 +28,10 @@
 #define HAVE_BAD_POWL
 #endif
 
+#if PERL_VERSION < 22 && defined(HAS_SETLOCALE)
+#define NEED_NUMERIC_LOCALE_C
+#endif
+
 /* FIXME: still a refcount error */
 #define HAVE_DECODE_BOM
 #define UTF8BOM     "\357\273\277"      /* EF BB BF */
@@ -1387,7 +1391,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
     {
       char *savecur, *saveend;
       char inf_or_nan = 0;
-#if PERL_VERSION < 22
+#ifdef NEED_NUMERIC_LOCALE_C
       char *locale = NULL;
 #endif
       NV nv = SvNVX(sv);
@@ -1409,8 +1413,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         }
       }
 #endif
-      /* TODO: #96 locale insensitive sprintf radix: set_numeric_standard */
-#if PERL_VERSION < 22
+      /* locale insensitive sprintf radix #96 */
+#ifdef NEED_NUMERIC_LOCALE_C
       locale = setlocale(LC_NUMERIC, NULL);
       if (!locale || strNE(locale, "C")) {
         setlocale(LC_NUMERIC, "C");
@@ -1421,7 +1425,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
 #else
       (void)Gconvert (nv, NV_DIG, 0, enc->cur);
 #endif
-#if PERL_VERSION < 22
+#ifdef NEED_NUMERIC_LOCALE_C
       if (locale)
         setlocale(LC_NUMERIC, locale);
 #endif

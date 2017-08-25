@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0238 2017-08-25 (rurban)
+        - Make printing of numbers on perl's earlier than 5.22 locale
+        insensitive, to produce a dot as decimal sep. (#96)
+
 3.0237 2017-07-28 (rurban)
         - relax inf/nan tests as in t/op/infnan.t for windows.
           we cannot know if msvcrt.dll or the new ucrt.dll is used.
