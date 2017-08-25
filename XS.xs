@@ -1387,6 +1387,9 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
     {
       char *savecur, *saveend;
       char inf_or_nan = 0;
+#if PERL_VERSION < 22
+      char *locale = NULL;
+#endif
       NV nv = SvNVX(sv);
       /* trust that perl will do the right thing w.r.t. JSON syntax. */
       need (aTHX_ enc, NV_DIG + 32);
@@ -1406,10 +1409,21 @@ encode_sv (pTHX_ enc_t *enc, SV *sv)
         }
       }
 #endif
+      /* TODO: #96 locale insensitive sprintf radix: set_numeric_standard */
+#if PERL_VERSION < 22
+      locale = setlocale(LC_NUMERIC, NULL);
+      if (!locale || strNE(locale, "C")) {
+        setlocale(LC_NUMERIC, "C");
+      }
+#endif
 #ifdef USE_QUADMATH
       quadmath_snprintf(enc->cur, enc->end - enc->cur, "%.*Qg", (int)NV_DIG, nv);
 #else
       (void)Gconvert (nv, NV_DIG, 0, enc->cur);
+#endif
+#if PERL_VERSION < 22
+      if (locale)
+        setlocale(LC_NUMERIC, locale);
 #endif
 
 #ifdef STR_INF4
