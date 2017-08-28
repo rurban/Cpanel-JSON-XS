@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0239 2017-08-28 (rurban)
+        - Fix compilation under windows. (#98 mauke)
+
 3.0238 2017-08-25 (rurban)
         - Make printing of numbers on perl's earlier than 5.22 locale
         insensitive, to produce a dot as decimal sep. (#96)
