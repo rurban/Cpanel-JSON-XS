@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+3.0240 2017-12-17 (rurban)
+        - Simplify >allow_singlequote check, coverity cid #165321
+        - Deprecate UTF-16 or UTF-32 BOM's: RFC 8259.
+
 3.0239 2017-08-28 (rurban)
         - Fix compilation under windows. (#98 mauke)
 
