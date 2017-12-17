@@ -1336,6 +1336,11 @@ See also L<http://www.unicode.org/faq/utf_bom.html#BOM>.
 Beware that Cpanel::JSON::XS is currently the only JSON module which
 does accept and decode a BOM.
 
+The latest JSON spec
+L<https://www.greenbytes.de/tech/webdav/rfc8259.html#character.encoding>
+forbid the usage of UTF-16 or UTF-32, the character encoding is UTF-8.
+Thus in subsequent updates BOM's of UTF-16 or UTF-32 will throw an error.
+
 =head1 MAPPING
 
 This section describes how Cpanel::JSON::XS maps Perl values to JSON
