@@ -1998,9 +1998,9 @@ SEE ALSO
     <https://tools.ietf.org/html/rfc4627>
 
 AUTHOR
-    Marc Lehmann <schmorp@schmorp.de>, http://home.schmorp.de/
-
     Reini Urban <rurban@cpan.org>
+
+    Marc Lehmann <schmorp@schmorp.de>, http://home.schmorp.de/
 
 MAINTAINER
     Reini Urban <rurban@cpan.org>

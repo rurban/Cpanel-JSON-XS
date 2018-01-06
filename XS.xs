@@ -958,7 +958,7 @@ encode_av (pTHX_ enc_t *enc, AV *av, SV *typesv)
 
   SvGETMAGIC (typesv);
 
-  if (SvOK (typesv))
+  if (UNLIKELY (SvOK (typesv)))
     {
       if (SvROK (typesv) &&
           SvOBJECT (SvRV (typesv)) &&
@@ -982,7 +982,7 @@ encode_av (pTHX_ enc_t *enc, AV *av, SV *typesv)
             }
         }
 
-      if (UNLIKELY(!SvROK (typesv)))
+      if (UNLIKELY (!SvROK (typesv)))
         croak ("encountered type (%s, 0x%x) was specified for '%s'",
                SvPV_nolen (typesv), (unsigned int)SvFLAGS (typesv),
                SvPV_nolen (sv_2mortal (newRV_inc ((SV *)av))));
@@ -1024,7 +1024,11 @@ encode_av (pTHX_ enc_t *enc, AV *av, SV *typesv)
           SV **svp = av_fetch (av, i, 0);
 
           if (typeav)
-            typesv = *(av_fetch (typeav, i, 0));
+            {
+              SV **typerv = av_fetch (typeav, i, 0);
+              if (typerv)
+                typesv = *typerv;
+            }
 
           encode_indent (aTHX_ enc);
 
@@ -1115,7 +1119,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
 
   SvGETMAGIC (typesv);
 
-  if (SvOK (typesv))
+  if (UNLIKELY (SvOK (typesv)))
     {
       if (SvROK (typesv) &&
           SvOBJECT (SvRV (typesv)) &&
@@ -1139,7 +1143,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
             }
         }
 
-      if (UNLIKELY(!SvROK (typesv)))
+      if (UNLIKELY (!SvROK (typesv)))
         croak ("encountered type (%s, 0x%x) was specified for '%s'",
                SvPV_nolen (typesv), (unsigned int)SvFLAGS (typesv),
                SvPV_nolen (sv_2mortal (newRV_inc ((SV *)hv))));
@@ -1242,7 +1246,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
               retrieve_hk (aTHX_ he, &key, &klen);
               encode_hk (aTHX_ enc, key, klen);
 
-              if (typehv)
+              if (UNLIKELY (typehv))
                 {
                   SV **typesv_ref = hv_fetch (typehv, key, klen, 0);
                   if (UNLIKELY (!typesv_ref))
@@ -1276,7 +1280,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
                 retrieve_hk (aTHX_ he, &key, &klen);
                 encode_hk (aTHX_ enc, key, klen);
 
-                if (typehv)
+                if (UNLIKELY (typehv))
                   {
                     SV **typesv_ref = hv_fetch (typehv, key, klen, 0);
                     if (UNLIKELY (!typesv_ref))
@@ -1478,8 +1482,8 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
 
   svt = SvTYPE (sv);
 
-  if (UNLIKELY(SvOBJECT (sv)))
-    {
+  if (UNLIKELY (SvOBJECT (sv)))
+  {
     if (!encode_bool_obj (aTHX_ enc, sv, 0, 0))
     {
       HV *stash = SvSTASH (sv);
@@ -1566,7 +1570,7 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
         croak ("encountered object '%s', but neither allow_blessed, convert_blessed nor allow_tags settings are enabled (or TO_JSON/FREEZE method missing)",
                SvPV_nolen (sv_2mortal (newRV_inc (sv))));
     }
-    }
+  }
   else if (svt < SVt_PVAV && svt != SVt_PVGV && svt != SVt_PVHV && svt != SVt_PVAV)
     {
       if (!encode_bool_ref (aTHX_ enc, sv))
@@ -1655,7 +1659,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
 
   SvGETMAGIC (typesv);
 
-  if (SvOK (typesv))
+  if (UNLIKELY (SvOK (typesv)))
     {
       if (!SvIOKp (typesv))
         {
@@ -1691,7 +1695,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       type = SvIVX (typesv);
     }
 
-  if (type)
+  if (UNLIKELY (type))
     {
       force_conversion = 1;
       can_be_null = (type & JSON_TYPE_CAN_BE_NULL);

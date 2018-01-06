@@ -70,7 +70,7 @@ WriteMakefile(
       },
       x_contributors => [
         'Ashley Willis <ashleyw@cpan.org>',
-        'bulk88 <bulk88@hotmail.com>',
+        'Daniel Dragan <bulk88@hotmail.com>',
         'Colin Kuskie <colink@perldreamer.com>',
         'David Golden <xdg@xdg.me>',
         'David Steinbrunner <dsteinbrunner@pobox.com>',
@@ -90,7 +90,7 @@ WriteMakefile(
         'Quim Rovira <quim@rovira.cat>',
         'Reini Urban <rurban@cpan.org>',
         'Sergey Aleynikov <sergey.aleynikov@gmail.com>',
-        'Syohei YOSHIDA <syohex@gmail.com>',
+        'Syohei Yoshida <syohex@gmail.com>',
       ],
     }
    ) : ()),
