@@ -184,7 +184,7 @@ FUNCTIONAL INTERFACE
     The following convenience methods are provided by this module. They are
     exported by default:
 
-    $json_text = encode_json $perl_scalar
+    $json_text = encode_json $perl_scalar, [json_type]
         Converts the given Perl data structure to a UTF-8 encoded, binary
         string (that is, the string contains octets only). Croaks on error.
 
@@ -193,6 +193,8 @@ FUNCTIONAL INTERFACE
            $json_text = Cpanel::JSON::XS->new->utf8->encode ($perl_scalar)
 
         Except being faster.
+
+        For the type argument see Cpanel::JSON::XS::Type.
 
     $perl_scalar = decode_json $json_text [, $allow_nonref ]
         The opposite of "encode_json": expects an UTF-8 (binary) string of

@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '3.0240';
+our $VERSION = '4.00';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -231,7 +231,7 @@ exported by default:
 
 =over 4
 
-=item $json_text = encode_json $perl_scalar
+=item $json_text = encode_json $perl_scalar, [json_type]
 
 Converts the given Perl data structure to a UTF-8 encoded, binary string
 (that is, the string contains octets only). Croaks on error.
@@ -241,6 +241,8 @@ This function call is functionally identical to:
    $json_text = Cpanel::JSON::XS->new->utf8->encode ($perl_scalar)
 
 Except being faster.
+
+For the type argument see L<Cpanel::JSON::XS::Type>.
 
 =item $perl_scalar = decode_json $json_text [, $allow_nonref ]
 
@@ -2256,9 +2258,9 @@ L<https://tools.ietf.org/html/rfc4627>
 
 =head1 AUTHOR
 
-Marc Lehmann <schmorp@schmorp.de>, http://home.schmorp.de/
-
 Reini Urban <rurban@cpan.org>
+
+Marc Lehmann <schmorp@schmorp.de>, http://home.schmorp.de/
 
 =head1 MAINTAINER
 

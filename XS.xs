@@ -2,6 +2,11 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#define NEED_load_module
+#define NEED_newCONSTSUB
+#define NEED_vload_module
+#define NEED_vnewSVpvf
+#define NEED_warner
 #define NEED_grok_number
 #define NEED_grok_numeric_radix
 #define NEED_newRV_noinc
@@ -35,6 +40,7 @@
 /* FIXME: still a refcount error */
 #define HAVE_DECODE_BOM
 #define UTF8BOM     "\357\273\277"      /* EF BB BF */
+/* UTF16/32BOM is deprecated, RFC 8259 */
 #define UTF16BOM    "\377\376"          /* FF FE or +UFEFF */
 #define UTF16BOM_BE "\376\377"          /* FE FF */
 #define UTF32BOM    "\377\376\000\000"  /* FF FE 00 00 or +UFEFF */
@@ -299,7 +305,7 @@ typedef struct {
   SV *sv_json;
 } my_cxt_t;
 
-// the amount of HEs to allocate on the stack, when sorting keys
+/* the amount of HEs to allocate on the stack, when sorting keys */
 #define STACK_HES 64
 
 START_MY_CXT
@@ -1197,7 +1203,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
           HE *hes_stack [STACK_HES];
           HE **hes = hes_stack;
 
-          // allocate larger arrays on the heap
+          /* allocate larger arrays on the heap */
           if (count > STACK_HES)
             {
               SV *sv = sv_2mortal (NEWSV (0, count * sizeof (*hes)));
@@ -1246,7 +1252,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
               retrieve_hk (aTHX_ he, &key, &klen);
               encode_hk (aTHX_ enc, key, klen);
 
-              if (UNLIKELY (typehv))
+              if (UNLIKELY (PTR2ul (typehv)))
                 {
                   SV **typesv_ref = hv_fetch (typehv, key, klen, 0);
                   if (UNLIKELY (!typesv_ref))
@@ -1280,7 +1286,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
                 retrieve_hk (aTHX_ he, &key, &klen);
                 encode_hk (aTHX_ enc, key, klen);
 
-                if (UNLIKELY (typehv))
+                if (UNLIKELY (PTR2ul (typehv)))
                   {
                     SV **typesv_ref = hv_fetch (typehv, key, klen, 0);
                     if (UNLIKELY (!typesv_ref))

@@ -4,7 +4,7 @@ package Cpanel::JSON::XS::Type;
 
 =head1 NAME
 
-Cpanel::JSON::XS::Type - Type support for JSON encoder
+Cpanel::JSON::XS::Type - Type support for JSON encode
 
 =head1 SYNOPSIS
 
@@ -45,19 +45,20 @@ In most cases perl structures passed to
 L<encode_json|Cpanel::JSON::XS/encode_json> come from other functions
 or from other modules and caller of Cpanel::JSON::XS module does not
 have control of internals or they are subject of change. So it is not
-possible to "force" type as described in the
+easy to support enforcing types as described in the
 L<simple scalars|Cpanel::JSON::XS/simple scalars> section.
 
-Function L<encode_json|Cpanel::JSON::XS/encode_json> takes perl
-structure as its input and optionally also json type specification in
+The function L<encode_json|Cpanel::JSON::XS/encode_json> takes a perl
+structure as its input and optionally also a json type specification in
 the second parameter.
 
-If the specification is not provided (or is undef) internal perl scalar
-flags are used for choosing JSON type. Internal flags can be changed
-by perl itself, also by external modules which means that types in
-resulting JSON string aren't stable. Specially it does not work reliable
-for dual vars and scalars which were used in both numeric and string
-operations. See L<simple scalars|Cpanel::JSON::XS/simple scalars>.
+If the specification is not provided (or is undef) internal perl
+scalar flags are used for the resulting JSON type. The internal flags
+can be changed by perl itself, but also by external modules. Which
+means that types in resulting JSON string aren't stable. Specially it
+does not work reliable for dual vars and scalars which were used in
+both numeric and string operations. See L<simple
+scalars|Cpanel::JSON::XS/simple scalars>.
 
 =head2 JSON type specification for scalars:
 
@@ -158,7 +159,8 @@ use warnings;
 # This exports needed XS constants to perl
 use Cpanel::JSON::XS ();
 
-use Exporter 5.57 'import';
+use Exporter;
+our @ISA = qw(Exporter);
 our @EXPORT = our @EXPORT_OK = qw(
   json_type_arrayof
   json_type_hashof
