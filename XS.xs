@@ -1751,7 +1751,11 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
 #ifdef NEED_NUMERIC_LOCALE_C
       locale = setlocale(LC_NUMERIC, NULL);
       if (!locale || strNE(locale, "C")) {
-        setlocale(LC_NUMERIC, "C");
+# ifdef I_XLOCALE
+        (void)uselocale("C");
+# else
+        (void)setlocale(LC_NUMERIC, "C");
+# endif
       }
 #endif
 #ifdef USE_QUADMATH
@@ -1761,7 +1765,11 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
 #endif
 #ifdef NEED_NUMERIC_LOCALE_C
       if (locale)
-        setlocale(LC_NUMERIC, locale);
+# ifdef I_XLOCALE
+        (void)uselocale(locale);
+# else
+        (void)setlocale(LC_NUMERIC, locale);
+# endif
 #endif
 
 #ifdef STR_INF4

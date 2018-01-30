@@ -2,7 +2,14 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-4.00 2018-01-30 (rurban,pali)
+4.00 2018-02-01 (rurban,pali)
+        - No changes
+
+3.99_02 2018-01-30 (rurban,pali)
+        - Avoid setlocale race in threads with non-C locales, where the threads differ
+          in the LC_NUMERIC locale. (#99 pali)
+
+3.99_01 2018-01-30 (rurban,pali)
         - Added Cpanel::JSON::XS::Type as 2nd optional encode argument. (#94 pali)
         - Removed calling get magic hooks twice in encode.
 
