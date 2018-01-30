@@ -2,7 +2,7 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-4.00 2018-01-29 (rurban,pali)
+4.00 2018-01-30 (rurban,pali)
         - Added Cpanel::JSON::XS::Type as 2nd optional encode argument. (#94 pali)
         - Removed calling get magic hooks twice in encode.
 
