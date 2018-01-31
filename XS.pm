@@ -1411,6 +1411,13 @@ The other round, from perl to JSON, C<!0> which is represented as
 C<yes> becomes C<true>, and C<!1> which is represented as
 C<no> becomes C<false>.
 
+Via L<Cpanel::JSON::XS::Type> you can now even force negation in C<encode>,
+without overloading of C<!>:
+
+    my $false = Cpanel::JSON::XS::false;
+    print($json->encode([!$false], [JSON_TYPE_BOOL]));
+    => [true]
+
 =item null
 
 A JSON null atom becomes C<undef> in Perl.
@@ -1974,7 +1981,8 @@ JSON::XS, Cpanel::JSON::XS produce JSON::PP::Boolean objects, just
 Mojo and JSON::YAJL not.  Mojo produces Mojo::JSON::_Bool and
 JSON::YAJL::Parser just an unblessed IV.
 
-Cpanel::JSON::XS accepts JSON::PP::Boolean and Mojo::JSON::_Bool objects as booleans.
+Cpanel::JSON::XS accepts JSON::PP::Boolean and Mojo::JSON::_Bool
+objects as booleans.
 
 I cannot think of any reason to still use JSON::XS anymore.
 

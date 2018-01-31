@@ -1260,6 +1260,13 @@ MAPPING
         "yes" becomes "true", and "!1" which is represented as "no" becomes
         "false".
 
+        Via Cpanel::JSON::XS::Type you can now even force negation in
+        "encode", without overloading of "!":
+
+            my $false = Cpanel::JSON::XS::false;
+            print($json->encode([!$false], [JSON_TYPE_BOOL]));
+            => [true]
+
     null
         A JSON null atom becomes "undef" in Perl.
 
