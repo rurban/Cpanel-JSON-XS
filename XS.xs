@@ -35,6 +35,9 @@
 
 #if PERL_VERSION < 22 && defined(HAS_SETLOCALE)
 #define NEED_NUMERIC_LOCALE_C
+#ifdef I_XLOCALE
+#include <xlocale.h>
+#endif
 #endif
 
 /* FIXME: still a refcount error */
@@ -1726,6 +1729,11 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       char *savecur, *saveend;
       char inf_or_nan = 0;
 #ifdef NEED_NUMERIC_LOCALE_C
+# ifdef HAS_USELOCALE
+      locale_t oldloc = (locale_t)0;
+      locale_t newloc;
+# endif
+      bool loc_changed = FALSE;
       char *locale = NULL;
 #endif
       NV nv = SvNOKp (sv) ? SvNVX (sv) : SvOK (sv) ? SvNV_nomg (sv) : 0;
@@ -1751,10 +1759,17 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
 #ifdef NEED_NUMERIC_LOCALE_C
       locale = setlocale(LC_NUMERIC, NULL);
       if (!locale || strNE(locale, "C")) {
-# ifdef I_XLOCALE
-        (void)uselocale("C");
+        loc_changed = TRUE;
+# ifdef HAS_USELOCALE
+        /* thread-safe variant for children not changing the global state */
+        oldloc = uselocale((locale_t)0);
+        if (oldloc == LC_GLOBAL_LOCALE)    /* NULL for "C" locale */
+          newloc = newlocale(LC_NUMERIC_MASK, NULL, (locale_t)0);
+        else
+          newloc = newlocale(LC_NUMERIC_MASK, NULL, oldloc);
+        uselocale(newloc);
 # else
-        (void)setlocale(LC_NUMERIC, "C");
+        setlocale(LC_NUMERIC, "C");
 # endif
       }
 #endif
@@ -1764,12 +1779,14 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       (void)Gconvert (nv, NV_DIG, 0, enc->cur);
 #endif
 #ifdef NEED_NUMERIC_LOCALE_C
-      if (locale)
-# ifdef I_XLOCALE
-        (void)uselocale(locale);
+      if (loc_changed) {
+# ifdef HAS_USELOCALE
+        (void)uselocale(oldloc);
+        freelocale(newloc);
 # else
         (void)setlocale(LC_NUMERIC, locale);
 # endif
+      }
 #endif
 
 #ifdef STR_INF4

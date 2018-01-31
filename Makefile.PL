@@ -5,12 +5,40 @@ use Config;
 my $define = '';
 # https://gcc.gnu.org/onlinedocs/gcc-4.0.0/gcc/Warning-Options.html
 if ($Config{gccversion} and $Config{gccversion} =~ /^(\d+\.\d+)\./) {
-    my $gccver = $1;
-    if ($gccver >= 4.3) {
-        $define = '-Wall -Werror=declaration-after-statement -Wextra -W';
-    } elsif ($gccver >= 3.4) {
-        $define = '-Wall -Wdeclaration-after-statement -Wextra -W';
+  my $gccver = $1;
+  if ($gccver >= 4.3) {
+    $define = '-Wall -Werror=declaration-after-statement -Wextra -W';
+  } elsif ($gccver >= 3.4) {
+    $define = '-Wall -Wdeclaration-after-statement -Wextra -W';
+  }
+}
+if ($] < 5.022 && $Config{d_setlocale} && $Config{usethreads}) {
+  if (-e "/usr/include/xlocale.h") {
+    $define .= " -DI_XLOCALE -DHAS_USELOCALE";
+  } else {
+    print "probe for xlocale.h... ";
+    open PROBE, "> tmp.c";
+    print PROBE <<'EOT'; close(PROBE);
+#include <stdio.h>
+#include <xlocale.h>
+int main(int argc, char** argv, char** env) {
+    printf("found\n");
+    uselocale((locale_t)0);
+    return 0;
+}
+EOT
+    my $exe = "tmp$Config{exe_ext}";
+    my $cc_cmd = "$Config{cc} $Config{ccflags}" .
+                 " -o $exe $Config{ldflags} tmp.c $Config{libs}";
+    my $rc = system($cc_cmd);
+    if ($rc) {
+      print "not found\n";
+      print "$cc_cmd\n";
+    } else {
+      $define .= " -DI_XLOCALE -DHAS_USELOCALE";
     }
+    unlink("tmp.c", $exe, "tmp$Config{obj_ext}");
+  }
 }
 
 WriteMakefile(
