@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.01 2018-02-03 (rurban)
+        - Fix centos7 locale crash (#101 McA), fix required for all
+          threaded perl's < 5.22 with glibc.
+
 4.00 2018-02-02 (rurban,pali)
         - No changes
 

@@ -1763,10 +1763,10 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
 # ifdef HAS_USELOCALE
         /* thread-safe variant for children not changing the global state */
         oldloc = uselocale((locale_t)0);
-        if (oldloc == LC_GLOBAL_LOCALE)    /* NULL for "C" locale */
-          newloc = newlocale(LC_NUMERIC_MASK, NULL, (locale_t)0);
+        if (oldloc == LC_GLOBAL_LOCALE)
+          newloc = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
         else
-          newloc = newlocale(LC_NUMERIC_MASK, NULL, oldloc);
+          newloc = newlocale(LC_NUMERIC_MASK, "C", oldloc);
         uselocale(newloc);
 # else
         setlocale(LC_NUMERIC, "C");
@@ -1782,7 +1782,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       if (loc_changed) {
 # ifdef HAS_USELOCALE
         (void)uselocale(oldloc);
-        freelocale(newloc);
+        if (newloc)
+          freelocale(newloc);
 # else
         (void)setlocale(LC_NUMERIC, locale);
 # endif
