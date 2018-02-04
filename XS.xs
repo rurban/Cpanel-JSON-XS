@@ -196,6 +196,9 @@ mingw_modfl(long double x, long double *ip)
 /* excluding the final \0, so the string s may continue */
 # define memEQc(s, c) memEQ(s, ("" c ""), sizeof(c)-1)
 #endif
+#ifndef He_IS_SVKEY
+# define He_IS_SVKEY(he) HeKLEN (he) == HEf_SVKEY
+#endif
 
 /* av_len has 2 different possible types */
 #ifndef HVMAX_T
@@ -1061,7 +1064,7 @@ retrieve_hk (pTHX_ HE *he, char **key, I32 *klen)
 {
   int utf8;
 
-  if (HeKLEN (he) == HEf_SVKEY)
+  if (He_IS_SVKEY(he))
     {
       STRLEN len;
       SV *sv = HeSVKEY (he);
