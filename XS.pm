@@ -530,6 +530,11 @@ resulting JSON text is guaranteed not to contain any C<newlines>.
 
 This setting has no effect when decoding JSON texts.
 
+=item $json = $json->pad([$padding])
+
+=item $padding = $json->get_pad()
+
+Set the indentation padding (default C<3>).
 
 =item $json = $json->space_before ([$enable])
 
