@@ -530,6 +530,13 @@ resulting JSON text is guaranteed not to contain any C<newlines>.
 
 This setting has no effect when decoding JSON texts.
 
+=item $json = $json->indent_length([$number_of_spaces])
+
+=item $length = $json->get_indent_length()
+
+Set the indent length (default C<3>).
+This option is only useful when you also enable indent or pretty.
+The acceptable range is from 0 (no indentation) to 15
 
 =item $json = $json->space_before ([$enable])
 

@@ -446,6 +446,12 @@ OBJECT-ORIENTED INTERFACE
 
         This setting has no effect when decoding JSON texts.
 
+    $json = $json->indent_length([$number_of_spaces])
+    $length = $json->get_indent_length()
+        Set the indent length (default 3). This option is only useful when
+        you also enable indent or pretty. The acceptable range is from 0 (no
+        indentation) to 15
+
     $json = $json->space_before ([$enable])
     $enabled = $json->get_space_before
         If $enable is true (or missing), then the "encode" method will add
