@@ -332,6 +332,7 @@ enum {
 typedef struct {
   U32 flags;
   U32 max_depth;
+  U32 pad;         /* how much padding to use when indenting */
   STRLEN max_size;
 
   SV *cb_object;
@@ -350,7 +351,8 @@ INLINE void
 json_init (JSON *json)
 {
   Zero (json, 1, JSON);
-  json->max_depth = 512;
+  json->max_depth  = 512;
+  json->pad = INDENT_STEP;
 }
 
 /* dTHX/threads TODO*/
@@ -923,7 +925,7 @@ encode_indent (pTHX_ enc_t *enc)
 {
   if (enc->json.flags & F_INDENT)
     {
-      int spaces = enc->indent * INDENT_STEP;
+      int spaces = enc->indent * enc->json.pad;
 
       need (aTHX_ enc, spaces);
       memset (enc->cur, ' ', spaces);
@@ -4030,6 +4032,17 @@ void get_ascii (JSON *self)
         get_allow_stringify  = F_ALLOW_STRINGIFY
     PPCODE:
         XPUSHs (boolSV (self->flags & ix));
+
+void pad (JSON *self, int val = INDENT_STEP)
+    PPCODE:
+        self->pad = val >= 0 ? val : INDENT_STEP;
+        XPUSHs (ST (0));
+
+U32 get_pad (JSON *self)
+    CODE:
+        RETVAL = self->pad;
+    OUTPUT:
+        RETVAL
 
 void max_depth (JSON *self, U32 max_depth = 0x80000000UL)
     PPCODE:
