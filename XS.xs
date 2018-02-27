@@ -265,15 +265,15 @@ mingw_modfl(long double x, long double *ip)
 #define F_ESCAPE_SLASH    0x00080000UL
 #define F_SORT_BY         0x00100000UL
 #define F_ALLOW_STRINGIFY 0x00200000UL
-#define F_HOOK            0x80000000UL // some hooks exist, so slow-path processing
+#define F_HOOK            0x80000000UL /* some hooks exist, so slow-path processing */
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
 #define SET_RELAXED (F_RELAXED | F_ALLOW_BAREKEY | F_ALLOW_SQUOTE)
 
-#define INIT_SIZE   32 // initial scalar size to be allocated
-#define INDENT_STEP 3  // spaces per indentation level
+#define INIT_SIZE   32 /* initial scalar size to be allocated */
+#define INDENT_STEP 3  /* default spaces per indentation level */
 
-#define SHORT_STRING_LEN 16384 // special-case strings of up to this size
+#define SHORT_STRING_LEN 16384 /* special-case strings of up to this size */
 
 #define DECODE_WANTS_OCTETS(json) ((json)->flags & F_UTF8)
 
