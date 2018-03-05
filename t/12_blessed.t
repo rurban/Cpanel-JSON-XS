@@ -1,15 +1,24 @@
-BEGIN { $| = 1; print "1..18\n"; }
+BEGIN { $| = 1; print "1..22\n"; }
 
 use Cpanel::JSON::XS;
 
 our $test;
 sub ok($;$) {
-  print $_[0] ? "" : "not ", "ok ", ++$test, $_[1]?"# ".$_[1]:"", "\n";
+  print $_[0] ? "" : "not ", "ok ", ++$test, $_[1]?"\t# ".$_[1]:"", "\n";
   $_[0]
 }
 
-my $o1 = bless { a => 3 }, "XX";
-my $o2 = bless \(my $dummy = 1), "YY";
+package ZZ;
+use overload ('""' => sub { "<ZZ:".${$_[0]}.">" } );
+
+package main;
+sub XX::TO_JSON {
+   {__,""}
+}
+
+my $o1 = bless { a => 3 }, "XX";       # with TO_JSON
+my $o2 = bless \(my $dummy = 1), "YY"; # without stringification
+my $o3 = bless \(my $dummy = 1), "ZZ"; # with stringification
 
 if (eval 'require Hash::Util') {
   if ($Hash::Util::VERSION > 0.05) {
@@ -25,27 +34,35 @@ else {
   print "# locked hashes are not supported\n";
 };
 
-sub XX::TO_JSON {
-   {__,""}
-}
-
 my $js = Cpanel::JSON::XS->new;
 
-eval { $js->encode ($o1) }; ok ($@ =~ /allow_blessed/);
-eval { $js->encode ($o2) }; ok ($@ =~ /allow_blessed/);
+eval { $js->encode ($o1) }; ok ($@ =~ /allow_blessed/, 'error no allow_blessed');
+eval { $js->encode ($o2) }; ok ($@ =~ /allow_blessed/, 'error w/o TO_JSON');
+eval { $js->encode ($o3) }; ok ($@ =~ /allow_blessed/, 'error w stringify');
+$js->convert_blessed;
+my $r = $js->encode ($o1);
+ok ($js->encode ($o1) eq '{"__":""}', "convert_blessed with TO_JSON $r");
+$r = "";
+eval { $r = $js->encode ($o2) }; ok ($@ =~ /allow_blessed/, "error w/o TO_JSON $r");
+$r = $js->encode ($o3);
+ok ($r =~ /<ZZ:1>/, "w stringify overload $r / $o3");
+
+$js = Cpanel::JSON::XS->new;
 $js->allow_blessed;
-ok ($js->encode ($o1) eq "null");
+ok ($js->encode ($o1) eq "null", 'allow_blessed');
 ok ($js->encode ($o2) eq "null");
-$js->allow_blessed(0)->convert_blessed;
-ok ($js->encode ($o1) eq '{"__":""}');
-ok ($js->encode ($o2) eq "null");
+ok ($js->encode ($o3) eq "null");
 $js->allow_blessed->convert_blessed;
-ok ($js->encode ($o1) eq '{"__":""}');
+ok ($js->encode ($o1) eq '{"__":""}', 'allow_blessed + convert_blessed');
 if ($] < 5.008) {
-  print "ok ",++$test," # skip 5.6\n"
+  print "ok ",++$test," # skip 5.6\n";
+  print "ok ",++$test," # skip 5.6\n";
 } else {
   # PP returns null
-  ok ($js->encode ($o2) eq 'null') or print STDERR "# ",$js->encode ($o2),"\n";
+  $r = $js->encode ($o2);
+  ok ($r eq 'null', "$r");
+  $r = $js->encode ($o3);
+  ok ($r eq '<ZZ:1>', "$r");
 }
 
 $js->filter_json_object (sub { 5 });

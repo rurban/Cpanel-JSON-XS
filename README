@@ -762,7 +762,8 @@ OBJECT-ORIENTED INTERFACE
         "TO_JSON" method found) is being encoded. Has no effect on "decode".
 
         If $enable is false (the default), then "encode" will throw an
-        exception when it encounters a blessed object.
+        exception when it encounters a blessed object without
+        "convert_blessed" and a "TO_JSON" method.
 
         This setting has no effect on "decode".
 

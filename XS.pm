@@ -889,7 +889,8 @@ object (C<convert_blessed> enabled and C<TO_JSON> method found) is being
 encoded. Has no effect on C<decode>.
 
 If C<$enable> is false (the default), then C<encode> will throw an
-exception when it encounters a blessed object.
+exception when it encounters a blessed object without C<convert_blessed>
+and a C<TO_JSON> method.
 
 This setting has no effect on C<decode>.
 

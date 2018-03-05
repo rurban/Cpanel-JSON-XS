@@ -1431,11 +1431,20 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
 
   if (isref && SvAMAGIC(sv))
     ;
-  /* if no string overload found, check allow_stringify */
+  /* if no string overload found, check allow_stringify, allow_unknown
+     and allow_blessed. */
   else if (!MyAMG(sv) && !(enc->json.flags & F_ALLOW_STRINGIFY)) {
-    if (isref && !(enc->json.flags & F_ALLOW_UNKNOWN))
-      croak ("cannot encode reference to scalar '%s' unless the scalar is 0 or 1",
+    if ((isref != 0) && ((enc->json.flags & F_ALLOW_UNKNOWN) == 0)) {
+      croak ("cannot encode reference to scalar '%s' unless the scalar is 0 or 1 "
+             "without allow_unknown",
              SvPV_nolen (sv_2mortal (newRV_inc (sv))));
+    }
+    else if ((isref == 0) && ((enc->json.flags & F_ALLOW_BLESSED) == 0)) {
+      croak ("encountered %s '%s', but allow_blessed, allow_stringify or "
+             "TO_JSON/FREEZE method missing",
+             SvOBJECT(sv) ? "object" : "reference",
+             SvPV_nolen (sv_2mortal (newRV_inc (sv))));
+    }
     encode_const_str (aTHX_ enc, "null", 4, 0);
     return;
   }
@@ -1564,7 +1573,7 @@ encode_bool_obj (pTHX_ enc_t *enc, SV *sv, int force_conversion, int as_string)
       if (as_string)
         encode_ch (aTHX_ enc, '"');
     }
-  else if (force_conversion && enc->json.flags & F_CONV_BLESSED)
+  else if (force_conversion && enc->json.flags & (F_ALLOW_BLESSED|F_CONV_BLESSED))
     {
       if (as_string)
         encode_ch (aTHX_ enc, '"');
