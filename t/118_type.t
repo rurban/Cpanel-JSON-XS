@@ -17,7 +17,7 @@ BEGIN {
     }
 }
 
-use Test::More tests => 244;
+use Test::More tests => 247;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref;
 
@@ -295,3 +295,33 @@ like($@, qr/Exactly one type must be specified in arrayof/);
 
 ok(!defined eval { json_type_hashof(JSON_TYPE_STRING, JSON_TYPE_INT) });
 like($@, qr/Exactly one type must be specified in hashof/);
+
+SKIP: {
+    skip "no Scalar::Util in $]", 1 unless $have_weaken;
+    my $struct = {};
+    $struct->{recursive} = json_type_arrayof(json_type_weaken($struct));
+    my $weakref = $struct->{recursive};
+    weaken($weakref);
+    undef $struct;
+    ok(!defined $weakref);
+}
+
+SKIP: {
+    skip "no Scalar::Util in $]", 1 unless $have_weaken;
+    my $struct = {};
+    $struct->{recursive} = json_type_hashof(json_type_weaken($struct));
+    my $weakref = $struct->{recursive};
+    weaken($weakref);
+    undef $struct;
+    ok(!defined $weakref);
+}
+
+SKIP: {
+    skip "no Scalar::Util in $]", 1 unless $have_weaken;
+    my $struct = {};
+    $struct->{recursive} = json_type_anyof(json_type_weaken($struct));
+    my $weakref = $struct->{recursive};
+    weaken($weakref);
+    undef $struct;
+    ok(!defined $weakref);
+}
