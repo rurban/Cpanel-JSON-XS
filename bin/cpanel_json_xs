@@ -232,6 +232,7 @@ my %F = (
    "yaml-xs"       => sub { require YAML::XS; YAML::XS::Load ($_) },
    "yaml-syck"     => sub { require YAML::Syck; YAML::Syck::Load ($_) },
    "cbor"          => sub { require CBOR::XS; CBOR::XS::decode_cbor ($_) },
+   "sereal"        => sub { require Sereal::Decoder; Sereal::Decoder::decode_sereal ($_) },
    "eval"          => sub { my $v = eval "no strict; no warnings; no utf8;\n#line 1 \"input\"\n$_"; die "$@" if $@; $v },
 );
 
@@ -275,6 +276,7 @@ my %T = (
       local $Data::Dump::TRY_BASE64 = 0;
       Data::Dump::dump ($_) . "\n"
    },
+   "sereal"        => sub { require Sereal::Encoder; Sereal::Encoder::encode_sereal ($_) },
 );
 
 $F{$opt_from}
