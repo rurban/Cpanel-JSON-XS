@@ -52,6 +52,7 @@ WriteMakefile(
   NAME         => "Cpanel::JSON::XS",
   PREREQ_PM    => {
     'Pod::Text'     => '2.08',
+    'Types::Bool'   => '0',
   },
   DEFINE       => $define,
   LICENSE      => 'perl',
