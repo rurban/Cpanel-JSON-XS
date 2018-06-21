@@ -6,7 +6,7 @@ BEGIN {
   $has_bignum = $@ ? 0 : 1;
 }
 use Test::More $has_bignum
-  ? (tests => 13)
+  ? (tests => 17)
   : (skip_all => "Can't load Math::BigInt");
 use Cpanel::JSON::XS;
 use Devel::Peek;
@@ -56,10 +56,23 @@ is( "$num", '2.0000000000000000001', 'decode bigfloat inside structure' )
   or Dump $num;
 
 my $bignan = Math::BigInt->new("NaN");
-#Dump $bignan;
 my $nan = $json->encode($bignan);
 is( "$nan", 'null', 'nan default' );
 $nan = $json->stringify_infnan(0)->encode($bignan);
 is( "$nan", 'null', 'nan null' );
 $nan = $json->stringify_infnan(3)->encode($bignan);
 is( "$nan", 'nan', 'nan stringify' );
+
+my $biginf = Math::BigInt->new("Inf");
+#note $biginf;
+my $inf = $json->stringify_infnan(0)->encode($biginf);
+is( "$inf", 'null', 'inf null' );
+$inf = $json->stringify_infnan(3)->encode($biginf);
+is( "$inf", 'inf', 'inf stringify' );
+
+$biginf = Math::BigInt->new("-Inf");
+$inf = $json->stringify_infnan(0)->encode($biginf);
+#note $biginf;
+is( "$inf", 'null', '-inf default' );
+$inf = $json->stringify_infnan(3)->encode($biginf);
+is( "$inf", '-inf', '-inf stringify' );
