@@ -56,12 +56,10 @@ is( "$num", '2.0000000000000000001', 'decode bigfloat inside structure' )
   or Dump $num;
 
 my $bignan = Math::BigInt->new("NaN");
+#Dump $bignan;
 my $nan = $json->encode($bignan);
-is( "$nan", 'null', 'nan default' )
-  or Dump $nan;
+is( "$nan", 'null', 'nan default' );
 $nan = $json->stringify_infnan(0)->encode($bignan);
-is( "$nan", 'null', 'nan null' )
-  or Dump $nan;
+is( "$nan", 'null', 'nan null' );
 $nan = $json->stringify_infnan(3)->encode($bignan);
-is( "$nan", 'nan', 'nan stringify' )
-  or Dump $nan;
+is( "$nan", 'nan', 'nan stringify' );
