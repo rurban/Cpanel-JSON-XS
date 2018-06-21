@@ -152,6 +152,9 @@ release : dist
 	git push
 	git push --tags
 
+xtest :: test
+	\$(MAKE) test TEST_FILES=xt/*.t
+
 const-c.inc const-xs.inc : Makefile.PL
 
 # versioned gcc needs overrides
