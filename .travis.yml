@@ -16,8 +16,8 @@ perl:
   #- "5.26-dbg"
   #- "5.26-thr-dbg"
   #- "5.26-mb"
-  - "dev"
-#  - "blead"
+  #- "dev"
+  - "blead"
 
 # slows down already cached versions by 3 (33s => 1m45s)
 # (i.e. cache download: 9s, setup: 45s-130s)

@@ -2,6 +2,12 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.03 2018-06-21 (rurban)
+        - Add sereal cpanel_json_xs type (#110 James Rouzier)
+        - Fix bencode/bdecode methods in cpanel_json_xs (#111 Fulvio Scapin)
+        - Overload ne operator for JSON::PP::Boolean (#107 tevfik1903)
+        - Add a missing semicolon to a documentation example (#104 E. Choroba)
+
 4.02 2018-02-27 (rurban)
         - Add encoder indent_length method (#103 rouzier), previously
           hard-coded to 3.

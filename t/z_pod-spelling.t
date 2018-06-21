@@ -109,6 +109,7 @@ resizes
 roundtripping
 runtime
 sanify
+sereal
 serializer
 serializers
 snan

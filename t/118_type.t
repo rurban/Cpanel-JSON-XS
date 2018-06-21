@@ -3,6 +3,11 @@ use warnings;
 
 use Cpanel::JSON::XS;
 use Cpanel::JSON::XS::Type;
+BEGIN {
+  if ($] < 5.014) {
+    use Test::More skip_all => 'This test requires 5.14 - stacked labels';
+  }
+}
 
 use Test::More tests => 244;
 
