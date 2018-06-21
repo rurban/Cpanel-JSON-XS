@@ -1417,8 +1417,13 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
     }
   }
   /* if ALLOW_BIGNUM and Math::Big* and NaN => according to stringify_infnan */
-  if ((enc->json.flags & F_ALLOW_BIGNUM) && SvROK(sv) && str
-      && (memEQc(str, "NaN") || memEQc(str, "inf")|| memEQc(str, "-inf"))) {
+  if (UNLIKELY(
+        (enc->json.flags & F_ALLOW_BIGNUM)
+        && str
+        && SvROK(sv)
+        && (memEQc(str, "NaN") || memEQc(str, "nan") ||
+            memEQc(str, "inf") || memEQc(str, "-inf"))))
+  {
     HV *stash = SvSTASH(SvRV(sv));
     if (stash
         && ((stash == gv_stashpvn ("Math::BigInt", sizeof("Math::BigInt")-1, 0)) ||
@@ -1429,7 +1434,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
         if (pv) SvREFCNT_dec(pv);
         return;
       } else if (enc->json.infnan_mode == 3) {
-        if (memEQc(str, "NaN"))
+        if (memEQc(str, "NaN") || memEQc(str, "nan"))
           encode_const_str (aTHX_ enc, "nan", 3, 0);
         else if (memEQc(str, "inf"))
           encode_const_str (aTHX_ enc, "inf", 3, 0);

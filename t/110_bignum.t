@@ -67,12 +67,14 @@ my $biginf = Math::BigInt->new("Inf");
 #note $biginf;
 my $inf = $json->stringify_infnan(0)->encode($biginf);
 is( "$inf", 'null', 'inf null' );
+my $exp = "$biginf" =~ /nan/i ? "nan" : "inf";
 $inf = $json->stringify_infnan(3)->encode($biginf);
-is( "$inf", 'inf', 'inf stringify' );
+is( "$inf", $exp, 'inf stringify' );
 
 $biginf = Math::BigInt->new("-Inf");
 $inf = $json->stringify_infnan(0)->encode($biginf);
 #note $biginf;
 is( "$inf", 'null', '-inf default' );
+$exp = "$biginf" =~ /nan/i ? "nan" : "-inf";
 $inf = $json->stringify_infnan(3)->encode($biginf);
-is( "$inf", '-inf', '-inf stringify' );
+is( "$inf", $exp, '-inf stringify' );
