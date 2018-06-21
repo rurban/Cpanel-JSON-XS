@@ -188,13 +188,9 @@ mingw_modfl(long double x, long double *ip)
 #endif
 /* from cperl */
 #ifndef strEQc
-# ifdef memEQs
-#  define strEQc(s, c) memEQs(s, strlen(s), c)
-# else
 /* the buffer ends with \0, includes comparison of the \0.
    better than strEQ as it uses memcmp, word-wise comparison. */
-#  define strEQc(s, c) memEQ(s, ("" c ""), sizeof(c))
-# endif
+# define strEQc(s, c) memEQ(s, ("" c ""), sizeof(c))
 #endif
 #ifndef memEQc
 /* excluding the final \0, so the string s may continue */

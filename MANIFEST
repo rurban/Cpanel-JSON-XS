@@ -69,7 +69,6 @@ t/98_56only.t
 t/99_binary.t
 t/_unicode_handling.pm
 t/appveyor-test.bat
-t/gh70-asan.t
 t/test_parsing/i_number_neg_int_huge_exp.json
 t/test_parsing/i_number_pos_double_huge_exp.json
 t/test_parsing/i_object_key_lone_2nd_surrogate.json
@@ -408,6 +407,7 @@ t/test_transform/string_3_invalid_codepoints.json
 t/test_transform/string_with_escaped_NULL.json
 t/zero-mojibake.t
 typemap
+xt/gh70-asan.t
 xt/kwalitee.t
 xt/leaktrace.t
 xt/manifest.t
