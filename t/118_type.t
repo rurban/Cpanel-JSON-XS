@@ -3,13 +3,16 @@ use warnings;
 
 use Cpanel::JSON::XS;
 use Cpanel::JSON::XS::Type;
+
+my $have_weaken;
 BEGIN {
-  if ($] < 5.014) {
-    use Test::More skip_all => 'This test requires 5.14 - stacked labels';
-  }
+    if (eval { require Scalar::Util }) {
+        Scalar::Util->import('weaken');
+        $have_weaken = 1;
+    }
 }
 
-use Test::More tests => 244;
+use Test::More tests => 247;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref;
 
@@ -196,8 +199,7 @@ is(encode_json(
 
 
 SKIP: {
-    skip "no Scalar::Util in $]", 2 if $] < 5.007;
-    require Scalar::Util;
+    skip "no Scalar::Util in $]", 2 unless $have_weaken;
     my $weakref;
     {
         my $perl_struct = { key1 => 'string', key2 => '10',
@@ -205,37 +207,35 @@ SKIP: {
                                       key3 => { key1 => 'level2', key2 => 30 } } };
         my $type_spec = { key1 => JSON_TYPE_STRING, key2 => JSON_TYPE_INT };
         $type_spec->{key3} = $type_spec;
-        Scalar::Util::weaken($type_spec->{key3});
+        weaken($type_spec->{key3});
         my $json_string = $cjson->encode($perl_struct, $type_spec);
         is($json_string, '{"key1":"string","key2":10,"key3":'
            .'{"key1":"level1","key2":20,"key3":{"key1":"level2","key2":30}}}');
         $weakref = $type_spec;
-        Scalar::Util::weaken($weakref);
+        weaken($weakref);
     }
     ok(not defined $weakref);
 }
 
 SKIP: {
-    skip "no Scalar::Util in $]", 2 if $] < 5.007;
-    require Scalar::Util;
+    skip "no Scalar::Util in $]", 2 unless $have_weaken;
     my $weakref;
     {
         my $perl_struct = [ "10", 10.2, undef, 10, [ [ "10", 10 ], 10.3, undef ], 10 ];
         my $type_arrayof = json_type_arrayof(my $type_spec);
         $type_spec = json_type_anyof(JSON_TYPE_INT_OR_NULL, $type_arrayof);
         ${$type_arrayof} = $type_spec;
-        Scalar::Util::weaken(${$type_arrayof});
+        weaken(${$type_arrayof});
         my $json_string = $cjson->encode($perl_struct, $type_spec);
         is($json_string, '[10,10,null,10,[[10,10],10,null],10]');
         $weakref = $type_spec;
-        Scalar::Util::weaken($weakref);
+        weaken($weakref);
     }
     ok(not defined $weakref);
 }
 
 SKIP: {
-    skip "no Scalar::Util in $]", 2 if $] < 5.007;
-    require Scalar::Util;
+    skip "no Scalar::Util in $]", 2 unless $have_weaken;
     my $weakref;
     {
         my $perl_struct = { type => "TYPE", value => "VALUE",
@@ -246,14 +246,14 @@ SKIP: {
         my $type_spec = { type => JSON_TYPE_STRING, value => 0,
                           position => { line => JSON_TYPE_INT, column => JSON_TYPE_INT } };
         my $type_spec_content = json_type_arrayof($type_spec);
-        Scalar::Util::weaken(${$type_spec_content});
+        weaken(${$type_spec_content});
         $type_spec->{content} = $type_spec_content;
         my $json_string = $cjson->encode($perl_struct, $type_spec);
         is ($json_string,
             '{"content":[{"position":{"column":13,"line":12},"type":"TYPE2","value":"VALUE2"}],'.
             '"position":{"column":11,"line":10},"type":"TYPE","value":"VALUE"}');
         $weakref = $type_spec;
-        Scalar::Util::weaken($weakref);
+        weaken($weakref);
     }
     ok(not defined $weakref);
 }
@@ -290,3 +290,33 @@ like($@, qr/Exactly one type must be specified in arrayof/);
 
 ok(!defined eval { json_type_hashof(JSON_TYPE_STRING, JSON_TYPE_INT) });
 like($@, qr/Exactly one type must be specified in hashof/);
+
+SKIP: {
+    skip "no Scalar::Util in $]", 1 unless $have_weaken;
+    my $struct = {};
+    $struct->{recursive} = json_type_arrayof(json_type_weaken($struct));
+    my $weakref = $struct->{recursive};
+    weaken($weakref);
+    undef $struct;
+    ok(!defined $weakref);
+}
+
+SKIP: {
+    skip "no Scalar::Util in $]", 1 unless $have_weaken;
+    my $struct = {};
+    $struct->{recursive} = json_type_hashof(json_type_weaken($struct));
+    my $weakref = $struct->{recursive};
+    weaken($weakref);
+    undef $struct;
+    ok(!defined $weakref);
+}
+
+SKIP: {
+    skip "no Scalar::Util in $]", 1 unless $have_weaken;
+    my $struct = {};
+    $struct->{recursive} = json_type_anyof(json_type_weaken($struct));
+    my $weakref = $struct->{recursive};
+    weaken($weakref);
+    undef $struct;
+    ok(!defined $weakref);
+}
