@@ -161,6 +161,10 @@ See following example:
 
 =back
 
+=head1 AUTHOR
+
+Pali E<lt>pali@cpan.orgE<gt>
+
 =head1 COPYRIGHT & LICENSE
 
 Copyright (c) 2017, GoodData Corporation. All rights reserved.
