@@ -11,6 +11,7 @@ Cpanel::JSON::XS::Type - Type support for JSON encode
  use Cpanel::JSON::XS;
  use Cpanel::JSON::XS::Type;
 
+
  encode_json([10, "10", 10.25], [JSON_TYPE_INT, JSON_TYPE_INT, JSON_TYPE_STRING]);
  # '[10,10,"10.25"]'
 
@@ -35,11 +36,27 @@ Cpanel::JSON::XS::Type - Type support for JSON encode
  my $json_string = encode_json($perl_struct, $type_spec);
  # '{"key1":{"key2":[10,10,10]},"key3":10.5}'
 
+
+ my $value = decode_json('false', 1, my $type);
+ # $value is 0 and $type is JSON_TYPE_BOOL
+
+ my $value = decode_json('0', 1, my $type);
+ # $value is 0 and $type is JSON_TYPE_INT
+
+ my $value = decode_json('"0"', 1, my $type);
+ # $value is 0 and $type is JSON_TYPE_STRING
+
+ my $json_string = '{"key1":{"key2":[10,"10",10.6]},"key3":"10.5"}';
+ my $perl_struct = decode_json($json_string, 0, my $type_spec);
+ # $perl_struct is { key1 => { key2 => [ 10, 10, 10.6 ] }, key3 => 10.5 }
+ # $type_spec is { key1 => { key2 => [ JSON_TYPE_INT, JSON_TYPE_STRING, JSON_TYPE_FLOAT ] }, key3 => JSON_TYPE_STRING }
+
 =head1 DESCRIPTION
 
 This module provides stable JSON type support for the
 L<Cpanel::JSON::XS|Cpanel::JSON::XS> encoder which doesn't depend on
-any internal perl scalar flags or characteristics.
+any internal perl scalar flags or characteristics. Also it provides
+real JSON types for L<Cpanel::JSON::XS|Cpanel::JSON::XS> decoder.
 
 In most cases perl structures passed to
 L<encode_json|Cpanel::JSON::XS/encode_json> come from other functions
@@ -47,6 +64,12 @@ or from other modules and caller of Cpanel::JSON::XS module does not
 have control of internals or they are subject of change. So it is not
 easy to support enforcing types as described in the
 L<simple scalars|Cpanel::JSON::XS/simple scalars> section.
+
+For services based on JSON contents it is sometimes needed to correctly
+process and enforce JSON types.
+
+The function L<decode_json|Cpanel::JSON::XS/decode_json> takes optional
+third scalar parameter and fills it with specification of json types.
 
 The function L<encode_json|Cpanel::JSON::XS/encode_json> takes a perl
 structure as its input and optionally also a json type specification in
@@ -83,6 +106,11 @@ Equivalent of perl operation C<+0> is used for conversion.
 =item JSON_TYPE_STRING
 
 It enforces JSON string type in the resulting JSON.
+
+=item JSON_TYPE_NULL
+
+It represents JSON C<null> value. Makes sense only when passing
+perl's C<undef> value.
 
 =back
 
@@ -196,6 +224,7 @@ our @EXPORT = our @EXPORT_OK = qw(
   json_type_anyof
   json_type_null_or_anyof
   json_type_weaken
+  JSON_TYPE_NULL
   JSON_TYPE_BOOL
   JSON_TYPE_INT
   JSON_TYPE_FLOAT

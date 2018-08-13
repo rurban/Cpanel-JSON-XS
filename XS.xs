@@ -231,6 +231,9 @@ mingw_modfl(long double x, long double *ip)
 /* flags */
 #define JSON_TYPE_CAN_BE_NULL  0x0100
 
+/* null type */
+#define JSON_TYPE_NULL         JSON_TYPE_CAN_BE_NULL
+
 /* classes */
 #define JSON_TYPE_CLASS          "Cpanel::JSON::XS::Type"
 #define JSON_TYPE_ARRAYOF_CLASS  "Cpanel::JSON::XS::Type::ArrayOf"
@@ -2190,7 +2193,7 @@ decode_ws (dec_t *dec)
 #define DEC_INC_DEPTH if (++dec->depth > dec->json.max_depth) ERR (ERR_NESTING_EXCEEDED)
 #define DEC_DEC_DEPTH --dec->depth
 
-static SV *decode_sv (pTHX_ dec_t *dec);
+static SV *decode_sv (pTHX_ dec_t *dec, SV *typesv);
 
 /* #regen code
  my $i;
@@ -3008,7 +3011,7 @@ decode_str_sq (pTHX_ dec_t *dec)
 }
 
 static SV *
-decode_num (pTHX_ dec_t *dec)
+decode_num (pTHX_ dec_t *dec, SV *typesv)
 {
   int is_nv = 0;
   char *start = dec->cur;
@@ -3073,6 +3076,9 @@ decode_num (pTHX_ dec_t *dec)
     {
       int len = dec->cur - start;
 
+      if (typesv)
+        sv_setiv_mg (typesv, JSON_TYPE_INT);
+
       /* special case the rather common 1..5-digit-int case */
       if (*start == '-')
         switch (len)
@@ -3136,6 +3142,9 @@ decode_num (pTHX_ dec_t *dec)
       return newSVpvn (start, dec->cur - start);
     }
 
+  if (typesv)
+    sv_setiv_mg (typesv, JSON_TYPE_FLOAT);
+
   if (dec->json.flags & F_ALLOW_BIGNUM) {
     SV* pv = newSVpvs("require Math::BigFloat && return Math::BigFloat->new(\"");
     sv_catpvn(pv, start, dec->cur - start);
@@ -3158,12 +3167,21 @@ fail:
 }
 
 static SV *
-decode_av (pTHX_ dec_t *dec)
+decode_av (pTHX_ dec_t *dec, SV *typesv)
 {
   AV *av = newAV ();
+  AV *typeav = NULL;
+  SV *typerv;
 
   DEC_INC_DEPTH;
   decode_ws (dec);
+
+  if (typesv)
+    {
+      typeav = newAV ();
+      typerv = newRV_noinc ((SV *)typeav);
+      SvSetMagicSV (typesv, typerv);
+    }
 
   if (*dec->cur == ']')
     ++dec->cur;
@@ -3171,8 +3189,15 @@ decode_av (pTHX_ dec_t *dec)
     for (;;)
       {
         SV *value;
+        SV *value_typesv = NULL;
 
-        value = decode_sv (aTHX_ dec);
+        if (typesv)
+          {
+            value_typesv = newSV (0);
+            av_push (typeav, value_typesv);
+          }
+
+        value = decode_sv (aTHX_ dec, value_typesv);
         if (!value)
           goto fail;
 
@@ -3210,10 +3235,12 @@ fail:
 }
 
 static SV *
-decode_hv (pTHX_ dec_t *dec)
+decode_hv (pTHX_ dec_t *dec, SV *typesv)
 {
   SV *sv;
   HV *hv = newHV ();
+  HV *typehv = NULL;
+  SV *typerv;
   int allow_squote = dec->json.flags & F_ALLOW_SQUOTE;
   int allow_barekey = dec->json.flags & F_ALLOW_BAREKEY;
   int relaxed = dec->json.flags & F_RELAXED;
@@ -3221,6 +3248,13 @@ decode_hv (pTHX_ dec_t *dec)
 
   DEC_INC_DEPTH;
   decode_ws (dec);
+
+  if (typesv)
+    {
+      typehv = newHV ();
+      typerv = newRV_noinc ((SV *)typehv);
+      SvSetMagicSV (typesv, typerv);
+    }
 
   if (*dec->cur == '}')
     ++dec->cur;
@@ -3252,6 +3286,7 @@ decode_hv (pTHX_ dec_t *dec)
         /* the overhead of decode_str + hv_store_ent. */
         {
           SV *value;
+          SV *value_typesv = NULL;
           char *p = dec->cur;
           char *e = p + 24; /* only try up to 24 bytes */
 
@@ -3271,7 +3306,14 @@ decode_hv (pTHX_ dec_t *dec)
                   decode_ws (dec); EXPECT_CH (':');
 
                   decode_ws (dec);
-                  value = decode_sv (aTHX_ dec);
+
+                  if (typesv)
+                    {
+                      value_typesv = newSV (0);
+                      hv_store_ent (typehv, key, value_typesv, 0);
+                    }
+
+                  value = decode_sv (aTHX_ dec, value_typesv);
                   if (!value)
                     {
                       SvREFCNT_dec (key);
@@ -3307,7 +3349,14 @@ decode_hv (pTHX_ dec_t *dec)
                   decode_ws (dec); if (*p != ':') EXPECT_CH (':');
 
                   decode_ws (dec);
-                  value = decode_sv (aTHX_ dec);
+
+                  if (typesv)
+                    {
+                      value_typesv = newSV (0);
+                      hv_store (typehv, key, len, value_typesv, 0);
+                    }
+
+                  value = decode_sv (aTHX_ dec, value_typesv);
                   if (!value)
                     goto fail;
 
@@ -3434,7 +3483,7 @@ decode_tag (pTHX_ dec_t *dec)
 
   decode_ws (dec);
 
-  tag = decode_sv (aTHX_ dec);
+  tag = decode_sv (aTHX_ dec, NULL);
   if (!tag)
     goto fail;
 
@@ -3450,7 +3499,7 @@ decode_tag (pTHX_ dec_t *dec)
 
   decode_ws (dec);
 
-  val = decode_sv (aTHX_ dec);
+  val = decode_sv (aTHX_ dec, NULL);
   if (!val)
     goto fail;
 
@@ -3505,33 +3554,42 @@ fail:
 }
 
 static SV *
-decode_sv (pTHX_ dec_t *dec)
+decode_sv (pTHX_ dec_t *dec, SV *typesv)
 {
   /* the beauty of JSON: you need exactly one character lookahead */
   /* to parse everything. */
   switch (*dec->cur)
     {
-      case '"': ++dec->cur; return decode_str (aTHX_ dec);
+      case '"':
+        ++dec->cur;
+        if (typesv)
+          sv_setiv_mg (typesv, JSON_TYPE_STRING);
+        return decode_str (aTHX_ dec);
       case 0x27:
         if (dec->json.flags & F_ALLOW_SQUOTE) {
-          ++dec->cur; return decode_str_sq (aTHX_ dec);
+          ++dec->cur;
+          if (typesv)
+            sv_setiv_mg (typesv, JSON_TYPE_STRING);
+          return decode_str_sq (aTHX_ dec);
         }
         ERR ("malformed JSON string, neither tag, array, object, number, string or atom");
         break;
-      case '[': ++dec->cur; return decode_av  (aTHX_ dec);
-      case '{': ++dec->cur; return decode_hv  (aTHX_ dec);
+      case '[': ++dec->cur; return decode_av  (aTHX_ dec, typesv);
+      case '{': ++dec->cur; return decode_hv  (aTHX_ dec, typesv);
       case '(':             return decode_tag (aTHX_ dec);
 
       case '-':
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-        return decode_num (aTHX_ dec);
+        return decode_num (aTHX_ dec, typesv);
 
       case 't':
         if (dec->end - dec->cur >= 4 && memEQc(dec->cur, "true"))
           {
             dMY_CXT;
             dec->cur += 4;
+            if (typesv)
+              sv_setiv_mg (typesv, JSON_TYPE_BOOL);
             return newSVsv(MY_CXT.json_true);
           }
         else
@@ -3544,6 +3602,8 @@ decode_sv (pTHX_ dec_t *dec)
           {
             dMY_CXT;
             dec->cur += 5;
+            if (typesv)
+              sv_setiv_mg (typesv, JSON_TYPE_BOOL);
             return newSVsv(MY_CXT.json_false);
           }
         else
@@ -3555,6 +3615,8 @@ decode_sv (pTHX_ dec_t *dec)
         if (dec->end - dec->cur >= 4 && memEQc(dec->cur, "null"))
           {
             dec->cur += 4;
+            if (typesv)
+              sv_setiv_mg (typesv, JSON_TYPE_NULL);
             return newSVsv(&PL_sv_undef);
           }
         else
@@ -3620,7 +3682,7 @@ decode_bom(pTHX_ const char* encoding, SV* string, STRLEN offset)
 }
 
 static SV *
-decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return)
+decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
 {
   dec_t dec;
   SV *sv;
@@ -3724,7 +3786,7 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return)
   *dec.end = 0; /* this should basically be a nop, too, but make sure it's there */
 
   decode_ws (&dec);
-  sv = decode_sv (aTHX_ &dec);
+  sv = decode_sv (aTHX_ &dec, typesv);
 
   if (offset_return) {
     if (dec.cur < SvPVX (string) || dec.cur > SvEND (string))
@@ -3956,6 +4018,7 @@ BOOT:
         newCONSTSUB(stash, "JSON_TYPE_INT", newSViv(JSON_TYPE_INT));
         newCONSTSUB(stash, "JSON_TYPE_FLOAT", newSViv(JSON_TYPE_FLOAT));
         newCONSTSUB(stash, "JSON_TYPE_STRING", newSViv(JSON_TYPE_STRING));
+        newCONSTSUB(stash, "JSON_TYPE_NULL", newSViv(JSON_TYPE_NULL));
         newCONSTSUB(stash, "JSON_TYPE_INT_OR_NULL", newSViv(JSON_TYPE_INT | JSON_TYPE_CAN_BE_NULL));
         newCONSTSUB(stash, "JSON_TYPE_BOOL_OR_NULL", newSViv(JSON_TYPE_BOOL | JSON_TYPE_CAN_BE_NULL));
         newCONSTSUB(stash, "JSON_TYPE_FLOAT_OR_NULL", newSViv(JSON_TYPE_FLOAT | JSON_TYPE_CAN_BE_NULL));
@@ -4161,17 +4224,17 @@ void encode (JSON *self, SV *scalar, SV *typesv = &PL_sv_undef)
         PUTBACK; scalar = encode_json (aTHX_ scalar, self, typesv); SPAGAIN;
         XPUSHs (scalar);
 
-void decode (JSON *self, SV *jsonstr)
+void decode (JSON *self, SV *jsonstr, SV *typesv = NULL)
     PPCODE:
-        PUTBACK; jsonstr = decode_json (aTHX_ jsonstr, self, 0); SPAGAIN;
+        PUTBACK; jsonstr = decode_json (aTHX_ jsonstr, self, 0, typesv); SPAGAIN;
         XPUSHs (jsonstr);
 
-void decode_prefix (JSON *self, SV *jsonstr)
+void decode_prefix (JSON *self, SV *jsonstr, SV *typesv = NULL)
     PPCODE:
 {
 	SV *sv;
         STRLEN offset;
-        PUTBACK; sv = decode_json (aTHX_ jsonstr, self, &offset); SPAGAIN;
+        PUTBACK; sv = decode_json (aTHX_ jsonstr, self, &offset, typesv); SPAGAIN;
         EXTEND (SP, 2);
         PUSHs (sv);
         PUSHs (sv_2mortal (newSVuv (ptr_to_index (aTHX_ jsonstr, offset))));
@@ -4257,7 +4320,7 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
                     }
                 }
 
-              PUTBACK; sv = decode_json (aTHX_ self->incr_text, self, &offset); SPAGAIN;
+              PUTBACK; sv = decode_json (aTHX_ self->incr_text, self, &offset, NULL); SPAGAIN;
               XPUSHs (sv);
 
               endp = SvPVX(self->incr_text) + offset;
@@ -4346,7 +4409,7 @@ void encode_json (SV *scalar, SV *typesv = &PL_sv_undef)
         XPUSHs (scalar);
 }
 
-void decode_json (SV *jsonstr, SV *allow_nonref = NULL)
+void decode_json (SV *jsonstr, SV *allow_nonref = NULL, SV *typesv = NULL)
 	ALIAS:
         _from_json  = 0
         decode_json = F_UTF8
@@ -4357,7 +4420,7 @@ void decode_json (SV *jsonstr, SV *allow_nonref = NULL)
         json.flags |= ix;
         if (ix && allow_nonref)
           json.flags |= F_ALLOW_NONREF;
-        PUTBACK; jsonstr = decode_json (aTHX_ jsonstr, &json, 0); SPAGAIN;
+        PUTBACK; jsonstr = decode_json (aTHX_ jsonstr, &json, 0, typesv); SPAGAIN;
         XPUSHs (jsonstr);
 }
 
