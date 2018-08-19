@@ -2,6 +2,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.05 2018-08-19 (rurban)
+        - Set decoded type (PR #115 by Pali)
+        - Add json_type_weaken (PR #114 by Pali)
+        - Fix tests for 5.6 (rurban, pali)
+
 4.04 2018-06-22 (rurban)
         - Fix bignum NaN/inf handling (#78 reported by Slaven Rezic)
         - Move author tests to xt/ as suggested in #106, added a make xtest target.
