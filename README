@@ -1336,6 +1336,14 @@ MAPPING
            encode_json [Cpanel::JSON::XS::true, Cpanel::JSON::XS::true] # yields [false,true]
            encode_json [!1, !0]      # yields [false,true]
 
+        eq/ne comparisons with true, false:
+
+        false is eq to the empty string or the string 'false' or the special
+        empty string "!!0", i.e. "SV_NO", or the numbers 0 or 0.0.
+
+        true is eq to the string 'true' or to the special string "!0" (i.e.
+        "SV_YES") or to the numbers 1 or 1.0.
+
     blessed objects
         Blessed objects are not directly representable in JSON, but
         "Cpanel::JSON::XS" allows various optional ways of handling objects.

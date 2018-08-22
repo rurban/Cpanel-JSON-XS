@@ -2,6 +2,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.06 2018-08-22 (rurban)
+        - Fix overloaded eq/ne comparisons (GH #116 by demerphq, GH #117 by Graham Knopp):
+          detect strings, protect from endless recursion. false is now ne "True".
+          clarify eq/ne rules in the docs.
+
 4.05 2018-08-19 (rurban)
         - Set decoded type (PR #115 by Pali)
         - Add json_type_weaken (PR #114 by Pali)
