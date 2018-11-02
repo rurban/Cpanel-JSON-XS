@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.07 2018-11-02 (rurban)
+        - Silence Gconvert -Wunused-result.
+          gcvt returns a string, sprintf int, so suppress the retval
+
 4.06 2018-08-22 (rurban)
         - Fix overloaded eq/ne comparisons (GH #116 by demerphq, GH #117 by Graham Knopp):
           detect strings, protect from endless recursion. false is now ne "True".
