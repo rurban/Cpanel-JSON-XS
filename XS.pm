@@ -2203,7 +2203,7 @@ sub allow_bigint {
     Carp::carp("allow_bigint() is obsoleted. use allow_bignum() instead.");
 }
 
-use Types::Bool qw(true false);
+use Data::Bool qw(true false);
 
 BEGIN {
   package
@@ -2235,7 +2235,7 @@ our ($true, $false) = (true, false);
 sub is_bool($) {
   shift if @_ == 2; # as method call
   (ref($_[0]) and UNIVERSAL::isa( $_[0], JSON::PP::Boolean::))
-  or Types::Bool::is_bool($_[0])
+  or Data::Bool::is_bool($_[0])
 }
 
 XSLoader::load 'Cpanel::JSON::XS', $XS_VERSION;
