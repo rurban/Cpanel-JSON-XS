@@ -2211,7 +2211,6 @@ BEGIN {
 
   require overload;
 
-  local $^W; # silence redefine warnings. no warnings 'redefine' does not help
   &overload::import( 'overload', # workaround 5.6 reserved keyword warning
     '""'     => sub { ${$_[0]} == 1 ? '1' : '0' }, # GH 29
     'eq'     => sub {
