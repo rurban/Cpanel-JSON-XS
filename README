@@ -600,6 +600,15 @@ OBJECT-ORIENTED INTERFACE
 
         This setting has no effect when decoding JSON texts.
 
+    $json = $json->unblessed_bool ([$enable])
+    $enabled = $json->get_unblessed_bool
+            $json = $json->unblessed_bool([$enable])
+
+        If $enable is true (or missing), then "decode" will return Perl
+        non-object boolean variables (1 and 0) for JSON booleans ("true" and
+        "false"). If $enable is false, then "decode" will return
+        "Cpanel::JSON::XS::Boolean" objects for JSON booleans.
+
     $json = $json->allow_singlequote ([$enable])
     $enabled = $json->get_allow_singlequote
             $json = $json->allow_singlequote([$enable])
