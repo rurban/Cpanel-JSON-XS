@@ -276,6 +276,7 @@ mingw_modfl(long double x, long double *ip)
 #define F_ESCAPE_SLASH    0x00080000UL
 #define F_SORT_BY         0x00100000UL
 #define F_ALLOW_STRINGIFY 0x00200000UL
+#define F_UNBLESSED_BOOL  0x00400000UL
 #define F_HOOK            0x80000000UL /* some hooks exist, so slow-path processing */
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
@@ -3600,6 +3601,8 @@ decode_sv (pTHX_ dec_t *dec, SV *typesv)
             dec->cur += 4;
             if (typesv)
               sv_setiv_mg (typesv, JSON_TYPE_BOOL);
+            if (dec->json.flags & F_UNBLESSED_BOOL)
+              return &PL_sv_yes;
             return newSVsv(MY_CXT.json_true);
           }
         else
@@ -3614,6 +3617,8 @@ decode_sv (pTHX_ dec_t *dec, SV *typesv)
             dec->cur += 5;
             if (typesv)
               sv_setiv_mg (typesv, JSON_TYPE_BOOL);
+            if (dec->json.flags & F_UNBLESSED_BOOL)
+              return &PL_sv_no;
             return newSVsv(MY_CXT.json_false);
           }
         else
@@ -4103,6 +4108,7 @@ void ascii (JSON *self, int enable = 1)
         allow_bignum    = F_ALLOW_BIGNUM
         escape_slash    = F_ESCAPE_SLASH
         allow_stringify = F_ALLOW_STRINGIFY
+        unblessed_bool  = F_UNBLESSED_BOOL
     PPCODE:
         if (enable)
           self->flags |=  ix;
@@ -4132,6 +4138,7 @@ void get_ascii (JSON *self)
         get_allow_bignum    = F_ALLOW_BIGNUM
         get_escape_slash    = F_ESCAPE_SLASH
         get_allow_stringify  = F_ALLOW_STRINGIFY
+        get_unblessed_bool  = F_UNBLESSED_BOOL
     PPCODE:
         XPUSHs (boolSV (self->flags & ix));
 
