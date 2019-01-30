@@ -803,6 +803,13 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
               *enc->cur++ = '\\';
               ++len;
             }
+          else if (UNLIKELY((ch == '&' || ch == '<' || ch == '>') && !(enc->json.flags & F_BINARY)))
+            {
+              need (aTHX_ enc, 6);
+              sprintf (enc->cur, "\\u%04x", ch);
+              enc->cur += 6;
+              ++len;
+            }
           else if (UNLIKELY(ch == '/' && (enc->json.flags & F_ESCAPE_SLASH)))
             {
               need (aTHX_ enc, 2);
