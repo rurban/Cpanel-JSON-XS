@@ -859,7 +859,7 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
                       clen = 1;
                     }
 
-                  if (uch < 0x80/*0x20*/ || uch >= enc->limit)
+                  if (uch < 0x80/*0x20*/ || uch >= enc->limit || ((uch == 0x2028 || uch == 0x2029) && !(enc->json.flags & F_DONT_ESCAPE_HTML)))
                     {
 		      if (enc->json.flags & F_BINARY)
 			{
