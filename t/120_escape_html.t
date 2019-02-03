@@ -13,6 +13,7 @@ my $json_unescaped = Cpanel::JSON::XS->new->allow_nonref->dont_escape_html;
 
 is($json_unescaped->encode($hash), '{"<script>":"\"&\""}');
 
+skip "5.6", 2 if $] < 5.008;
 my $extra_hash = { "\x{2028}" => "\x{2029}" };
 is($json->encode($extra_hash), '{"\u2028":"\u2029"}');
 is($json_unescaped->encode($extra_hash), "{\"\x{2028}\":\"\x{2029}\"}");
