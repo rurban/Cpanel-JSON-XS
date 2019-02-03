@@ -86,6 +86,12 @@ this module usually compares favourably in terms of speed, too.
 This module has both a simple functional interface as well as an object
 oriented interface.
 
+=item * HTML-safe by default
+
+This module escapes HTML characters (&, E<lt>, E<gt>) with JSON
+C<\u>-notation.  The resulting JSON is safe to embed in HTML page
+without additional HTML-escaping.
+
 =item * reasonably versatile output formats
 
 You can choose between the most compact guaranteed-single-line format
@@ -686,19 +692,24 @@ This setting has no effect when decoding JSON texts.
 
 This setting has currently no effect on tied hashes.
 
+=item $json = $json->dont_escape_html ([$enable])
+
+=item $dont_escape = $json->get_dont_escape_html
+
+By default HTML-unsafe characters (&, E<lt> and E<gt>) in strings are
+escaped using JSON C<\u>-notation.  If you are sure that generated
+JSON is not going to be embedded in HTML and you want to save some
+bytes you can use this method to disable this escaping.
+
+See L/SECURITY CONSIDERATIONS>, below, for more info on this.
 
 =item $json = $json->escape_slash ([$enable])
 
 =item $enabled = $json->get_escape_slash
 
-According to the JSON Grammar, the I<forward slash> character (U+002F)
-C<"/"> need to be escaped.  But by default strings are encoded without
-escaping slashes in all perl JSON encoders.
-
-If C<$enable> is true (or missing), then C<encode> will escape slashes,
-C<"\/">.
-
-This setting has no effect when decoding JSON texts.
+This method is no longer recommended because Cpan::JSON::XS now
+generates HTML-safe JSON by default, see L</Embedding JSON in HTML>
+chapter.
 
 
 =item $json = $json->unblessed_bool ([$enable])
@@ -2141,14 +2152,38 @@ structures in its error messages, so when you serialize sensitive
 information you might want to make sure that exceptions thrown by JSON::XS
 will not end up in front of untrusted eyes.
 
-If you are using Cpanel::JSON::XS to return packets to consumption
-by JavaScript scripts in a browser you should have a look at
-L<http://blog.archive.jpsykes.com/47/practical-csrf-and-json-security/> to
-see whether you are vulnerable to some common attack vectors (which really
-are browser design bugs, but it is still you who will have to deal with
-it, as major browser developers care only for features, not about getting
-security right). You might also want to also look at L<Mojo::JSON>
-special escape rules to prevent from XSS attacks.
+=head2 Embedding JSON in HTML
+
+Cpanel::JSON::XS by default escapes HTML-unsafe characters (&, L<gt>
+and L<lt>) in strings using JSON C<\u>-notation.  This allows to
+directly embed generated JSON in E<lt>scriptE<gt> tags in HTML source
+without the usual HTML-escaping (using C<&lt;>, C<&gt;> and C<&amp;>).
+
+The problem with HTML escaping is that every hash key and every string
+is encoded with double quotes that are converted to six bytes
+(C<&quot;>).  This may substantially increase the size of JSON
+contents and reduce readability of HTML source code.
+
+If you embed JSON in E<lt>scriptE<gt> tag without any escaping you
+may be exposed to XSS attack vulnerability.  Here is an example:
+
+    <script>{"foo": "</script><script>window.alert(1)</script>"}</script>
+
+Here the string containing closing E<lt>/scriptE<gt> tag closes the
+outer tag and then immediately starts the new script tag that will
+contain attacker-controlled code that is going to be executed.
+
+Naive attempts to fix the problem by detecting end-tags with regexes
+often forget that a) tag names are case-insensitive and b) there could
+be spaces between C<</script> and C<L<gt>>.
+
+With default behaviour of Cpanel::JSON::XS the example code would look
+like this:
+
+    <script>{"foo": "\u003c\u003escript\u003e\u003cscript\u003ewindow.alert(1)\u003c/script\u003c"}</script>
+
+This code does not contain unsafe characters inside raw strings and is
+not vulnerable to the describe attack.
 
 =head1 "OLD" VS. "NEW" JSON (RFC 4627 VS. RFC 7159)
 
