@@ -2180,7 +2180,7 @@ be spaces between C<</script> and C<L<gt>>.
 With default behaviour of Cpanel::JSON::XS the example code would look
 like this:
 
-    <script>{"foo": "\u003c\u003escript\u003e\u003cscript\u003ewindow.alert(1)\u003c/script\u003c"}</script>
+    <script>{"foo": "\u003c/script\u003e\u003cscript\u003ewindow.alert(1)\u003c/script\u003c"}</script>
 
 This code does not contain unsafe characters inside raw strings and is
 not vulnerable to the describe attack.
