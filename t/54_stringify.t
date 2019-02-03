@@ -35,7 +35,7 @@ package main;
 my $object = bless ["foo"], 'Foo';
 my $enc = $json->encode( { obj => $object } );
 
-is( $enc, '{"obj":"Foo <foo>"}', "mg object stringified" )
+is( $enc, '{"obj":"Foo \u003cfoo\u003e"}', "mg object stringified" )
   or diag($enc);
 
 $enc = $json->encode( { time => $time } );
