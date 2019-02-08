@@ -3602,7 +3602,7 @@ decode_sv (pTHX_ dec_t *dec, SV *typesv)
             if (typesv)
               sv_setiv_mg (typesv, JSON_TYPE_BOOL);
             if (dec->json.flags & F_UNBLESSED_BOOL)
-              return &PL_sv_yes;
+              return newSVsv (&PL_sv_yes);
             return newSVsv(MY_CXT.json_true);
           }
         else
@@ -3618,7 +3618,7 @@ decode_sv (pTHX_ dec_t *dec, SV *typesv)
             if (typesv)
               sv_setiv_mg (typesv, JSON_TYPE_BOOL);
             if (dec->json.flags & F_UNBLESSED_BOOL)
-              return &PL_sv_no;
+              return newSVsv (&PL_sv_no);
             return newSVsv(MY_CXT.json_false);
           }
         else
