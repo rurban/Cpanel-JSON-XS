@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 40;
+use Test::More tests => 42;
 use Cpanel::JSON::XS ();
 use Config;
 
@@ -113,5 +113,9 @@ SKIP: {
 cmp_ok($js->{is_false}, "==", 0, "->unblessed_bool for JSON false returns correct Perl bool value");
 cmp_ok($js->{is_false}, "eq", "", "->unblessed_bool for JSON false returns correct Perl bool value");
 
-is($unblessed_bool_cjson->encode($unblessed_bool_cjson->decode($truefalse)), $truefalse, "encode(decode(boolean)) is identity with ->unblessed_bool");
-is($cjson->encode($unblessed_bool_cjson->decode($truefalse)), $truefalse, "booleans decoded by ->unblessed_bool(1) are encoded by ->unblessed_bool(0) in the same way");
+is($unblessed_bool_cjson->encode(do { my $struct = $unblessed_bool_cjson->decode($truefalse, my $types); ($struct, $types) }), $truefalse, "encode(decode(boolean)) is identity with ->unblessed_bool");
+is($cjson->encode(do { my $struct = $unblessed_bool_cjson->decode($truefalse, my $types); ($struct, $types) }), $truefalse, "booleans decoded by ->unblessed_bool(1) are encoded by ->unblessed_bool(0) in the same way");
+
+$js = $unblessed_bool_cjson->decode($truefalse);
+ok eval { $js->[0] = "new value 0" }, "decoded 'true' is modifiable" or diag($@);
+ok eval { $js->[1] = "new value 1" }, "decoded 'false' is modifiable" or diag($@);
