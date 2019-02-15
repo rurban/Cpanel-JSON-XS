@@ -553,12 +553,12 @@ OBJECT-ORIENTED INTERFACE
 
                 { foo:"bar" }
 
-        *   duplicate keys
+        *   allow_dupkeys
 
-            With relaxed decoding of duplicate keys does not error and are
-            silently accepted. See <http://seriot.ch/parsing_json.php#24>:
+            Allow decoding of duplicate keys in hashes. By default duplicate
+            keys are forbidden. See <http://seriot.ch/parsing_json.php#24>:
             RFC 7159 section 4: "The names within an object should be
-            unique."
+            unique." See the "allow_dupkeys" option.
 
     $json = $json->canonical ([$enable])
     $enabled = $json->get_canonical
@@ -703,6 +703,20 @@ OBJECT-ORIENTED INTERFACE
 
         This option is special to this module, it is not supported by other
         encoders. So it is not recommended to use it.
+
+    $json = $json->allow_dupkeys ([$enable])
+    $enabled = $json->get_allow_dupkeys
+        If $enable is true (or missing), then the "decode" method will not
+        die when it encounters duplicate keys in a hash. "allow_dupkeys" is
+        also enabled in the "relaxed" mode.
+
+        The JSON spec allows duplicate name in objects but recommends to
+        disable it, however with Perl hashes they are impossible, parsing
+        JSON in Perl silently ignores duplicate names, using the last value
+        found.
+
+        See <http://seriot.ch/parsing_json.php#24>: RFC 7159 section 4: "The
+        names within an object should be unique."
 
     $json = $json->allow_blessed ([$enable])
     $enabled = $json->get_allow_blessed

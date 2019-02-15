@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.09 2019-02-15 (rurban)
+        - Add seperate allow_dupkeys property, in relaxed (#122)
+
 4.08 2018-11-28 (rurban)
         - Add unblessed_bool property (PR #118 by Pali)
 
