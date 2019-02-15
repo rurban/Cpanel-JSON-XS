@@ -3324,7 +3324,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                   if (typesv)
                     {
                       value_typesv = newSV (0);
-                      hv_store_ent (typehv, key, value_typesv, 0);
+                      (void)hv_store_ent (typehv, key, value_typesv, 0);
                     }
 
                   value = decode_sv (aTHX_ dec, value_typesv);
@@ -3334,7 +3334,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                       goto fail;
                     }
 
-                  hv_store_ent (hv, key, value, 0);
+                  (void)hv_store_ent (hv, key, value, 0);
                   SvREFCNT_dec (key);
 
                   break;
