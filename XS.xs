@@ -4360,28 +4360,31 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
 
 SV *incr_text (JSON *self)
     ATTRS: lvalue
-    CODE:
+    PPCODE:
 {
+        PERL_UNUSED_VAR(RETVAL);
         if (UNLIKELY(self->incr_pos))
-          croak ("incr_text can not be called when the incremental parser already started parsing");
-
-        RETVAL = self->incr_text ? SvREFCNT_inc (self->incr_text) : &PL_sv_undef;
+          {
+            /* We might want to return a copy of the rest.
+               But incr_parse already chops the start at the end, so this can
+               only happen on concurrent accesses to incr_parse */
+            croak ("incr_text can not be called when the incremental parser already started parsing");
+          }
+        ST(0) = self->incr_text ? self->incr_text : &PL_sv_undef;
+        XSRETURN(1);
 }
-    OUTPUT:
-        RETVAL
 
 #else
 
 SV *incr_text (JSON *self)
-    CODE:
+    PPCODE:
 {
         if (UNLIKELY(self->incr_pos))
           croak ("incr_text can not be called when the incremental parser already started parsing");
 
-        RETVAL = self->incr_text ? SvREFCNT_inc (self->incr_text) : &PL_sv_undef;
+        ST(0) = self->incr_text ? self->incr_text : &PL_sv_undef;
+        XSRETURN(1);
 }
-	OUTPUT:
-        RETVAL
 
 #endif
 
@@ -4400,8 +4403,11 @@ void incr_skip (JSON *self)
 void incr_reset (JSON *self)
 	CODE:
 {
-	SvREFCNT_dec (self->incr_text);
-        self->incr_text = 0;
+        if (self->incr_text)
+          {
+            SvREFCNT_dec (self->incr_text);
+          }
+        self->incr_text = NULL;
         self->incr_pos  = 0;
         self->incr_nest = 0;
         self->incr_mode = 0;

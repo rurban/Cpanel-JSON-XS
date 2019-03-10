@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.10 2019-03-10 (rurban)
+        - Fix incr_text refcounts (#123)
+        - Add incr_rest testcase (#123)
+
 4.09 2019-02-15 (rurban)
         - Add seperate allow_dupkeys property, in relaxed (#122)
         - Fixed allow_dupkeys for the XS slow path
