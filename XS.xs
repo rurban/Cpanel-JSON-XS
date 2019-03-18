@@ -1467,10 +1467,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
     if (isref != 1)
       encode_ch (aTHX_ enc, '"');
   }
-  if (pv) SvREFCNT_dec(pv);
-
 #undef MyAMG
-
 }
 
 INLINE int
