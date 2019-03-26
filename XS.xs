@@ -3745,12 +3745,12 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
      NOT add a byte order mark to the beginning of a JSON text",
      "implementations (...) MAY ignore the presence of a byte order
      mark rather than treating it as an error". */
-  if (UNLIKELY(len > 2 && SvPOK(string))) {
+  if (UNLIKELY(len > 2 && SvPOK(string) && !json->incr_pos)) {
     U8 *s = (U8*)SvPVX (string);
     if (*s >= 0xEF) {
       if (len >= 3 && memEQc(s, UTF8BOM)) {
+        converted = 1 + (json->flags & F_UTF8);
         json->flags |= F_UTF8;
-        converted++;
         offset = 3;
         SvPV_set(string, SvPVX_mutable (string) + 3);
         SvCUR_set(string, len - 3);
@@ -3758,22 +3758,22 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
         /* omitting the endian name will skip the BOM in the result */
       } else if (len >= 4 && memEQc(s, UTF32BOM)) {
         string = decode_bom(aTHX_ "UTF-32", string, 4);
+        converted = 1 + (json->flags & F_UTF8);
         json->flags |= F_UTF8;
-        converted++;
       } else if (memEQc(s, UTF16BOM)) {
         string = decode_bom(aTHX_ "UTF-16", string, 2);
+        converted = 1 + (json->flags & F_UTF8);
         json->flags |= F_UTF8;
-        converted++;
       } else if (memEQc(s, UTF16BOM_BE)) {
         string = decode_bom(aTHX_ "UTF-16", string, 2);
+        converted = 1 + (json->flags & F_UTF8);
         json->flags |= F_UTF8;
-        converted++;
       }
     } else if (UNLIKELY(len >= 4 && !*s && memEQc(s, UTF32BOM_BE))) {
         string = decode_bom(aTHX_ "UTF-32", string, 4);
+        converted = 1 + (json->flags & F_UTF8);
         json->flags |= F_UTF8;
-        converted++;
-    }
+   }
   }
 
   if (LIKELY(!converted)) {
@@ -3850,6 +3850,8 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
   if (!(dec.json.flags & F_ALLOW_NONREF) && json_nonref(aTHX_ sv))
     croak ("JSON text must be an object or array (but found number, string, true, false or null, use allow_nonref to allow this)");
 
+  if (UNLIKELY(converted && !(converted - 1))) /* with BOM, and UTF8 was not set */
+    json->flags &= ~F_UTF8;
   return sv_2mortal (sv);
 }
 

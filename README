@@ -1206,6 +1206,9 @@ BOM
     Detect all unicode Byte Order Marks on decode. Which are UTF-8,
     UTF-16LE, UTF-16BE, UTF-32LE and UTF-32BE.
 
+    The BOM encoding is set only for one specific decode call, it does not
+    change the state of the JSON object.
+
     Warning: With perls older than 5.20 you need load the Encode module
     before loading a multibyte BOM, i.e. >= UTF-16. Otherwise an error is
     thrown. This is an implementation limitation and might get fixed later.
