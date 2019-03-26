@@ -2,6 +2,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.11 2019-03-26 (rurban)
+        - Fix unicode strings with BOM corrupt ->utf8 state (#125)
+          The BOM encoding effects only its very own decode call,
+          not its object.
+
 4.10 2019-03-18 (rurban)
         - Fix incr_text refcounts (#123)
         - Add incr_rest testcase (#123)

@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '4.10';
+our $VERSION = '4.11';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -118,7 +118,7 @@ B<Changes to JSON::XS>
   strings. Cpanel::JSON::XS is a bit slower, but preserves numeric
   types better.
 
-- numbers ending with .0 stay numbers, are not converted to
+- numbers ending with .0 stray numbers, are not converted to
   integers. [#63] dual-vars which are represented as number not
   integer (42+"bar" != 5.8.9) are now encoded as number (=> 42.0)
   because internally it's now a NOK type.  However !!1 which is
@@ -191,7 +191,7 @@ B<Changes to JSON::XS>
   decode_json(, allow_nonref) arg.
   relaxed implements allow_dupkeys.
 
-- support all 5 unicode BOM's: UTF-8, UTF-16LE, UTF-16BE, UTF-32LE,
+- support all 5 unicode L<BOM|/BOM>'s: UTF-8, UTF-16LE, UTF-16BE, UTF-32LE,
   UTF-32BE, encoding internally to UTF-8.
 
 =cut
@@ -1358,6 +1358,9 @@ the above example :).
 Detect all unicode B<Byte Order Marks> on decode.
 Which are UTF-8, UTF-16LE, UTF-16BE, UTF-32LE and UTF-32BE.
 
+The BOM encoding is set only for one specific decode call, it does not
+change the state of the JSON object.
+
 B<Warning>: With perls older than 5.20 you need load the Encode module
 before loading a multibyte BOM, i.e. >= UTF-16. Otherwise an error is
 thrown. This is an implementation limitation and might get fixed later.
@@ -2220,14 +2223,14 @@ its design is bug-free. If you keep reporting bugs and tests they will
 be fixed swiftly, though.
 
 Since the JSON::XS author refuses to use a public bugtracker and
-prefers private emails, we've setup a tracker at RT, so you might want
+prefers private emails, we use the tracker at B<github>, so you might want
 to report any issues twice. Once in private to MLEHMANN to be fixed in
 JSON::XS and one to our the public tracker. Issues fixed by JSON::XS
 with a new release will also be backported to Cpanel::JSON::XS and
 5.6.2, as long as cPanel relies on 5.6.2 and Cpanel::JSON::XS as our
 serializer of choice.
 
-L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
+L<https://github.com/rurban/Cpanel-JSON-XS/issues>
 
 =head1 LICENSE
 

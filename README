@@ -105,7 +105,7 @@ DESCRIPTION
     represent the same number are here treated as numbers, not strings.
     Cpanel::JSON::XS is a bit slower, but preserves numeric types better.
 
-    - numbers ending with .0 stay numbers, are not converted to integers.
+    - numbers ending with .0 stray numbers, are not converted to integers.
     [#63] dual-vars which are represented as number not integer (42+"bar" !=
     5.8.9) are now encoded as number (=> 42.0) because internally it's now a
     NOK type. However !!1 which is wrongly encoded in 5.8 as "1"/1.0 is
@@ -2022,14 +2022,14 @@ BUGS
     be fixed swiftly, though.
 
     Since the JSON::XS author refuses to use a public bugtracker and prefers
-    private emails, we've setup a tracker at RT, so you might want to report
-    any issues twice. Once in private to MLEHMANN to be fixed in JSON::XS
-    and one to our the public tracker. Issues fixed by JSON::XS with a new
-    release will also be backported to Cpanel::JSON::XS and 5.6.2, as long
-    as cPanel relies on 5.6.2 and Cpanel::JSON::XS as our serializer of
-    choice.
+    private emails, we use the tracker at github, so you might want to
+    report any issues twice. Once in private to MLEHMANN to be fixed in
+    JSON::XS and one to our the public tracker. Issues fixed by JSON::XS
+    with a new release will also be backported to Cpanel::JSON::XS and
+    5.6.2, as long as cPanel relies on 5.6.2 and Cpanel::JSON::XS as our
+    serializer of choice.
 
-    <https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
+    <https://github.com/rurban/Cpanel-JSON-XS/issues>
 
 LICENSE
     This module is available under the same licences as perl, the Artistic
