@@ -13,7 +13,7 @@ BEGIN {
   $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
 }
 use Time::Piece;
-plan $] < 5.008 ? (skip_all => "5.6 no AMG yet") : (tests => 18);
+plan $] < 5.008 ? (skip_all => "5.6 no AMG yet") : (tests => 19);
 use JSON ();
 use Cpanel::JSON::XS;
 
@@ -82,4 +82,11 @@ use overload '""' => sub {"1"};
 package main;
 my $data = {nick => bless({}, 'BoolTestOk')};
 is( $json->convert_blessed->allow_blessed->encode($data), '{"nick":"1"}', 'GH #124' );
+
+# GH #128 Deep recursion in stringifiy overload
+package StringifiyRec;
+use overload '""' => sub { $json->encode($_[0]) };
+package main;
+$data = bless [], 'StringifiyRec';
+is( $json->convert_blessed->allow_blessed->encode($data), '[]' );
 
