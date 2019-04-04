@@ -387,7 +387,7 @@ typedef struct {
   HV *jsonold_boolean_stash;  /* JSON::XS::Boolean:: if empty will be (HV*)1 */
   HV *mojo_boolean_stash;     /* Mojo::JSON::_Bool:: if empty will be (HV*)1 */
   SV *json_true, *json_false;
-  SV *sv_json;
+  SV *sv_json;                /* "JSON" */
 } my_cxt_t;
 
 /* the amount of HEs to allocate on the stack, when sorting keys */
@@ -1493,15 +1493,13 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
 
 /* SvAMAGIC without the ref */
 #if PERL_VERSION > 17
-#define MyAMG(sv) (SvOBJECT(sv) && HvAMAGIC(SvSTASH(sv)))
+# define MyAMG(sv) (SvOBJECT(sv) && HvAMAGIC(SvSTASH(sv)))
+#elif PERL_VERSION > 8
+# define MyAMG(sv) (SvOBJECT(sv) && (SvFLAGS(sv) & SVf_AMAGIC))
 #else
-#if PERL_VERSION > 8
-#define MyAMG(sv) (SvOBJECT(sv) && (SvFLAGS(sv) & SVf_AMAGIC))
-#else
-#define MyAMG(sv) (SvOBJECT(sv) && ((SvFLAGS(sv) & SVf_AMAGIC) \
+# define MyAMG(sv) (SvOBJECT(sv) && ((SvFLAGS(sv) & SVf_AMAGIC) \
         || ((mg = mg_find((SV*)SvSTASH(sv), PERL_MAGIC_overload_table)) \
             && mg->mg_ptr && AMT_AMAGIC((AMT*)mg->mg_ptr))))
-#endif
 #endif
 
   if (isref && SvAMAGIC(sv))
@@ -1564,17 +1562,29 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
     /* manually call all possible magic on AV, HV, FM */
     if (SvGMAGICAL(sv)) mg_get(sv);
     if (MyAMG(sv)) { /* force a RV here */
+#if PERL_VERSION > 22
+      U32 flags = enc->json.flags;
+#endif
       SV* rv = newRV(SvREFCNT_inc(sv));
 #if PERL_VERSION <= 8
       HV *stash = SvSTASH(sv);
       if (!SvSTASH(rv) || !(SvFLAGS(sv) & SVf_AMAGIC)) {
         sv_bless(rv, stash);
         Gv_AMupdate(stash);
-        SvFLAGS(sv) |= SVf_AMAGIC;
       }
 #endif
+      DEBUG_o(Perl_deb(aTHX_
+          "Calling \"\" stringify on %p in Cpanel::JSON::XS::encode\n", sv));
+      SvFLAGS(rv) |= SVf_AMAGIC;
 #if PERL_VERSION > 13
+#  if PERL_VERSION > 22 || defined(USE_CPERL)
+      /* #128 protect from endless recursion */
+      enc->json.flags &= ~(F_ALLOW_STRINGIFY|F_CONV_BLESSED);
+#  endif
       pv = AMG_CALLunary(rv, string_amg);
+#  if PERL_VERSION > 22
+      enc->json.flags = flags;
+#  endif
 #else
       pv = AMG_CALLun(rv, string);
 #endif
