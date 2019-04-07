@@ -1528,7 +1528,7 @@ These special values become JSON true and JSON false values,
 respectively. You can also use C<\1> and C<\0> or C<!0> and C<!1>
 directly if you want.
 
-   encode_json [Cpanel::JSON::XS::true, Cpanel::JSON::XS::true] # yields [false,true]
+   encode_json [Cpanel::JSON::XS::false, Cpanel::JSON::XS::true] # yields [false,true]
    encode_json [!1, !0]      # yields [false,true]
 
 eq/ne comparisons with true, false:
