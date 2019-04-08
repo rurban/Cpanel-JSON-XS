@@ -1359,7 +1359,7 @@ MAPPING
         respectively. You can also use "\1" and "\0" or "!0" and "!1"
         directly if you want.
 
-           encode_json [Cpanel::JSON::XS::true, Cpanel::JSON::XS::true] # yields [false,true]
+           encode_json [Cpanel::JSON::XS::false, Cpanel::JSON::XS::true] # yields [false,true]
            encode_json [!1, !0]      # yields [false,true]
 
         eq/ne comparisons with true, false:
