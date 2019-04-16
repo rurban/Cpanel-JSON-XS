@@ -61,7 +61,7 @@ is( $nonref_cjson->encode( UNIVERSAL::isa('UNIVERSAL', 'UNIVERSAL') ), "true", "
 # GH #39
 # XS function utf8::is_utf8 returns sv_no or sv_yes
 SKIP: {
-  skip 'Perl 5.8 is needed for boolean tests based on utf8::upgrade()+utf8::is_utf8()', 4 if $] < 5.008;
+  skip 'Perl 5.8.1 is needed for boolean tests based on utf8::upgrade()+utf8::is_utf8()', 4 if $] < 5.008001;
   is( $nonref_cjson->encode( do{utf8::is_utf8(my $a)} ), "false", "map do{utf8::is_utf8(my \$a)} to false");
   is( $nonref_cjson->encode( do{utf8::is_utf8(my $a)} ), "false", "map do{utf8::is_utf8(my \$a)} to false");
   my $utf8 = '';
