@@ -5,6 +5,7 @@ use Test::More;
 use Config;
 
 plan skip_all => 'requires Test::More 0.88' if Test::More->VERSION < 0.88;
+plan skip_all => 'requires Perl 5.8.2' if $] < 5.008002;
 
 plan skip_all => 'This test is only run for the module author'
   unless -d '.git' || $ENV{AUTHOR_TESTING} || $ENV{RELEASE_TESTING};
