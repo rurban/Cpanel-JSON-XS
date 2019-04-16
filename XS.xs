@@ -1780,7 +1780,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       bool loc_changed = FALSE;
       char *locale = NULL;
 #endif
-      NV nv = SvNOKp (sv) ? SvNVX (sv) : SvOK (sv) ? SvNV_nomg (sv) : 0;
+      NV nv = SvNOKp (sv) ? SvNVX (sv) : SvNV_nomg (sv);
       /* trust that perl will do the right thing w.r.t. JSON syntax. */
       need (aTHX_ enc, NV_DIG + 32);
       savecur = enc->cur;
@@ -2006,7 +2006,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
               uv = (UV)iv;
             }
         }
-      else if (SvOK (sv))
+      else
         {
           is_neg = 1;
           iv = SvIV_nomg (sv);
