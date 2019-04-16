@@ -742,7 +742,7 @@ typedef struct
 INLINE void
 need (pTHX_ enc_t *enc, STRLEN len)
 {
-#if PERL_VERSION > 6
+#if PERL_VERSION > 8 || (PERL_VERSION == 8 && PERL_SUBVERSION >= 1)
   DEBUG_v(Perl_deb(aTHX_ "need enc: %p %p %4ld, want: %lu\n", enc->cur, enc->end,
                    (long)(enc->end - enc->cur), (unsigned long)len));
 #endif
@@ -783,7 +783,7 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
   while (str < end)
     {
       unsigned char ch = *(unsigned char *)str;
-#if PERL_VERSION > 6
+#if PERL_VERSION > 8 || (PERL_VERSION == 8 && PERL_SUBVERSION >= 1)
       DEBUG_v(Perl_deb(aTHX_ "str  enc: %p %p %4ld, want: %lu\n", enc->cur, enc->end,
                        (long)(enc->end - enc->cur), (long unsigned)len));
 #endif
