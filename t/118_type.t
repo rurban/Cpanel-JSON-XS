@@ -12,7 +12,7 @@ BEGIN {
     }
 }
 
-use Test::More tests => 247;
+use Test::More tests => 265;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref;
 
@@ -290,6 +290,27 @@ like($@, qr/Exactly one type must be specified in arrayof/);
 
 ok(!defined eval { json_type_hashof(JSON_TYPE_STRING, JSON_TYPE_INT) });
 like($@, qr/Exactly one type must be specified in hashof/);
+
+foreach my $val (['0', JSON_TYPE_INT], ['0.0', JSON_TYPE_FLOAT], ['""', JSON_TYPE_STRING]) {
+    my $warn;
+    local $SIG{__WARN__} = sub { $warn = $_[0] };
+    is($cjson->encode(undef, $val->[1]), $val->[0]); my $line = __LINE__;
+    is($warn, "Use of uninitialized value in subroutine entry at $0 line $line.\n");
+}
+
+foreach my $type (JSON_TYPE_BOOL_OR_NULL, JSON_TYPE_INT_OR_NULL, JSON_TYPE_FLOAT_OR_NULL, JSON_TYPE_STRING_OR_NULL) {
+    my $warn;
+    local $SIG{__WARN__} = sub { $warn = $_[0] };
+    is($cjson->encode(undef, $type), 'null');
+    ok(!defined $warn);
+}
+
+foreach my $val (['0', JSON_TYPE_INT], ['0.0', JSON_TYPE_FLOAT]) {
+    my $warn;
+    local $SIG{__WARN__} = sub { $warn = $_[0] };
+    is($cjson->encode(my $str = 'string_value', $val->[1]), $val->[0]); my $line = __LINE__;
+    is($warn, "Argument \"string_value\" isn't numeric in subroutine entry at $0 line $line.\n");
+}
 
 SKIP: {
     skip "no Scalar::Util in $]", 1 unless $have_weaken;
