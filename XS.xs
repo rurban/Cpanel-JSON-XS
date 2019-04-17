@@ -1981,21 +1981,6 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
           iv = SvIVX (sv);
           uv = SvUVX (sv);
         }
-      else if (SvNOKp (sv))
-        {
-          NV nv = SvNVX (sv);
-          is_neg = (nv < 0);
-          if (is_neg)
-            {
-              iv = (IV)nv;
-              uv = (UV)iv;
-            }
-          else
-            {
-              uv = (UV)nv;
-              iv = (IV)uv;
-            }
-        }
       else if (SvPOKp (sv))
         {
           int numtype = grok_number (SvPVX (sv), SvCUR (sv), &uv);

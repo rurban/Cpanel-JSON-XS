@@ -14,7 +14,7 @@ BEGIN {
     }
 }
 
-use Test::More tests => 280;
+use Test::More tests => 285;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref;
 
@@ -109,9 +109,16 @@ if ($Config{ivsize} == 4) {
   is($cjson->encode( '4294967298', JSON_TYPE_INT),  '4294967295');  #  2^32+2
   is($cjson->encode('-2147483649', JSON_TYPE_INT), '-2147483648');  # -2^31-1
   is($cjson->encode('-2147483650', JSON_TYPE_INT), '-2147483648');  # -2^31-2
+
+  # those floating point values are rounded to unsigned UV_MAX or signed IV_MIN too
+  is($cjson->encode( 4294967296.5, JSON_TYPE_INT),  '4294967295');  #  2^32
+  is($cjson->encode( 4294967297.5, JSON_TYPE_INT),  '4294967295');  #  2^32+1
+  is($cjson->encode( 4294967298.5, JSON_TYPE_INT),  '4294967295');  #  2^32+2
+  is($cjson->encode(-2147483649.5, JSON_TYPE_INT), '-2147483648');  # -2^31-1
+  is($cjson->encode(-2147483650.5, JSON_TYPE_INT), '-2147483648');  # -2^31-2
 } else {
 SKIP: {
-  skip "unknown ivsize $Config{ivsize}", 15 if $Config{ivsize} != 8;
+  skip "unknown ivsize $Config{ivsize}", 20 if $Config{ivsize} != 8;
   # values around signed IV_MAX should work correctly as they can be represented by unsigned UV
   is($cjson->encode( '9223372036854775806', JSON_TYPE_INT),  '9223372036854775806');  #  2^63-2
   is($cjson->encode( '9223372036854775807', JSON_TYPE_INT),  '9223372036854775807');  #  2^63-1
@@ -134,6 +141,13 @@ SKIP: {
   is($cjson->encode('18446744073709551618', JSON_TYPE_INT), '18446744073709551615');  #  2^64+2
   is($cjson->encode('-9223372036854775809', JSON_TYPE_INT), '-9223372036854775808');  # -2^63-1
   is($cjson->encode('-9223372036854775810', JSON_TYPE_INT), '-9223372036854775808');  # -2^63-2
+
+  # those floating point values are rounded to unsigned UV_MAX or signed IV_MIN too
+  is($cjson->encode(18446744073709551616.5, JSON_TYPE_INT), '18446744073709551615');  #  2^64
+  is($cjson->encode(18446744073709551617.5, JSON_TYPE_INT), '18446744073709551615');  #  2^64+1
+  is($cjson->encode(18446744073709551618.5, JSON_TYPE_INT), '18446744073709551615');  #  2^64+2
+  is($cjson->encode(-9223372036854775809.5, JSON_TYPE_INT), '-9223372036854775808');  # -2^63-1
+  is($cjson->encode(-9223372036854775810.5, JSON_TYPE_INT), '-9223372036854775808');  # -2^63-2
  }
 }
 
