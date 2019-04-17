@@ -1,7 +1,7 @@
-version: 3.02.31.{build}
+version: 4.11.{build}
 skip_tags: true
+os: Visual Studio 2015
 #os: MinGW
-#os: Visual Studio 2015
 #os: Default Azure
 #build:
 #  verbosity: minimal
@@ -12,6 +12,9 @@ platform:
 environment:
   matrix:
     - STRAWBERRY: 1
+    - MSVC_CPERL: 1
+matrix:
+  allow_failures:
     - MSVC_CPERL: 1
 clone_depth: 1
 init:
@@ -32,15 +35,12 @@ init:
   #- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 install:
-  - cinst wget -y
+  - set BITS=64
   - if "%PLATFORM%" == "x86" set BITS=32
-  - if "%PLATFORM%" == "x64" set BITS=64
-  #- if "%STRAWBERRY%" == "1" wget -q http://strawberryperl.com/download/5.24.1.1/strawberry-perl-5.24.1.1-%BITS%bit.msi
-  # waits for input
-  #- if "%STRAWBERRY%" == "1" msiexec /qn /norestart strawberry-perl-5.24.1.1-%BITS%bit.msi
   - if "%STRAWBERRY%" == "1" cinst strawberryperl -i
-  - if "%MSVC_CPERL%" == "1" wget -q https://github.com/perl11/cperl/releases/download/cperl-5.26.0/cperl-5.26.0-win%BITS%.exe
-  - if "%MSVC_CPERL%" == "1" cperl-5.26.0-win%BITS%.exe -y -o"C:\"
+  - if "%MSVC_CPERL%" == "1" cinst -y curl
+  - if "%MSVC_CPERL%" == "1" curl -O https://github.com/perl11/cperl/releases/download/cperl-5.26.0/cperl-5.26.0-win%BITS%.exe
+  - if "%MSVC_CPERL%" == "1" .\cperl-5.26.0-win%BITS%.exe -y -o"C:\"
 
 build: off
 

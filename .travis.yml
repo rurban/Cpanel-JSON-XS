@@ -14,6 +14,7 @@ perl:
   - "5.24"
   - "5.26"
   - "5.28"
+  #- "cperl-5.28.2"
   #- "5.26-thr"
   #- "5.26-dbg"
   #- "5.26-thr-dbg"
@@ -41,8 +42,17 @@ before_install:
   - mkdir /home/travis/bin || true
   - ln -s `which true` /home/travis/bin/cpansign
   - eval $(curl https://travis-perl.github.io/init) --auto
+  - if [ -n $cperl ]; then
+      perlbrew --notest install $cperl ;
+      perlbrew use $cperl ;
+    fi
 install:
   - export AUTOMATED_TESTING=1 HARNESS_TIMER=1
+  - if [ -n $cperl ]; then
+      alias perl=~/perl5/perlbrew/perls/$cperl/bin/cperl ;
+      alias cpan=~/perl5/perlbrew/perls/$cperl/bin/cpan ;
+      cpan App::cpanminus ;
+    fi
   - cpan-install --deps       # installs prereqs, including recommends
   - cpan-install JSON JSON::PP JSON::XS Mojo::JSON Test::LeakTrace Time::Piece
   - test x$AUTHOR_TESTING = x1 && cpan-install Test::CPAN::Meta Test::MinimumVersion
@@ -61,6 +71,7 @@ notifications:
 matrix:
   fast_finish: true
   include:
+    - env: cperl=cperl-5.28.2
     - perl: "5.18"
       env: COVERAGE=1 AUTHOR_TESTING=1  # enables coverage+coveralls reporting
   allow_failures:
