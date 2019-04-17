@@ -1522,14 +1522,39 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
   }
   /* sv_2pv_flags does not accept those types: */
   if (type != SVt_PVAV && type != SVt_PVHV && type != SVt_PVFM) {
-    /* the essential of pp_stringify */
+    /* The essential of pp_stringify */
 #if PERL_VERSION > 7
     pv = newSVpvs("");
+#  if PERL_VERSION > 22 || defined(USE_CPERL)
+    if (isref && SvAMAGIC(sv)
+        && enc->json->flags & (F_ALLOW_STRINGIFY|F_CONV_BLESSED)) {
+      /* #128 protect from endless TO_JSON/overload recursion */
+      U32 flags = enc->json->flags;
+      DEBUG_o(Perl_deb(aTHX_
+        "Calling AMAGIC on %p in Cpanel::JSON::XS::encode\n", sv));
+      enc->json->flags &= ~(F_ALLOW_STRINGIFY|F_CONV_BLESSED);
+      if (!isref && !(flags & F_ALLOW_STRINGIFY)) {
+        sv_copypv(pv, newRV(sv));
+      } else {
+        sv_copypv(pv, sv); /* calls GMAGIC and AMAGIC */
+      }
+      enc->json->flags = flags;
+    } else { /* sv_copypv(pv, sv) with SV_SKIP_OVERLOAD */
+      STRLEN len;
+      const char *s = SvPV_flags_const(pv,len,SV_SKIP_OVERLOAD|SV_GMAGIC);
+      sv_setpvn(pv,s,len);
+      if (SvUTF8(sv))
+	SvUTF8_on(pv);
+      else
+	SvUTF8_off(pv);
+    }
+#  else
     if (!isref && !(enc->json->flags & F_ALLOW_STRINGIFY)) {
       sv_copypv(pv, newRV(sv));
     } else {
       sv_copypv(pv, sv);
     }
+#  endif
     SvSETMAGIC(pv);
     str = SvPVutf8_force(pv, len);
 #else
@@ -1561,9 +1586,6 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
     /* manually call all possible magic on AV, HV, FM */
     if (SvGMAGICAL(sv)) mg_get(sv);
     if (MyAMG(sv)) { /* force a RV here */
-#if PERL_VERSION > 22
-      U32 flags = enc->json->flags;
-#endif
       SV* rv = newRV(SvREFCNT_inc(sv));
 #if PERL_VERSION <= 8
       HV *stash = SvSTASH(sv);
@@ -1574,8 +1596,9 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
 #endif
 #if PERL_VERSION > 13
 #  if PERL_VERSION > 22 || defined(USE_CPERL)
-      /* #128 protect from endless recursion */
+      /* #128 protect from endless TO_JSON/overload recursion */
       if (enc->json->flags & F_CONV_BLESSED) {
+        U32 flags = enc->json->flags;
         DEBUG_o(Perl_deb(aTHX_
           "Calling \"\" stringify on %p in Cpanel::JSON::XS::encode\n", sv));
         enc->json->flags &= ~(F_ALLOW_STRINGIFY|F_CONV_BLESSED);
@@ -1887,7 +1910,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
 
   if (SvROK (sv) && !SvOBJECT (SvRV (sv)))
     {
-      svtype svt = SvTYPE (SvRV (sv));
+      const svtype svt = SvTYPE (SvRV (sv));
       if (svt == SVt_PVHV)
         {
           encode_hv (aTHX_ enc, (HV *)SvRV (sv), typesv);
@@ -1950,12 +1973,17 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
     }
   else
     {
+      const svtype svt = SvTYPE (sv);
       if (UNLIKELY (sv == &PL_sv_yes || sv == &PL_sv_no)) type = JSON_TYPE_BOOL;
-      else if (SvPOKp (sv)) type = JSON_TYPE_STRING;
-      else if (SvNOKp (sv)) type = JSON_TYPE_FLOAT;
-      else if (SvIOKp (sv)) type = JSON_TYPE_INT;
       else if (SvROK (sv)) process_ref = 1;
       else if (!SvOK (sv)) can_be_null = 1;
+      else if (svt == SVt_NV) type = JSON_TYPE_FLOAT;
+      else if (svt == SVt_IV) type = JSON_TYPE_INT;
+      else if (svt == SVt_PV) type = JSON_TYPE_STRING;
+      /* dualvars: number first */
+      else if (SvNOKp (sv)) type = JSON_TYPE_FLOAT;
+      else if (SvIOKp (sv)) type = JSON_TYPE_INT;
+      else if (SvPOKp (sv)) type = JSON_TYPE_STRING;
     }
 
   if (can_be_null && !SvOK (sv))

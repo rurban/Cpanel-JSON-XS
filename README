@@ -710,8 +710,9 @@ OBJECT-ORIENTED INTERFACE
         If $enable is true (or missing), then "encode" will stringify the
         non-object perl value or reference. Note that blessed objects are
         not included here and are handled separately by "allow_blessed" and
-        "convert_blessed". String references are stringified to the string
-        value, other references as in perl.
+        "convert_blessed", also stringify overloaded objects. String
+        references are stringified to the string value, other references as
+        in perl.
 
         This option does not affect "decode" in any way.
 

@@ -828,8 +828,9 @@ leave it off unless you know your communications partner.
 If C<$enable> is true (or missing), then C<encode> will stringify the
 non-object perl value or reference. Note that blessed objects are not
 included here and are handled separately by C<allow_blessed> and
-C<convert_blessed>.  String references are stringified to the string
-value, other references as in perl.
+C<convert_blessed>, also stringify overloaded objects.  String
+references are stringified to the string value, other references as in
+perl.
 
 This option does not affect C<decode> in any way.
 
@@ -902,13 +903,13 @@ This setting has no effect on C<decode>.
 
 =item $enabled = $json->get_convert_blessed
 
-If C<$enable> is true (or missing), then C<encode>, upon encountering a
-blessed object, will check for the availability of the C<TO_JSON> method
-on the object's class. If found, it will be called in scalar context
-and the resulting scalar will be encoded instead of the object. If no
-C<TO_JSON> method is found, a stringification overload method is tried next.
-If both are not found, the value of C<allow_blessed> will decide what
-to do.
+If C<$enable> is true (or missing), then C<encode>, upon encountering
+a blessed object, will check for the availability of the C<TO_JSON>
+method on the object's class.  If found, it will be called in scalar
+context and the resulting scalar will be encoded instead of the
+object. If no C<TO_JSON> method is found, a stringification overload
+method is tried next.  If both are not found, the value of
+C<allow_blessed> will decide what to do.
 
 The C<TO_JSON> method may safely call die if it wants. If C<TO_JSON>
 returns other blessed objects, those will be handled in the same
