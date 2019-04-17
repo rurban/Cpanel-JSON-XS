@@ -295,7 +295,7 @@ foreach my $val (['0', JSON_TYPE_INT], ['0.0', JSON_TYPE_FLOAT], ['""', JSON_TYP
     my $warn;
     local $SIG{__WARN__} = sub { $warn = $_[0] };
     is($cjson->encode(undef, $val->[1]), $val->[0]); my $line = __LINE__;
-    like($warn, qr/Use of uninitialized value in (?:XS )subroutine entry at $0 line $line/);
+    like($warn, qr/Use of uninitialized value in (?:XS )?subroutine entry at $0 line $line/);
 }
 
 foreach my $type (JSON_TYPE_BOOL_OR_NULL, JSON_TYPE_INT_OR_NULL, JSON_TYPE_FLOAT_OR_NULL, JSON_TYPE_STRING_OR_NULL) {
@@ -309,7 +309,7 @@ foreach my $val (['0', JSON_TYPE_INT], ['0.0', JSON_TYPE_FLOAT]) {
     my $warn;
     local $SIG{__WARN__} = sub { $warn = $_[0] };
     is($cjson->encode(my $str = 'string_value', $val->[1]), $val->[0]); my $line = __LINE__;
-    like($warn, qr/Argument "string_value" isn't numeric in (?:XS )subroutine entry at $0 line $line/);
+    like($warn, qr/Argument "string_value" isn't numeric in (?:XS )?subroutine entry at $0 line $line/);
 }
 
 SKIP: {
