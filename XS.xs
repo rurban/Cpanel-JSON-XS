@@ -1686,6 +1686,20 @@ encode_bool (pTHX_ enc_t *enc, SV *sv)
 }
 
 static void
+sv_to_ivuv (pTHX_ SV *sv, int *is_neg, IV *iv, UV *uv)
+{
+  *iv = SvIV_nomg (sv);
+  *uv = (UV)iv;
+  /* SvIV and SvUV may modify SvIsUV flag */
+  *is_neg = !SvIsUV (sv);
+  if (!*is_neg)
+    {
+      *uv = SvUV_nomg (sv);
+      *iv = (IV)uv;
+    }
+}
+
+static void
 encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
 {
   IV type = 0;
@@ -2001,16 +2015,12 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
             }
           else
             {
-              is_neg = 1;
-              iv = SvIV_nomg (sv);
-              uv = (UV)iv;
+              sv_to_ivuv (aTHX_ sv, &is_neg, &iv, &uv);
             }
         }
       else
         {
-          is_neg = 1;
-          iv = SvIV_nomg (sv);
-          uv = (UV)iv;
+          sv_to_ivuv (aTHX_ sv, &is_neg, &iv, &uv);
         }
       if (is_neg ? iv <= 59000 && iv >= -59000
                  : uv <= 59000)
