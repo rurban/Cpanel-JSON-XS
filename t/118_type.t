@@ -1,6 +1,8 @@
 use strict;
 use warnings;
 
+use Config;
+
 use Cpanel::JSON::XS;
 use Cpanel::JSON::XS::Type;
 
@@ -12,7 +14,7 @@ BEGIN {
     }
 }
 
-use Test::More tests => 265;
+use Test::More tests => 280;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref;
 
@@ -83,6 +85,54 @@ is($cjson->encode(undef, JSON_TYPE_FLOAT_OR_NULL), 'null');
 is($cjson->encode(undef, JSON_TYPE_STRING_OR_NULL), 'null');
 is($cjson->encode(undef, json_type_null_or_anyof([])), 'null');
 is($cjson->encode(undef, json_type_null_or_anyof({})), 'null');
+
+if ($Config{ivsize} == 4) {
+  # values around signed IV_MAX should work correctly as they can be represented by unsigned UV
+  is($cjson->encode( '2147483646', JSON_TYPE_INT),  '2147483646');  #  2^31-2
+  is($cjson->encode( '2147483647', JSON_TYPE_INT),  '2147483647');  #  2^31-1
+  is($cjson->encode( '2147483648', JSON_TYPE_INT),  '2147483648');  #  2^31
+  is($cjson->encode( '2147483649', JSON_TYPE_INT),  '2147483649');  #  2^31+1
+  is($cjson->encode( '2147483650', JSON_TYPE_INT),  '2147483650');  #  2^31+2
+
+  # values up to signed IV_MIN should work correctly too
+  is($cjson->encode('-2147483646', JSON_TYPE_INT), '-2147483646');  # -2^31+2
+  is($cjson->encode('-2147483647', JSON_TYPE_INT), '-2147483647');  # -2^31+1
+  is($cjson->encode('-2147483648', JSON_TYPE_INT), '-2147483648');  # -2^31
+
+  # values up to unsigned UV_MAX should work correctly too
+  is($cjson->encode( '4294967294', JSON_TYPE_INT),  '4294967294');  #  2^32-2
+  is($cjson->encode( '4294967295', JSON_TYPE_INT),  '4294967295');  #  2^32-1
+
+  # those values are rounded to unsigned UV_MAX or signed IV_MIN (maximal or minimal integer representation in perl)
+  is($cjson->encode( '4294967296', JSON_TYPE_INT),  '4294967295');  #  2^32
+  is($cjson->encode( '4294967297', JSON_TYPE_INT),  '4294967295');  #  2^32+1
+  is($cjson->encode( '4294967298', JSON_TYPE_INT),  '4294967295');  #  2^32+2
+  is($cjson->encode('-2147483649', JSON_TYPE_INT), '-2147483648');  # -2^31-1
+  is($cjson->encode('-2147483650', JSON_TYPE_INT), '-2147483648');  # -2^31-2
+} else {
+  # values around signed IV_MAX should work correctly as they can be represented by unsigned UV
+  is($cjson->encode( '9223372036854775806', JSON_TYPE_INT),  '9223372036854775806');  #  2^63-2
+  is($cjson->encode( '9223372036854775807', JSON_TYPE_INT),  '9223372036854775807');  #  2^63-1
+  is($cjson->encode( '9223372036854775808', JSON_TYPE_INT),  '9223372036854775808');  #  2^63
+  is($cjson->encode( '9223372036854775809', JSON_TYPE_INT),  '9223372036854775809');  #  2^63+1
+  is($cjson->encode( '9223372036854775810', JSON_TYPE_INT),  '9223372036854775810');  #  2^63+2
+
+  # values up to signed IV_MIN should work correctly too
+  is($cjson->encode('-9223372036854775806', JSON_TYPE_INT), '-9223372036854775806');  # -2^63+2
+  is($cjson->encode('-9223372036854775807', JSON_TYPE_INT), '-9223372036854775807');  # -2^63+1
+  is($cjson->encode('-9223372036854775808', JSON_TYPE_INT), '-9223372036854775808');  # -2^63
+
+  # values up to unsigned UV_MAX should work correctly too
+  is($cjson->encode('18446744073709551614', JSON_TYPE_INT), '18446744073709551614');  #  2^64-2
+  is($cjson->encode('18446744073709551615', JSON_TYPE_INT), '18446744073709551615');  #  2^64-1
+
+  # those values are rounded to unsigned UV_MAX or signed IV_MIN (maximal or minimal integer representation in perl)
+  is($cjson->encode('18446744073709551616', JSON_TYPE_INT), '18446744073709551615');  #  2^64
+  is($cjson->encode('18446744073709551617', JSON_TYPE_INT), '18446744073709551615');  #  2^64+1
+  is($cjson->encode('18446744073709551618', JSON_TYPE_INT), '18446744073709551615');  #  2^64+2
+  is($cjson->encode('-9223372036854775809', JSON_TYPE_INT), '-9223372036854775808');  # -2^63-1
+  is($cjson->encode('-9223372036854775810', JSON_TYPE_INT), '-9223372036854775808');  # -2^63-2
+}
 
 is(encode_json([10, "10", 10.25], [JSON_TYPE_INT, JSON_TYPE_INT, JSON_TYPE_STRING]), '[10,10,"10.25"]');
 is(encode_json([10, "10", 10.25], json_type_arrayof(JSON_TYPE_INT)), '[10,10,10]');
