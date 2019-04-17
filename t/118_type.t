@@ -103,13 +103,15 @@ if ($Config{ivsize} == 4) {
   is($cjson->encode( '4294967294', JSON_TYPE_INT),  '4294967294');  #  2^32-2
   is($cjson->encode( '4294967295', JSON_TYPE_INT),  '4294967295');  #  2^32-1
 
-  # those values are rounded to unsigned UV_MAX or signed IV_MIN (maximal or minimal integer representation in perl)
+  # those values are rounded to unsigned UV_MAX or signed IV_MIN
   is($cjson->encode( '4294967296', JSON_TYPE_INT),  '4294967295');  #  2^32
   is($cjson->encode( '4294967297', JSON_TYPE_INT),  '4294967295');  #  2^32+1
   is($cjson->encode( '4294967298', JSON_TYPE_INT),  '4294967295');  #  2^32+2
   is($cjson->encode('-2147483649', JSON_TYPE_INT), '-2147483648');  # -2^31-1
   is($cjson->encode('-2147483650', JSON_TYPE_INT), '-2147483648');  # -2^31-2
 } else {
+SKIP: {
+  skip "unknown ivsize $Config{ivsize}", 15 if $Config{ivsize} != 8;
   # values around signed IV_MAX should work correctly as they can be represented by unsigned UV
   is($cjson->encode( '9223372036854775806', JSON_TYPE_INT),  '9223372036854775806');  #  2^63-2
   is($cjson->encode( '9223372036854775807', JSON_TYPE_INT),  '9223372036854775807');  #  2^63-1
@@ -126,13 +128,15 @@ if ($Config{ivsize} == 4) {
   is($cjson->encode('18446744073709551614', JSON_TYPE_INT), '18446744073709551614');  #  2^64-2
   is($cjson->encode('18446744073709551615', JSON_TYPE_INT), '18446744073709551615');  #  2^64-1
 
-  # those values are rounded to unsigned UV_MAX or signed IV_MIN (maximal or minimal integer representation in perl)
+  # those values are rounded to unsigned UV_MAX or signed IV_MIN
   is($cjson->encode('18446744073709551616', JSON_TYPE_INT), '18446744073709551615');  #  2^64
   is($cjson->encode('18446744073709551617', JSON_TYPE_INT), '18446744073709551615');  #  2^64+1
   is($cjson->encode('18446744073709551618', JSON_TYPE_INT), '18446744073709551615');  #  2^64+2
   is($cjson->encode('-9223372036854775809', JSON_TYPE_INT), '-9223372036854775808');  # -2^63-1
   is($cjson->encode('-9223372036854775810', JSON_TYPE_INT), '-9223372036854775808');  # -2^63-2
+ }
 }
+
 
 is(encode_json([10, "10", 10.25], [JSON_TYPE_INT, JSON_TYPE_INT, JSON_TYPE_STRING]), '[10,10,"10.25"]');
 is(encode_json([10, "10", 10.25], json_type_arrayof(JSON_TYPE_INT)), '[10,10,10]');
@@ -345,7 +349,7 @@ foreach my $val (['0', JSON_TYPE_INT], ['0.0', JSON_TYPE_FLOAT], ['""', JSON_TYP
     my $warn;
     local $SIG{__WARN__} = sub { $warn = $_[0] };
     is($cjson->encode(undef, $val->[1]), $val->[0]); my $line = __LINE__;
-    like($warn, qr/Use of uninitialized value in (?:XS )?subroutine entry at $0 line $line/);
+    like($warn, qr/Use of uninitialized value in (?:XS )?subroutine entry at \Q$0\E line \Q$line\E/);
 }
 
 foreach my $type (JSON_TYPE_BOOL_OR_NULL, JSON_TYPE_INT_OR_NULL, JSON_TYPE_FLOAT_OR_NULL, JSON_TYPE_STRING_OR_NULL) {
@@ -359,7 +363,7 @@ foreach my $val (['0', JSON_TYPE_INT], ['0.0', JSON_TYPE_FLOAT]) {
     my $warn;
     local $SIG{__WARN__} = sub { $warn = $_[0] };
     is($cjson->encode(my $str = 'string_value', $val->[1]), $val->[0]); my $line = __LINE__;
-    like($warn, qr/Argument "string_value" isn't numeric in (?:XS )?subroutine entry at $0 line $line/);
+    like($warn, qr/Argument "string_value" isn't numeric in (?:XS )?subroutine entry at \Q$0\E line \Q$line\E/);
 }
 
 SKIP: {
