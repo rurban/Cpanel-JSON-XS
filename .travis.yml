@@ -2,7 +2,7 @@ language: "perl"
 sudo: false
 perl:
   - "5.6.2"
-  - "5.8.1"
+  - "5.8.5"
   - "5.8"
   - "5.10"
   - "5.12"
@@ -42,13 +42,13 @@ before_install:
   - mkdir /home/travis/bin || true
   - ln -s `which true` /home/travis/bin/cpansign
   - eval $(curl https://travis-perl.github.io/init) --auto
-  - if [ -n $cperl ]; then
+  - if [ X$cperl != X ]; then
       perlbrew --notest install $cperl ;
       perlbrew use $cperl ;
     fi
 install:
   - export AUTOMATED_TESTING=1 HARNESS_TIMER=1
-  - if [ -n $cperl ]; then
+  - if [ X$cperl != X ]; then
       alias perl=~/perl5/perlbrew/perls/$cperl/bin/cperl ;
       alias cpan=~/perl5/perlbrew/perls/$cperl/bin/cpan ;
       cpan App::cpanminus ;
@@ -58,7 +58,7 @@ install:
   - test x$AUTHOR_TESTING = x1 && cpan-install Test::CPAN::Meta Test::MinimumVersion
         Pod::Spell::CommonMistakes Class::XSAccessor Test::Kwalitee Test::Spelling
         Text::CSV_XS Test::Pod Test::Pod::Coverage
-  - cpan-install --coverage   # installs converage prereqs, if enabled
+  - cpan-install --coverage   # installs coverage prereqs, if enabled
 
 before_script:
   - coverage-setup
