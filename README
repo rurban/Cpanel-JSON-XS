@@ -190,20 +190,21 @@ FUNCTIONAL INTERFACE
 
         This function call is functionally identical to:
 
-           $json_text = Cpanel::JSON::XS->new->utf8->encode ($perl_scalar)
+           $json_text = Cpanel::JSON::XS->new->utf8->encode ($perl_scalar, $json_type)
 
         Except being faster.
 
         For the type argument see Cpanel::JSON::XS::Type.
 
-    $perl_scalar = decode_json $json_text [, $allow_nonref ]
+    $perl_scalar = decode_json $json_text [, $allow_nonref [, my $json_type
+    ] ]
         The opposite of "encode_json": expects an UTF-8 (binary) string of
         an json reference and tries to parse that as an UTF-8 encoded JSON
         text, returning the resulting reference. Croaks on error.
 
         This function call is functionally identical to:
 
-           $perl_scalar = Cpanel::JSON::XS->new->utf8->decode ($json_text)
+           $perl_scalar = Cpanel::JSON::XS->new->utf8->decode ($json_text, $json_type)
 
         except being faster.
 
@@ -215,6 +216,8 @@ FUNCTIONAL INTERFACE
         allow_nonref option will be set and the function will act is
         described as in the relaxed RFC 7159 allowing all values such as
         objects, arrays, strings, numbers, "null", "true", and "false".
+
+        For the type argument see Cpanel::JSON::XS::Type.
 
     $is_boolean = Cpanel::JSON::XS::is_bool $scalar
         Returns true if the passed scalar represents either "JSON::XS::true"
@@ -934,7 +937,7 @@ OBJECT-ORIENTED INTERFACE
         strings. No QNAN/SNAN/negative NAN support, unified to "nan". Much
         easier to detect, but may conflict with valid strings.
 
-    $json_text = $json->encode ($perl_scalar)
+    $json_text = $json->encode ($perl_scalar, $json_type)
         Converts the given Perl data structure (a simple scalar or a
         reference to a hash or array) to its JSON representation. Simple
         scalars will be converted into JSON string or number sequences,
@@ -943,13 +946,17 @@ OBJECT-ORIENTED INTERFACE
         become JSON "null" values. Neither "true" nor "false" values will be
         generated.
 
-    $perl_scalar = $json->decode ($json_text)
+        For the type argument see Cpanel::JSON::XS::Type.
+
+    $perl_scalar = $json->decode ($json_text, my $json_type)
         The opposite of "encode": expects a JSON text and tries to parse it,
         returning the resulting simple scalar or reference. Croaks on error.
 
         JSON numbers and strings become simple Perl scalars. JSON arrays
         become Perl arrayrefs and JSON objects become Perl hashrefs. "true"
         becomes 1, "false" becomes 0 and "null" becomes "undef".
+
+        For the type argument see Cpanel::JSON::XS::Type.
 
     ($perl_scalar, $characters) = $json->decode_prefix ($json_text)
         This works like the "decode" method, but instead of raising an
@@ -1282,7 +1289,10 @@ MAPPING
         precision up to but not including the least significant bit.
 
     true, false
-        These JSON atoms become "Cpanel::JSON::XS::true" and
+        When "unblessed_bool" is set to true, then JSON "true" becomes 1 and
+        JSON "false" becomes 0.
+
+        Otherwise these JSON atoms become "Cpanel::JSON::XS::true" and
         "Cpanel::JSON::XS::false", respectively. They are
         "JSON::PP::Boolean" objects and are overloaded to act almost exactly
         like the numbers 1 and 0. You can check whether a scalar is a JSON
@@ -1384,9 +1394,16 @@ MAPPING
     simple scalars
         Simple Perl scalars (any scalar that is not a reference) are the
         most difficult objects to encode: Cpanel::JSON::XS will encode
-        undefined scalars or inf/nan as JSON "null" values, scalars that
-        have last been used in a string context before encoding as JSON
-        strings, and anything else as number value:
+        undefined scalars or inf/nan as JSON "null" values and other scalars
+        to either number or string in non-deterministic way which may be
+        affected or changed by Perl version or any other loaded Perl module.
+
+        If you want to have stable and deterministic types in JSON encoder
+        then use Cpanel::JSON::XS::Type.
+
+        Non-deterministic behavior is following: scalars that have last been
+        used in a string context before encoding as JSON strings, and
+        anything else as number value:
 
            # dump as number
            encode_json [2]                      # yields [2]
