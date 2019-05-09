@@ -14,9 +14,9 @@ BEGIN {
     }
 }
 
-use Test::More tests => 285;
+use Test::More tests => 299;
 
-my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref;
+my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types;
 
 foreach my $false (Cpanel::JSON::XS::false, undef, 0, 0.0, 0E0, !!0, !1, "0", "", \0) {
     is($cjson->encode($false, JSON_TYPE_BOOL), 'false');
@@ -69,14 +69,12 @@ is($cjson->encode(Cpanel::JSON::XS::false, JSON_TYPE_BOOL), 'false');
 is($cjson->encode(Cpanel::JSON::XS::false, JSON_TYPE_INT), '0');
 is($cjson->encode(Cpanel::JSON::XS::false, JSON_TYPE_FLOAT), '0.0');
 is($cjson->encode(Cpanel::JSON::XS::false, JSON_TYPE_STRING), '"false"');
-is($cjson->encode(Cpanel::JSON::XS::false), 'false');
 is($cjson->encode(Cpanel::JSON::XS::false, json_type_anyof([], {}, JSON_TYPE_BOOL)), 'false');
 
 is($cjson->encode(Cpanel::JSON::XS::true, JSON_TYPE_BOOL), 'true');
 is($cjson->encode(Cpanel::JSON::XS::true, JSON_TYPE_INT), '1');
 is($cjson->encode(Cpanel::JSON::XS::true, JSON_TYPE_FLOAT), '1.0');
 is($cjson->encode(Cpanel::JSON::XS::true, JSON_TYPE_STRING), '"true"');
-is($cjson->encode(Cpanel::JSON::XS::true), 'true');
 is($cjson->encode(Cpanel::JSON::XS::true, json_type_anyof([], {}, JSON_TYPE_BOOL)), 'true');
 
 is($cjson->encode(undef, JSON_TYPE_BOOL_OR_NULL), 'null');
@@ -409,3 +407,27 @@ SKIP: {
     undef $struct;
     ok(!defined $weakref);
 }
+
+ok(!defined eval { $cjson->encode(1) });
+like($@, qr/type for '1' was not specified/);
+
+ok(!defined eval { $cjson->encode(1, undef) });
+like($@, qr/type for '1' was not specified/);
+
+ok(!defined eval { $cjson->encode([1]) });
+like($@, qr/type for 'ARRAY\(.*\)' was not specified/);
+
+ok(!defined eval { $cjson->encode([1], undef) });
+like($@, qr/type for 'ARRAY\(.*\)' was not specified/);
+
+ok(!defined eval { $cjson->encode([1], [undef]) });
+like($@, qr/type for '1' was not specified/);
+
+ok(!defined eval { $cjson->encode({ key => 1 }) });
+like($@, qr/type for 'HASH\(.*\)' was not specified/);
+
+ok(!defined eval { $cjson->encode({ key => 1 }, undef) });
+like($@, qr/type for 'HASH\(.*\)' was not specified/);
+
+ok(!defined eval { $cjson->encode({ key => 1 }, { key => undef }) });
+like($@, qr/type for '1' was not specified/);

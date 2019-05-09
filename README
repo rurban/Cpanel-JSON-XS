@@ -707,6 +707,16 @@ OBJECT-ORIENTED INTERFACE
         This option is special to this module, it is not supported by other
         encoders. So it is not recommended to use it.
 
+    $json = $json->require_types ([$enable])
+    $enable = $json->get_require_types
+             $json = $json->require_types([$enable])
+
+        If $enable is true (or missing), then "encode" will require second
+        argument with supplied JSON types. See Cpanel::JSON::XS::Type. When
+        second argument is not provided (or is undef), then "encode" croaks.
+        It also croaks when the type for provided structure in "encode" is
+        incomplete.
+
     $json = $json->allow_dupkeys ([$enable])
     $enabled = $json->get_allow_dupkeys
         If $enable is true (or missing), then the "decode" method will not

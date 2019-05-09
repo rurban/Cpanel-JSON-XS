@@ -827,6 +827,18 @@ This option does not affect C<decode> in any way.
 This option is special to this module, it is not supported by other
 encoders.  So it is not recommended to use it.
 
+=item $json = $json->require_types ([$enable])
+
+=item $enable = $json->get_require_types
+
+     $json = $json->require_types([$enable])
+
+If C<$enable> is true (or missing), then C<encode> will require
+second argument with supplied JSON types. See L<Cpanel::JSON::XS::Type>.
+When second argument is not provided (or is undef), then C<encode>
+croaks. It also croaks when the type for provided structure in
+C<encode> is incomplete.
+
 =item $json = $json->allow_dupkeys ([$enable])
 
 =item $enabled = $json->get_allow_dupkeys
