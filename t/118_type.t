@@ -14,7 +14,7 @@ BEGIN {
     }
 }
 
-use Test::More tests => 299;
+use Test::More tests => 302;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types;
 
@@ -84,6 +84,8 @@ is($cjson->encode(undef, JSON_TYPE_STRING_OR_NULL), 'null');
 is($cjson->encode(undef, json_type_null_or_anyof([])), 'null');
 is($cjson->encode(undef, json_type_null_or_anyof({})), 'null');
 
+is($cjson->encode(int("NaN"), JSON_TYPE_INT), '0');
+
 if ($Config{ivsize} == 4) {
   # values around signed IV_MAX should work correctly as they can be represented by unsigned UV
   is($cjson->encode( '2147483646', JSON_TYPE_INT),  '2147483646');  #  2^31-2
@@ -114,9 +116,13 @@ if ($Config{ivsize} == 4) {
   is($cjson->encode( 4294967298.5, JSON_TYPE_INT),  '4294967295');  #  2^32+2
   is($cjson->encode(-2147483649.5, JSON_TYPE_INT), '-2147483648');  # -2^31-1
   is($cjson->encode(-2147483650.5, JSON_TYPE_INT), '-2147483648');  # -2^31-2
+
+  is($cjson->encode(int( "Inf"),   JSON_TYPE_INT), ($] < 5.008008) ? '0' :  '4294967295');
+  is($cjson->encode(int("-Inf"),   JSON_TYPE_INT), ($] < 5.008008) ? '0' : '-2147483648');
 } else {
 SKIP: {
-  skip "unknown ivsize $Config{ivsize}", 20 if $Config{ivsize} != 8;
+  skip "unknown ivsize $Config{ivsize}", 22 if $Config{ivsize} != 8;
+
   # values around signed IV_MAX should work correctly as they can be represented by unsigned UV
   is($cjson->encode( '9223372036854775806', JSON_TYPE_INT),  '9223372036854775806');  #  2^63-2
   is($cjson->encode( '9223372036854775807', JSON_TYPE_INT),  '9223372036854775807');  #  2^63-1
@@ -146,6 +152,9 @@ SKIP: {
   is($cjson->encode(18446744073709551618.5, JSON_TYPE_INT), '18446744073709551615');  #  2^64+2
   is($cjson->encode(-9223372036854775809.5, JSON_TYPE_INT), '-9223372036854775808');  # -2^63-1
   is($cjson->encode(-9223372036854775810.5, JSON_TYPE_INT), '-9223372036854775808');  # -2^63-2
+
+  is($cjson->encode(int( "Inf"),            JSON_TYPE_INT), ($] < 5.008008) ? '0' : '18446744073709551615');
+  is($cjson->encode(int("-Inf"),            JSON_TYPE_INT), ($] < 5.008008) ? '0' : '-9223372036854775808');
  }
 }
 
