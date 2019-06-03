@@ -1690,13 +1690,13 @@ static void
 sv_to_ivuv (pTHX_ SV *sv, int *is_neg, IV *iv, UV *uv)
 {
   *iv = SvIV_nomg (sv);
-  *uv = (UV)iv;
+  *uv = (UV)(*iv);
   /* SvIV and SvUV may modify SvIsUV flag */
   *is_neg = !SvIsUV (sv);
   if (!*is_neg)
     {
       *uv = SvUV_nomg (sv);
-      *iv = (IV)uv;
+      *iv = (IV)(*uv);
     }
 }
 
