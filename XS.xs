@@ -2002,14 +2002,54 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
               else
                 iv = (IV)uv;
             }
-          else
+          else if (UNLIKELY (numtype & IS_NUMBER_INFINITY))
+            {
+              is_neg = (numtype & IS_NUMBER_NEG);
+              if (is_neg)
+                {
+                  iv = IV_MIN;
+                  uv = (UV)iv;
+                }
+              else
+                {
+                  uv = UV_MAX;
+                  iv = (IV)uv;
+                }
+            }
+          else if (LIKELY (!(numtype & IS_NUMBER_NAN)))
             {
               sv_to_ivuv (aTHX_ sv, &is_neg, &iv, &uv);
             }
         }
       else
         {
-          sv_to_ivuv (aTHX_ sv, &is_neg, &iv, &uv);
+#if PERL_VERSION < 8
+/* SvIV() and SvUV() in Perl 5.6 does not handle Inf and NaN in NV slot */
+# if defined(USE_QUADMATH) && defined(HAVE_ISINFL) && defined(HAVE_ISNANL)
+          if (SvNOKp (sv) && UNLIKELY (isinfl (SvNVX (sv))))
+# else
+          if (SvNOKp (sv) && UNLIKELY (isinf (SvNVX (sv))))
+# endif
+            {
+              if (SvNVX (sv) < 0)
+                {
+                  is_neg = 1;
+                  iv = IV_MIN;
+                  uv = (UV)iv;
+                }
+              else
+                {
+                  uv = UV_MAX;
+                  iv = (IV)uv;
+                }
+            }
+# if defined(USE_QUADMATH) && defined(HAVE_ISINFL) && defined(HAVE_ISNANL)
+          else if (!SvNOKp (sv) || LIKELY (!isnanl (SvNVX (sv))))
+# else
+          else if (!SvNOKp (sv) || LIKELY (!isnan (SvNVX (sv))))
+# endif
+#endif
+            sv_to_ivuv (aTHX_ sv, &is_neg, &iv, &uv);
         }
       if (is_neg ? iv <= 59000 && iv >= -59000
                  : uv <= 59000)
