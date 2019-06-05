@@ -3178,6 +3178,8 @@ decode_num (pTHX_ dec_t *dec, SV *typesv)
         sv_catpvs(pv, "\");");
         eval_sv(pv, G_SCALAR);
         SvREFCNT_dec(pv);
+        if (SvTRUEx (ERRSV))
+          croak (NULL); /* rethrow current error */
         {
           dSP;
           SV *retval = SvREFCNT_inc(POPs);
@@ -3199,6 +3201,8 @@ decode_num (pTHX_ dec_t *dec, SV *typesv)
     sv_catpvs(pv, "\");");
     eval_sv(pv, G_SCALAR);
     SvREFCNT_dec(pv);
+    if (SvTRUEx (ERRSV))
+      croak (NULL); /* rethrow current error */
     {
       dSP;
       SV *retval = SvREFCNT_inc(POPs);
