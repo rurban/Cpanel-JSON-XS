@@ -1,4 +1,5 @@
 .appveyor.yml
+.github/FUNDING.yml
 .travis.yml
 COPYING
 Changes
