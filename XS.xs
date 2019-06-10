@@ -1430,6 +1430,10 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
       SvREFCNT_dec(rv);
     }
   }
+  if (UNLIKELY(isref == 1 && (enc->json.flags & F_ALLOW_BIGNUM) && str && str[0] == '+')) {
+    str++;
+    len--;
+  }
   /* if ALLOW_BIGNUM and Math::Big* and NaN => according to stringify_infnan */
   if (UNLIKELY(
         (enc->json.flags & F_ALLOW_BIGNUM)

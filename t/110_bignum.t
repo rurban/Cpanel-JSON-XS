@@ -30,7 +30,7 @@ is("$num", $fix . '100000000000000000000000000000000000000', 'decode bigint')
   or Dump ($num);
 
 my $e = $json->encode($num);
-is($e, $fix . '100000000000000000000000000000000000000', 'encode bigint')
+is($e, '100000000000000000000000000000000000000', 'encode bigint')
     or Dump( $e );
 
 $num  = $json->decode(q|2.0000000000000000001|);
