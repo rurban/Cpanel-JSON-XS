@@ -885,11 +885,13 @@ to do.
 
 The C<TO_JSON> method may safely call die if it wants. If C<TO_JSON>
 returns other blessed objects, those will be handled in the same
-way. C<TO_JSON> must take care of not causing an endless recursion cycle
-(== crash) in this case. The name of C<TO_JSON> was chosen because other
-methods called by the Perl core (== not by the user of the object) are
-usually in upper case letters and to avoid collisions with any C<to_json>
-function or method.
+way. C<TO_JSON> must take care of not causing an endless recursion
+cycle (== crash) in this case. The same care must be taken with
+calling encode in stringify overloads (even if this works by luck in
+older perls) or other callbacks.  The name of C<TO_JSON> was chosen
+because other methods called by the Perl core (== not by the user of
+the object) are usually in upper case letters and to avoid collisions
+with any C<to_json> function or method.
 
 If C<$enable> is false (the default), then C<encode> will not consider
 this type of conversion.

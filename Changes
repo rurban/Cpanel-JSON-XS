@@ -15,6 +15,7 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
         - Fix inconsistency with warnings in typed json encoder (#131 by Pali)
         - Fix Perl 5.8.0 support (#130 by Pali)
         - Fixed minor pod typo (#129 by sheeit)
+        - Warn from recursive callbacks or overloads (#128)
 
 4.11 2019-03-26 (rurban)
         - Fix unicode strings with BOM corrupt ->utf8 state (#125)
