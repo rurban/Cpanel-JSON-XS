@@ -1,6 +1,7 @@
 .appveyor.yml
 .github/FUNDING.yml
 .travis.yml
+.whitesource
 COPYING
 Changes
 MANIFEST
@@ -39,6 +40,7 @@ t/115_tie_ixhash.t
 t/116_incr_parse_fixed.t
 t/117_numbers.t
 t/118_type.t
+t/119_type_decode.t
 t/11_pc_expo.t
 t/12_blessed.t
 t/13_limit.t

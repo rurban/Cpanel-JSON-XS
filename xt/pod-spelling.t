@@ -42,6 +42,7 @@ NOK
 NaN's
 OO
 QNAN
+Pali
 Reini
 SNAN
 STDIN
