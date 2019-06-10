@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '4.11';
+our $VERSION = '4.12';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 

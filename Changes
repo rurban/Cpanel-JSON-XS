@@ -2,6 +2,20 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.12 2019-06-?? (rurban)
+        - Make encoder independent on Math::BigInt version (#140 by Pali)
+        - Rethrow error from eval_sv and eval_pv() (#138, #139 by Pali),
+          e.g. when Math::BigInt/BigFloat fails.
+        - Fix encoding Inf and NaN from PV and NV slots to JSON_TYPE_INT
+          (#137 by Pali)
+        - Fix memory corruption in sv_to_ivuv() function (#136 by Pali)
+        - Add new method ->require_types (#135 by Pali)
+        - Fix typed json encoder conversion from scalar's PV and NV slot to
+          JSON_TYPE_INT (#133, #134 by Pali)
+        - Fix inconsistency with warnings in typed json encoder (#131 by Pali)
+        - Fix Perl 5.8.0 support (#130 by Pali)
+        - Fixed minor pod typo (#129 by sheeit)
+
 4.11 2019-03-26 (rurban)
         - Fix unicode strings with BOM corrupt ->utf8 state (#125)
           The BOM encoding effects only its very own decode call,
