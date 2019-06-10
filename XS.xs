@@ -3173,13 +3173,18 @@ decode_num (pTHX_ dec_t *dec, SV *typesv)
         return newSVnv (json_atof (start));
 
       if (dec->json.flags & F_ALLOW_BIGNUM) {
+        SV *errsv;
         SV* pv = newSVpvs("require Math::BigInt && return Math::BigInt->new(\"");
         sv_catpvn(pv, start, dec->cur - start);
         sv_catpvs(pv, "\");");
         eval_sv(pv, G_SCALAR);
         SvREFCNT_dec(pv);
-        if (SvTRUEx (ERRSV))
-          croak (NULL); /* rethrow current error */
+        /* rethrow current error */
+        errsv = ERRSV;
+        if (SvROK (errsv))
+          croak (NULL);
+        else if (SvTRUE (errsv))
+          croak ("%" SVf, SVfARG (errsv));
         {
           dSP;
           SV *retval = SvREFCNT_inc(POPs);
@@ -3196,13 +3201,18 @@ decode_num (pTHX_ dec_t *dec, SV *typesv)
     sv_setiv_mg (typesv, JSON_TYPE_FLOAT);
 
   if (dec->json.flags & F_ALLOW_BIGNUM) {
+    SV *errsv;
     SV* pv = newSVpvs("require Math::BigFloat && return Math::BigFloat->new(\"");
     sv_catpvn(pv, start, dec->cur - start);
     sv_catpvs(pv, "\");");
     eval_sv(pv, G_SCALAR);
     SvREFCNT_dec(pv);
-    if (SvTRUEx (ERRSV))
-      croak (NULL); /* rethrow current error */
+    /* rethrow current error */
+    errsv = ERRSV;
+    if (SvROK (errsv))
+      croak (NULL);
+    else if (SvTRUE (errsv))
+      croak ("%" SVf, SVfARG (errsv));
     {
       dSP;
       SV *retval = SvREFCNT_inc(POPs);
