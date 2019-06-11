@@ -117,8 +117,8 @@ DESCRIPTION
     - added "binary" extension, non-JSON and non JSON parsable, allows
     "\xNN" and "\NNN" sequences.
 
-    - 5.6 support; sacrificing some utf8 features (assuming bytes all-over),
-    no multi-byte unicode characters with 5.6.
+    - 5.6.2 support; sacrificing some utf8 features (assuming bytes
+    all-over), no multi-byte unicode characters with 5.6.
 
     - interop for true/false overloading. JSON::XS, JSON::PP and Mojo::JSON
     representations for booleans are accepted and JSON::XS accepts
@@ -2054,9 +2054,9 @@ BUGS
     private emails, we use the tracker at github, so you might want to
     report any issues twice. Once in private to MLEHMANN to be fixed in
     JSON::XS and one to our the public tracker. Issues fixed by JSON::XS
-    with a new release will also be backported to Cpanel::JSON::XS and 5.6,
-    as long as cPanel relies on 5.6 and Cpanel::JSON::XS as the serializer
-    of choice.
+    with a new release will also be backported to Cpanel::JSON::XS and
+    5.6.2, as long as cPanel relies on 5.6.2 and Cpanel::JSON::XS as our
+    serializer of choice.
 
     <https://github.com/rurban/Cpanel-JSON-XS/issues>
 

@@ -130,7 +130,7 @@ B<Changes to JSON::XS>
 - added C<binary> extension, non-JSON and non JSON parsable, allows
   C<\xNN> and C<\NNN> sequences.
 
-- 5.6 support; sacrificing some utf8 features (assuming bytes
+- 5.6.2 support; sacrificing some utf8 features (assuming bytes
   all-over), no multi-byte unicode characters with 5.6.
 
 - interop for true/false overloading. JSON::XS, JSON::PP and Mojo::JSON 
@@ -2257,7 +2257,7 @@ prefers private emails, we use the tracker at B<github>, so you might want
 to report any issues twice. Once in private to MLEHMANN to be fixed in
 JSON::XS and one to our the public tracker. Issues fixed by JSON::XS
 with a new release will also be backported to Cpanel::JSON::XS and
-5.6, as long as cPanel relies on 5.6 and Cpanel::JSON::XS as the
+5.6.2, as long as cPanel relies on 5.6.2 and Cpanel::JSON::XS as our
 serializer of choice.
 
 L<https://github.com/rurban/Cpanel-JSON-XS/issues>

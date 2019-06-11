@@ -28,7 +28,7 @@ foreach my $MODULE ( @MODULES ) {
   }
 }
 
-# but v5.6 is allowed dynamically
+# but 5.6.2 is allowed dynamically
 all_minimum_version_ok("5.008", # bug: no stacked_labels
                        { skip => ['t/118_type.t',
                                   't/119_type_decode.t'] });
