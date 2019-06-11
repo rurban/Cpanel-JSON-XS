@@ -2,7 +2,7 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-4.12 2019-06-?? (rurban)
+4.12 2019-06-11 (rurban)
         - Make encoder independent on Math::BigInt version (#140 by Pali)
         - Rethrow error from eval_sv and eval_pv() (#138, #139 by Pali),
           e.g. when Math::BigInt/BigFloat fails.
@@ -15,7 +15,7 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
         - Fix inconsistency with warnings in typed json encoder (#131 by Pali)
         - Fix Perl 5.8.0 support (#130 by Pali)
         - Fixed minor pod typo (#129 by sheeit)
-        - Warn from recursive callbacks or overloads (#128)
+        - Document invalid recursive callbacks or overloads (#128)
 
 4.11 2019-03-26 (rurban)
         - Fix unicode strings with BOM corrupt ->utf8 state (#125)
