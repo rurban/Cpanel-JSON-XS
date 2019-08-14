@@ -1515,7 +1515,7 @@ MAPPING
               $uri->as_string
            }
 
-    2. "convert_blessed" is enabled and the object has a stringification
+    3. "convert_blessed" is enabled and the object has a stringification
     overload.
         In this case, the overloaded "" method of the object is invoked in
         scalar context. It must return a single scalar that can be directly
@@ -1528,10 +1528,10 @@ MAPPING
             package URI;
             use overload '""' => sub { shift->as_string };
 
-    3. "allow_blessed" is enabled.
+    4. "allow_blessed" is enabled.
         The object will be serialized as a JSON null value.
 
-    4. none of the above
+    5. none of the above
         If none of the settings are enabled or the respective methods are
         missing, "Cpanel::JSON::XS" throws an exception.
 
