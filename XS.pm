@@ -1694,7 +1694,7 @@ originally were L<URI> objects is lost.
       $uri->as_string
    }
 
-=item 2. C<convert_blessed> is enabled and the object has a stringification overload.
+=item 3. C<convert_blessed> is enabled and the object has a stringification overload.
 
 In this case, the overloaded C<""> method of the object is invoked in scalar
 context. It must return a single scalar that can be directly encoded into
@@ -1707,11 +1707,11 @@ originally were L<URI> objects is lost.
     package URI;
     use overload '""' => sub { shift->as_string };
 
-=item 3. C<allow_blessed> is enabled.
+=item 4. C<allow_blessed> is enabled.
 
 The object will be serialized as a JSON null value.
 
-=item 4. none of the above
+=item 5. none of the above
 
 If none of the settings are enabled or the respective methods are missing,
 C<Cpanel::JSON::XS> throws an exception.
