@@ -6,6 +6,8 @@ use Config;
 use Cpanel::JSON::XS;
 use Cpanel::JSON::XS::Type;
 
+use Math::BigFloat;
+
 my $have_weaken;
 BEGIN {
     if (eval { require Scalar::Util }) {
@@ -14,9 +16,10 @@ BEGIN {
     }
 }
 
-use Test::More tests => 307;
+use Test::More tests => 317;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types;
+my $bigcjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types->allow_bignum;
 
 foreach my $false (Cpanel::JSON::XS::false, undef, 0, 0.0, 0E0, !!0, !1, "0", "", \0) {
     is($cjson->encode($false, JSON_TYPE_BOOL), 'false');
@@ -169,6 +172,22 @@ SKIP: {
  }
 }
 
+# integer string values outside of range [IV_MIN, UV_MAX] with enabled bignum
+is($bigcjson->encode('18446744073709551616', JSON_TYPE_INT), '18446744073709551616');  #  2^64
+is($bigcjson->encode('18446744073709551617', JSON_TYPE_INT), '18446744073709551617');  #  2^64+1
+is($bigcjson->encode('18446744073709551618', JSON_TYPE_INT), '18446744073709551618');  #  2^64+2
+is($bigcjson->encode('-9223372036854775809', JSON_TYPE_INT), '-9223372036854775809');  # -2^63-1
+is($bigcjson->encode('-9223372036854775810', JSON_TYPE_INT), '-9223372036854775810');  # -2^63-2
+
+SKIP: {
+  skip 'requires Math::BigFloat 1.35', 5 unless eval { Math::BigFloat->VERSION(1.35) };
+  # float string values outside of range [IV_MIN, UV_MAX] with enabled bignum
+  is($bigcjson->encode('18446744073709551616.5', JSON_TYPE_INT), '18446744073709551616');  #  2^64
+  is($bigcjson->encode('18446744073709551617.5', JSON_TYPE_INT), '18446744073709551617');  #  2^64+1
+  is($bigcjson->encode('18446744073709551618.5', JSON_TYPE_INT), '18446744073709551618');  #  2^64+2
+  is($bigcjson->encode('-9223372036854775809.5', JSON_TYPE_INT), '-9223372036854775809');  # -2^63-1
+  is($bigcjson->encode('-9223372036854775810.5', JSON_TYPE_INT), '-9223372036854775810');  # -2^63-2
+}
 
 is(encode_json([10, "10", 10.25], [JSON_TYPE_INT, JSON_TYPE_INT, JSON_TYPE_STRING]), '[10,10,"10.25"]');
 is(encode_json([10, "10", 10.25], json_type_arrayof(JSON_TYPE_INT)), '[10,10,10]');

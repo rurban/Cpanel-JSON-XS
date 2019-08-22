@@ -2000,7 +2000,10 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                   if (LIKELY(uv <= (UV)(IV_MAX) + 1))
                     iv = -(IV)uv;
                   else
-                    iv = IV_MIN; /* underflow */
+                    {
+                      iv = IV_MIN; /* underflow, but F_ALLOW_BIGNUM can handle this */
+                      numtype |= IS_NUMBER_GREATER_THAN_UV_MAX;
+                    }
                   uv = (UV)iv;
                 }
               else
@@ -2020,7 +2023,63 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                   iv = (IV)uv;
                 }
             }
-          else if (LIKELY (!(numtype & IS_NUMBER_NAN)))
+
+          if ((numtype & IS_NUMBER_GREATER_THAN_UV_MAX) && (enc->json.flags & F_ALLOW_BIGNUM))
+            {
+              STRLEN len;
+              char *str;
+              SV *pv;
+              SV *errsv;
+
+              if (numtype & IS_NUMBER_NOT_INT)
+                pv = newSVpvs ("my $obj; require Math::BigFloat && ($obj = Math::BigFloat->new(\"");
+              else
+                pv = newSVpvs ("require Math::BigInt && return Math::BigInt->new(\"");
+
+              sv_catpvn (pv, SvPVX (sv), SvCUR (sv));
+
+              if (numtype & IS_NUMBER_NOT_INT)
+                /* This bceil/bfloor logic can be replaced by just one "bint" method call
+                 * but it is not supported by older Math::BigFloat versions.
+                 * Older Math::BigFloat versions have also "as_number" method which should
+                 * do same thing as "bint" method but it is broken and loose precision.
+                 * This bceil/bfloor logic needs Math::Float 1.35 which is in Perl 5.8.0. */
+                sv_catpvs (pv, "\")) && ($obj->is_negative ? $obj->bceil : $obj->bfloor);");
+              else
+                sv_catpvs (pv, "\");");
+
+              eval_sv (pv, G_SCALAR);
+              SvREFCNT_dec (pv);
+
+              /* rethrow current error */
+              errsv = ERRSV;
+              if (SvROK (errsv))
+                croak (NULL);
+              else if (SvTRUE (errsv))
+                croak ("%" SVf, SVfARG (errsv));
+
+              {
+                dSP;
+                pv = POPs;
+                PUTBACK;
+              }
+
+              str = SvPV (pv, len);
+              if (UNLIKELY (str[0] == '+'))
+                {
+                  str++;
+                  len--;
+                }
+              need (aTHX_ enc, len+1);
+              savecur = enc->cur;
+              saveend = enc->end;
+              memcpy (enc->cur, str, len);
+              enc->cur += len;
+              *enc->cur = '\0';
+
+              return;
+            }
+          else if (!(numtype & (IS_NUMBER_IN_UV|IS_NUMBER_INFINITY|IS_NUMBER_NAN)))
             {
               sv_to_ivuv (aTHX_ sv, &is_neg, &iv, &uv);
             }
