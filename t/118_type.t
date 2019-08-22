@@ -6,6 +6,7 @@ use Config;
 use Cpanel::JSON::XS;
 use Cpanel::JSON::XS::Type;
 
+use Math::BigInt;
 use Math::BigFloat;
 
 my $have_weaken;
@@ -16,7 +17,7 @@ BEGIN {
     }
 }
 
-use Test::More tests => 317;
+use Test::More tests => 333;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types;
 my $bigcjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types->allow_bignum;
@@ -187,6 +188,48 @@ SKIP: {
   is($bigcjson->encode('18446744073709551618.5', JSON_TYPE_INT), '18446744073709551618');  #  2^64+2
   is($bigcjson->encode('-9223372036854775809.5', JSON_TYPE_INT), '-9223372036854775809');  # -2^63-1
   is($bigcjson->encode('-9223372036854775810.5', JSON_TYPE_INT), '-9223372036854775810');  # -2^63-2
+}
+
+# Math::BigInt values outside of range [IV_MIN, UV_MAX] with enabled bignum
+is($bigcjson->encode(Math::BigInt->new('18446744073709551616'), JSON_TYPE_INT), '18446744073709551616');  #  2^64
+is($bigcjson->encode(Math::BigInt->new('18446744073709551617'), JSON_TYPE_INT), '18446744073709551617');  #  2^64+1
+is($bigcjson->encode(Math::BigInt->new('18446744073709551618'), JSON_TYPE_INT), '18446744073709551618');  #  2^64+2
+is($bigcjson->encode(Math::BigInt->new('-9223372036854775809'), JSON_TYPE_INT), '-9223372036854775809');  # -2^63-1
+is($bigcjson->encode(Math::BigInt->new('-9223372036854775810'), JSON_TYPE_INT), '-9223372036854775810');  # -2^63-2
+
+is($bigcjson->encode(Math::BigInt->new('NaN'), JSON_TYPE_INT), '0');
+SKIP: {
+  skip 'requires Math::BigInt 1.42', 2 unless eval { Math::BigInt->VERSION(1.42) };
+  if ($Config{ivsize} == 4) {
+    is($bigcjson->encode(Math::BigInt->new( 'inf'), JSON_TYPE_INT), '4294967295');
+    is($bigcjson->encode(Math::BigInt->new('-inf'), JSON_TYPE_INT), '-2147483648');
+  } elsif ($Config{ivsize} == 8) {
+    is($bigcjson->encode(Math::BigInt->new( 'inf'), JSON_TYPE_INT), '18446744073709551615');
+    is($bigcjson->encode(Math::BigInt->new('-inf'), JSON_TYPE_INT), '-9223372036854775808');
+  } else {
+    skip "unknown ivsize $Config{ivsize}", 2;
+  }
+}
+
+SKIP: {
+  skip 'requires Math::BigFloat 1.35', 8 unless eval { Math::BigFloat->VERSION(1.35) };
+  # Math::BigFloat values outside of range [IV_MIN, UV_MAX] with enabled bignum
+  is($bigcjson->encode(Math::BigFloat->new('18446744073709551616.5'), JSON_TYPE_INT), '18446744073709551616');  #  2^64
+  is($bigcjson->encode(Math::BigFloat->new('18446744073709551617.5'), JSON_TYPE_INT), '18446744073709551617');  #  2^64+1
+  is($bigcjson->encode(Math::BigFloat->new('18446744073709551618.5'), JSON_TYPE_INT), '18446744073709551618');  #  2^64+2
+  is($bigcjson->encode(Math::BigFloat->new('-9223372036854775809.5'), JSON_TYPE_INT), '-9223372036854775809');  # -2^63-1
+  is($bigcjson->encode(Math::BigFloat->new('-9223372036854775810.5'), JSON_TYPE_INT), '-9223372036854775810');  # -2^63-2
+
+  is($bigcjson->encode(Math::BigFloat->new('NaN'), JSON_TYPE_INT), '0');
+  if ($Config{ivsize} == 4) {
+    is($bigcjson->encode(Math::BigFloat->new( 'inf'), JSON_TYPE_INT), '4294967295');
+    is($bigcjson->encode(Math::BigFloat->new('-inf'), JSON_TYPE_INT), '-2147483648');
+  } elsif ($Config{ivsize} == 8) {
+    is($bigcjson->encode(Math::BigFloat->new( 'inf'), JSON_TYPE_INT), '18446744073709551615');
+    is($bigcjson->encode(Math::BigFloat->new('-inf'), JSON_TYPE_INT), '-9223372036854775808');
+  } else {
+    skip "unknown ivsize $Config{ivsize}", 2;
+  }
 }
 
 is(encode_json([10, "10", 10.25], [JSON_TYPE_INT, JSON_TYPE_INT, JSON_TYPE_STRING]), '[10,10,"10.25"]');

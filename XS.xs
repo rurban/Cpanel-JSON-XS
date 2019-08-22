@@ -1983,6 +1983,97 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       UV uv = 0;
       IV iv = 0;
       int is_neg = 0;
+
+      if (UNLIKELY (SvROK (sv) && SvOBJECT (SvRV (sv))) && (enc->json.flags & F_ALLOW_BIGNUM))
+        {
+          HV *stash = SvSTASH (SvRV (sv));
+          int is_bigint = (stash && stash == gv_stashpvs ("Math::BigInt", 0));
+          int is_bigfloat = (stash && stash == gv_stashpvs ("Math::BigFloat", 0));
+
+          if (is_bigint || is_bigfloat)
+            {
+              STRLEN len;
+              char *str;
+
+              if (is_bigfloat)
+                {
+                  dSP;
+                  int is_negative;
+
+                  ENTER;
+                  SAVETMPS;
+
+                  PUSHMARK (SP);
+                  XPUSHs (sv);
+                  PUTBACK;
+
+                  call_method ("is_negative", G_SCALAR);
+
+                  SPAGAIN;
+                  is_negative = SvTRUEx (POPs);
+                  PUTBACK;
+
+                  PUSHMARK (SP);
+                  XPUSHs (sv);
+                  PUTBACK;
+
+                  /* This bceil/bfloor logic can be replaced by just one "bint" method call
+                   * but it is not supported by older Math::BigFloat versions.
+                   * Older Math::BigFloat versions have also "as_number" method which should
+                   * do same thing as "bint" method but it is broken and loose precision.
+                   * This bceil/bfloor logic needs Math::Float 1.35 which is in Perl 5.8.0. */
+                  call_method (is_negative ? "bceil" : "bfloor", G_SCALAR);
+
+                  SPAGAIN;
+                  sv = POPs;
+                  PUTBACK;
+                }
+
+              str = SvPV_nomg (sv, len);
+              if (UNLIKELY (str[0] == '+'))
+                {
+                  str++;
+                  len--;
+                }
+
+              if (UNLIKELY (strEQc (str, "NaN") || strEQc (str, "nan")))
+                {
+                  encode_const_str (aTHX_ enc, "0", 1, 0);
+                }
+              else if (UNLIKELY (strEQc (str, "inf")))
+                {
+                  need (aTHX_ enc, IVUV_MAXCHARS);
+                  savecur = enc->cur;
+                  saveend = enc->end;
+                  enc->cur += snprintf (enc->cur, IVUV_MAXCHARS, "%" UVuf, UV_MAX);
+                }
+              else if (UNLIKELY (strEQc (str, "-inf")))
+                {
+                  need (aTHX_ enc, IVUV_MAXCHARS);
+                  savecur = enc->cur;
+                  saveend = enc->end;
+                  enc->cur += snprintf (enc->cur, IVUV_MAXCHARS, "%" IVdf, IV_MIN);
+                }
+              else
+                {
+                  need (aTHX_ enc, len+1);
+                  savecur = enc->cur;
+                  saveend = enc->end;
+                  memcpy (enc->cur, str, len);
+                  enc->cur += len;
+                  *enc->cur = '\0';
+                }
+
+              if (is_bigfloat)
+                {
+                  FREETMPS;
+                  LEAVE;
+                }
+
+              return;
+            }
+        }
+
       if (SvIOKp (sv))
         {
           is_neg = !SvIsUV (sv);
