@@ -1734,6 +1734,9 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
 
   if (UNLIKELY (SvOK (typesv)))
     {
+      if (SvROK (sv) && SvOBJECT (SvRV (sv)) && !(enc->json.flags & (F_ALLOW_TAGS|F_CONV_BLESSED|F_ALLOW_BLESSED)) && !is_bool_obj (aTHX_ SvRV (sv)) && !is_bignum_obj (aTHX_ SvRV (sv)))
+        croak ("encountered object '%s', but neither allow_blessed, convert_blessed nor allow_tags settings are enabled (or TO_JSON/FREEZE method missing)", SvPV_nolen (sv));
+
       if (!SvIOKp (typesv))
         {
           if (SvROK (typesv) &&
