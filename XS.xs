@@ -683,6 +683,19 @@ is_bignum_obj (pTHX_ SV *sv)
   return (stash == gv_stashpvs ("Math::BigInt", 0) || stash == gv_stashpvs ("Math::BigFloat", 0)) ? 1 : 0;
 }
 
+INLINE int
+is_bool_obj (pTHX_ SV *sv)
+{
+  dMY_CXT;
+
+  HV *bstash   = MY_CXT.json_boolean_stash; /* JSON-XS-3.x interop (Types::Serialiser/JSON::PP::Boolean) */
+  HV *oldstash = MY_CXT.jsonold_boolean_stash; /* JSON-XS-2.x interop (JSON::XS::Boolean) */
+  HV *mstash   = MY_CXT.mojo_boolean_stash; /* Mojo::JSON::_Bool interop */
+  HV *stash    = SvSTASH (sv);
+
+  return (stash == bstash || stash == mstash || stash == oldstash) ? 1 : 0;
+}
+
 /* target of scalar reference is bool?  -1 == nope, 0 == false, 1 == true */
 static int
 ref_bool_type (pTHX_ SV *sv)
@@ -718,16 +731,8 @@ json_nonref (pTHX_ SV *scalar)
   if (!SvOBJECT (scalar) && ref_bool_type (aTHX_ scalar) >= 0)
     return 1;
 
-  if (SvOBJECT (scalar)) {
-    dMY_CXT;
-    HV *bstash   = MY_CXT.json_boolean_stash;
-    HV *oldstash = MY_CXT.jsonold_boolean_stash;
-    HV *mstash   = MY_CXT.mojo_boolean_stash;
-    HV *stash    = SvSTASH (scalar);
-
-    if (stash == bstash || stash == mstash || stash == oldstash)
-      return 1;
-  }
+  if (SvOBJECT (scalar) && is_bool_obj (aTHX_ scalar))
+    return 1;
   
   return 0;
 }
@@ -1481,14 +1486,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
 INLINE int
 encode_bool_obj (pTHX_ enc_t *enc, SV *sv, int force_conversion, int as_string)
 {
-  dMY_CXT;
-
-  HV *bstash   = MY_CXT.json_boolean_stash; /* JSON-XS-3.x interop (Types::Serialiser/JSON::PP::Boolean) */
-  HV *oldstash = MY_CXT.jsonold_boolean_stash; /* JSON-XS-2.x interop (JSON::XS::Boolean) */
-  HV *mstash   = MY_CXT.mojo_boolean_stash; /* Mojo::JSON::_Bool interop */
-  HV *stash    = SvSTASH (sv);
-
-  if (stash == bstash || stash == mstash || stash == oldstash)
+  if (is_bool_obj (aTHX_ sv))
     {
       if (as_string)
         encode_ch (aTHX_ enc, '"');
