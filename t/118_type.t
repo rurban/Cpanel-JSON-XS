@@ -17,7 +17,7 @@ BEGIN {
     }
 }
 
-use Test::More tests => 333;
+use Test::More tests => 335;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types;
 my $bigcjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types->allow_bignum;
@@ -513,3 +513,6 @@ like($@, qr/type for 'HASH\(.*\)' was not specified/);
 
 ok(!defined eval { $cjson->encode({ key => 1 }, { key => undef }) });
 like($@, qr/type for '1' was not specified/);
+
+ok(!defined eval { $cjson->encode(bless({}, 'Object'), JSON_TYPE_STRING) });
+like($@, qr/encountered object.*but neither allow_blessed, convert_blessed nor allow_tags settings are enabled/);
