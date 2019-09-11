@@ -676,6 +676,12 @@ json_atof (const char *s)
   return neg ? -accum : accum;
 }
 
+INLINE int
+is_bignum_obj (pTHX_ SV *sv)
+{
+  HV *stash = SvSTASH (sv);
+  return (stash == gv_stashpvs ("Math::BigInt", 0) || stash == gv_stashpvs ("Math::BigFloat", 0)) ? 1 : 0;
+}
 
 /* target of scalar reference is bool?  -1 == nope, 0 == false, 1 == true */
 static int
@@ -1442,10 +1448,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
         && (memEQc(str, "NaN") || memEQc(str, "nan") ||
             memEQc(str, "inf") || memEQc(str, "-inf"))))
   {
-    HV *stash = SvSTASH(SvRV(sv));
-    if (stash
-        && ((stash == gv_stashpvn ("Math::BigInt", sizeof("Math::BigInt")-1, 0)) ||
-            (stash == gv_stashpvn ("Math::BigFloat", sizeof("Math::BigFloat")-1, 0))))
+    if (is_bignum_obj (aTHX_ SvRV (sv)))
     {
       if (enc->json.infnan_mode == 0) {
         encode_const_str (aTHX_ enc, "null", 4, 0);
@@ -1615,10 +1618,7 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
 
           FREETMPS; LEAVE;
         }
-      else if ((enc->json.flags & F_ALLOW_BIGNUM)
-               && stash
-               && ((stash == gv_stashpvn ("Math::BigInt", sizeof("Math::BigInt")-1, 0))
-                || (stash == gv_stashpvn ("Math::BigFloat", sizeof("Math::BigFloat")-1, 0))))
+      else if ((enc->json.flags & F_ALLOW_BIGNUM) && is_bignum_obj (aTHX_ sv))
         encode_stringify(aTHX_ enc, rv, 1);
       else if (enc->json.flags & F_CONV_BLESSED)
         encode_stringify(aTHX_ enc, sv, 0);
