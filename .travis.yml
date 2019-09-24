@@ -80,6 +80,8 @@ matrix:
     - env: COVERAGE=1 AUTHOR_TESTING=1
     - perl: "blead"
     - perl: "5.6.2" # cp5.6.2an.barnyard.co.uk sometimes down
+    - perl: "5.28"
+      env: cperl=cperl-5.28.2
 
 # Hack to not run on tag pushes:
 branches:
