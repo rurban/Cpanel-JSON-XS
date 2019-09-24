@@ -85,6 +85,57 @@
 #define STR_NAN "nan"
 #endif
 
+/* NV_INF compatibility for Perl 5.6 */
+#if !defined(NV_INF) && defined(USE_LONG_DOUBLE) && defined(LDBL_INFINITY)
+#  define NV_INF LDBL_INFINITY
+#endif
+#if !defined(NV_INF) && defined(DBL_INFINITY)
+#  define NV_INF (NV)DBL_INFINITY
+#endif
+#if !defined(NV_INF) && defined(INFINITY)
+#  define NV_INF (NV)INFINITY
+#endif
+#if !defined(NV_INF) && defined(INF)
+#  define NV_INF (NV)INF
+#endif
+#if !defined(NV_INF) && defined(USE_LONG_DOUBLE) && defined(HUGE_VALL)
+#  define NV_INF (NV)HUGE_VALL
+#endif
+#if !defined(NV_INF) && defined(HUGE_VAL)
+#  define NV_INF (NV)HUGE_VAL
+#endif
+
+/* NV_NAN compatibility for Perl 5.6 */
+#if !defined(NV_NAN) && defined(USE_LONG_DOUBLE)
+#   if !defined(NV_NAN) && defined(LDBL_NAN)
+#       define NV_NAN LDBL_NAN
+#   endif
+#   if !defined(NV_NAN) && defined(LDBL_QNAN)
+#       define NV_NAN LDBL_QNAN
+#   endif
+#   if !defined(NV_NAN) && defined(LDBL_SNAN)
+#       define NV_NAN LDBL_SNAN
+#   endif
+#endif
+#if !defined(NV_NAN) && defined(DBL_NAN)
+#  define NV_NAN (NV)DBL_NAN
+#endif
+#if !defined(NV_NAN) && defined(DBL_QNAN)
+#  define NV_NAN (NV)DBL_QNAN
+#endif
+#if !defined(NV_NAN) && defined(DBL_SNAN)
+#  define NV_NAN (NV)DBL_SNAN
+#endif
+#if !defined(NV_NAN) && defined(QNAN)
+#  define NV_NAN (NV)QNAN
+#endif
+#if !defined(NV_NAN) && defined(SNAN)
+#  define NV_NAN (NV)SNAN
+#endif
+#if !defined(NV_NAN) && defined(NAN)
+#  define NV_NAN (NV)NAN
+#endif
+
 /* modfl() segfaults for -Duselongdouble && 64-bit mingw64 && mingw
    runtime version 4.0 [perl #125924] */
 #if defined(USE_LONG_DOUBLE) && defined(__MINGW64__) \
@@ -1793,6 +1844,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
     encode_bool (aTHX_ enc, sv);
   else if (type == JSON_TYPE_FLOAT)
     {
+      int is_bigobj = 0;
       char *savecur, *saveend;
       char inf_or_nan = 0;
 #ifdef NEED_NUMERIC_LOCALE_C
@@ -1803,151 +1855,245 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       bool loc_changed = FALSE;
       char *locale = NULL;
 #endif
-      NV nv = SvNOKp (sv) ? SvNVX (sv) : SvNV_nomg (sv);
-      /* trust that perl will do the right thing w.r.t. JSON syntax. */
-      need (aTHX_ enc, NV_DIG + 32);
-      savecur = enc->cur;
-      saveend = enc->end;
+      NV nv = 0;
+      int had_nokp = SvNOKp(sv);
 
-#if defined(HAVE_ISINF) && defined(HAVE_ISNAN)
-      /* With no stringify_infnan we can skip the conversion, returning null. */
-      if (enc->json.infnan_mode == 0) {
-# if defined(USE_QUADMATH) && defined(HAVE_ISINFL) && defined(HAVE_ISNANL)
-        if (UNLIKELY(isinfl(nv) || isnanl(nv)))
-# else
-        if (UNLIKELY(isinf(nv) || isnan(nv)))
-# endif
+      if (UNLIKELY (SvROK (sv) && SvOBJECT (SvRV (sv))) && (enc->json.flags & F_ALLOW_BIGNUM) && is_bignum_obj (aTHX_ SvRV (sv)))
+        is_bigobj = 1;
+
+      if (UNLIKELY (is_bigobj))
         {
-          goto is_inf_or_nan;
+          STRLEN len;
+          char *str = SvPV_nomg (sv, len);
+          if (UNLIKELY (str[0] == '+'))
+            {
+              str++;
+              len--;
+            }
+          if (UNLIKELY (memEQc (str, "NaN") || memEQc (str, "nan")))
+            {
+              nv = NV_NAN;
+              is_bigobj = 0;
+            }
+          else if (UNLIKELY (memEQc (str, "inf")))
+            {
+              nv = NV_INF;
+              is_bigobj = 0;
+            }
+          else if (UNLIKELY (memEQc (str, "-inf")))
+            {
+              nv = -NV_INF;
+              is_bigobj = 0;
+            }
+          else
+            {
+              need (aTHX_ enc, len+1+2); /* +2 for '.0' */
+              savecur = enc->cur;
+              saveend = enc->end;
+              memcpy (enc->cur, str, len);
+              *(enc->cur+len) = '\0';
+            }
         }
-      }
+      else if (SvNOKp (sv))
+        {
+          nv = SvNVX (sv);
+        }
+      else
+        {
+#if PERL_VERSION < 8 || (PERL_VERSION == 8 && PERL_SUBVERSION < 8)
+          if (SvPOKp (sv))
+            {
+              int numtype = grok_number (SvPVX (sv), SvCUR (sv), NULL);
+              if (UNLIKELY (numtype & IS_NUMBER_INFINITY))
+                nv = (numtype & IS_NUMBER_NEG) ? -NV_INF : NV_INF;
+              else if (UNLIKELY (numtype & IS_NUMBER_NAN))
+                nv = NV_NAN;
+              else
+                nv = SvNV_nomg (sv);
+            }
+          else
+            {
+              nv = SvNV_nomg (sv);
+            }
+#else
+          nv = SvNV_nomg (sv);
 #endif
-      /* locale insensitive sprintf radix #96 */
+        }
+
+      if (LIKELY (!is_bigobj))
+        {
+          /* trust that perl will do the right thing w.r.t. JSON syntax. */
+          need (aTHX_ enc, NV_DIG + 32);
+          savecur = enc->cur;
+          saveend = enc->end;
+
+          if (force_conversion)
+            {
+              had_nokp = 0;
+#if defined(USE_QUADMATH) && defined(HAVE_ISINFL)
+              if (UNLIKELY(isinfl(nv)))
+#else
+              if (UNLIKELY(isinf(nv)))
+#endif
+                nv = (nv > 0) ? NV_MAX : -NV_MAX;
+#if defined(USE_QUADMATH) && defined(HAVE_ISNANL)
+              if (UNLIKELY(isnanl(nv)))
+#else
+              if (UNLIKELY(isnan(nv)))
+#endif
+                nv = 0;
+            }
+          /* With no stringify_infnan we can skip the conversion, returning null. */
+          else if (enc->json.infnan_mode == 0)
+            {
+#if defined(USE_QUADMATH) && defined(HAVE_ISINFL)
+              if (UNLIKELY(isinfl(nv)))
+#else
+              if (UNLIKELY(isinf(nv)))
+#endif
+                {
+                  inf_or_nan = (nv > 0) ? 1 : 2;
+                  goto is_inf_or_nan;
+                }
+#if defined(USE_QUADMATH) && defined(HAVE_ISNANL)
+              if (UNLIKELY(isnanl(nv)))
+#else
+              if (UNLIKELY(isnan(nv)))
+#endif
+                {
+                  inf_or_nan = 3;
+                  goto is_inf_or_nan;
+                }
+            }
+          /* locale insensitive sprintf radix #96 */
 #ifdef NEED_NUMERIC_LOCALE_C
-      locale = setlocale(LC_NUMERIC, NULL);
-      if (!locale || strNE(locale, "C")) {
-        loc_changed = TRUE;
+          locale = setlocale(LC_NUMERIC, NULL);
+          if (!locale || strNE(locale, "C"))
+            {
+              loc_changed = TRUE;
 # ifdef HAS_USELOCALE
-        /* thread-safe variant for children not changing the global state */
-        oldloc = uselocale((locale_t)0);
-        if (oldloc == LC_GLOBAL_LOCALE)
-          newloc = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
-        else
-          newloc = newlocale(LC_NUMERIC_MASK, "C", oldloc);
-        uselocale(newloc);
+              /* thread-safe variant for children not changing the global state */
+              oldloc = uselocale((locale_t)0);
+              if (oldloc == LC_GLOBAL_LOCALE)
+                newloc = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+              else
+                newloc = newlocale(LC_NUMERIC_MASK, "C", oldloc);
+              uselocale(newloc);
 # else
-        setlocale(LC_NUMERIC, "C");
+              setlocale(LC_NUMERIC, "C");
 # endif
-      }
+            }
 #endif
 
 #ifdef USE_QUADMATH
-      quadmath_snprintf(enc->cur, enc->end - enc->cur, "%.*Qg", (int)NV_DIG, nv);
+          quadmath_snprintf(enc->cur, enc->end - enc->cur, "%.*Qg", (int)NV_DIG, nv);
 #else
-      PERL_UNUSED_RESULT(Gconvert (nv, NV_DIG, 0, enc->cur));
+          PERL_UNUSED_RESULT(Gconvert (nv, NV_DIG, 0, enc->cur));
 #endif
 
 #ifdef NEED_NUMERIC_LOCALE_C
-      if (loc_changed) {
+          if (loc_changed)
+            {
 # ifdef HAS_USELOCALE
-        (void)uselocale(oldloc);
-        if (newloc)
-          freelocale(newloc);
+              (void)uselocale(oldloc);
+              if (newloc)
+                freelocale(newloc);
 # else
-        (void)setlocale(LC_NUMERIC, locale);
+              (void)setlocale(LC_NUMERIC, locale);
 # endif
-      }
+            }
 #endif
 
 #ifdef STR_INF4
-      if (UNLIKELY(strEQc(enc->cur, STR_INF)
-                   || strEQc(enc->cur, STR_INF2)
-                   || strEQc(enc->cur, STR_INF3)
-                   || strEQc(enc->cur, STR_INF4)))
+          if (UNLIKELY(strEQc(enc->cur, STR_INF)
+                       || strEQc(enc->cur, STR_INF2)
+                       || strEQc(enc->cur, STR_INF3)
+                       || strEQc(enc->cur, STR_INF4)))
 #elif defined(STR_INF2)
-      if (UNLIKELY(strEQc(enc->cur, STR_INF)
-                   || strEQc(enc->cur, STR_INF2)))
+          if (UNLIKELY(strEQc(enc->cur, STR_INF)
+                       || strEQc(enc->cur, STR_INF2)))
 #else
-      if (UNLIKELY(strEQc(enc->cur, STR_INF)))
+          if (UNLIKELY(strEQc(enc->cur, STR_INF)))
 #endif
-        inf_or_nan = 1;
+            inf_or_nan = 1;
 #if defined(__hpux)
-      else if (UNLIKELY(strEQc(enc->cur, STR_NEG_INF)))
-        inf_or_nan = 2;
-      else if (UNLIKELY(strEQc(enc->cur, STR_NEG_NAN)))
-        inf_or_nan = 3;
+          else if (UNLIKELY(strEQc(enc->cur, STR_NEG_INF)))
+            inf_or_nan = 2;
+          else if (UNLIKELY(strEQc(enc->cur, STR_NEG_NAN)))
+            inf_or_nan = 3;
 #endif
-      else if
+          else if
 #ifdef HAVE_QNAN
 # ifdef STR_QNAN2
-        (UNLIKELY(strEQc(enc->cur, STR_NAN)
-                  || strEQc(enc->cur, STR_QNAN)
-                  || strEQc(enc->cur, STR_NAN2)
-                  || strEQc(enc->cur, STR_QNAN2)))
+            (UNLIKELY(strEQc(enc->cur, STR_NAN)
+                      || strEQc(enc->cur, STR_QNAN)
+                      || strEQc(enc->cur, STR_NAN2)
+                      || strEQc(enc->cur, STR_QNAN2)))
 # else
-        (UNLIKELY(strEQc(enc->cur, STR_NAN)
-                  || strEQc(enc->cur, STR_QNAN)))
+            (UNLIKELY(strEQc(enc->cur, STR_NAN)
+                      || strEQc(enc->cur, STR_QNAN)))
 # endif
 #else
-        (UNLIKELY(strEQc(enc->cur, STR_NAN)))
+            (UNLIKELY(strEQc(enc->cur, STR_NAN)))
 #endif
-        inf_or_nan = 3;
-      else if (*enc->cur == '-') {
+            inf_or_nan = 3;
+          else if (*enc->cur == '-') {
 #ifdef STR_INF4
-        if (UNLIKELY(strEQc(enc->cur+1, STR_INF)
-                     || strEQc(enc->cur+1, STR_INF2)
-                     || strEQc(enc->cur+1, STR_INF3)
-                     || strEQc(enc->cur+1, STR_INF4)))
+            if (UNLIKELY(strEQc(enc->cur+1, STR_INF)
+                         || strEQc(enc->cur+1, STR_INF2)
+                         || strEQc(enc->cur+1, STR_INF3)
+                         || strEQc(enc->cur+1, STR_INF4)))
 #elif defined(STR_INF2)
-        if (UNLIKELY(strEQc(enc->cur+1, STR_INF)
-                   || strEQc(enc->cur+1, STR_INF2)))
+            if (UNLIKELY(strEQc(enc->cur+1, STR_INF)
+                       || strEQc(enc->cur+1, STR_INF2)))
 #else
-        if (UNLIKELY(strEQc(enc->cur+1, STR_INF)))
+            if (UNLIKELY(strEQc(enc->cur+1, STR_INF)))
 #endif
-          inf_or_nan = 2;
-        else if
+              inf_or_nan = 2;
+            else if
 #ifdef HAVE_QNAN
 # ifdef STR_QNAN2
-          (UNLIKELY(strEQc(enc->cur+1, STR_NAN)
+              (UNLIKELY(strEQc(enc->cur+1, STR_NAN)
                     || strEQc(enc->cur+1, STR_QNAN)
                     || strEQc(enc->cur+1, STR_NAN2)
                     || strEQc(enc->cur+1, STR_QNAN2)))
 # else
-          (UNLIKELY(strEQc(enc->cur+1, STR_NAN)
+              (UNLIKELY(strEQc(enc->cur+1, STR_NAN)
                     || strEQc(enc->cur+1, STR_QNAN)))
 # endif
 #else
-          (UNLIKELY(strEQc(enc->cur+1, STR_NAN)))
+              (UNLIKELY(strEQc(enc->cur+1, STR_NAN)))
 #endif
-            inf_or_nan = 3;
-      }
-      if (UNLIKELY(inf_or_nan)) {
-#if defined(HAVE_ISINF) && defined(HAVE_ISNAN)
-      is_inf_or_nan:
-#endif
-        if (enc->json.infnan_mode == 0) {
-          strncpy(enc->cur, "null\0", 5);
+                inf_or_nan = 3;
+          }
+          if (UNLIKELY(inf_or_nan)) {
+          is_inf_or_nan:
+            if (enc->json.infnan_mode == 0) {
+              strncpy(enc->cur, "null\0", 5);
+            }
+            else if (enc->json.infnan_mode == 1) {
+              const int l = strlen(enc->cur);
+              memmove(enc->cur+1, enc->cur, l);
+              *enc->cur = '"';
+              *(enc->cur + l+1) = '"';
+              *(enc->cur + l+2) = 0;
+            }
+            else if (enc->json.infnan_mode == 3) {
+              if (inf_or_nan == 1)
+                strncpy(enc->cur, "\"inf\"\0", 6);
+              else if (inf_or_nan == 2)
+                strncpy(enc->cur, "\"-inf\"\0", 7);
+              else if (inf_or_nan == 3)
+                strncpy(enc->cur, "\"nan\"\0", 6);
+            }
+            else if (enc->json.infnan_mode != 2) {
+              croak ("invalid stringify_infnan mode %c. Must be 0, 1, 2 or 3",
+                     enc->json.infnan_mode);
+            }
+          }
+
         }
-        else if (enc->json.infnan_mode == 1) {
-          const int l = strlen(enc->cur);
-          memmove(enc->cur+1, enc->cur, l);
-          *enc->cur = '"';
-          *(enc->cur + l+1) = '"';
-          *(enc->cur + l+2) = 0;
-        }
-        else if (enc->json.infnan_mode == 3) {
-          if (inf_or_nan == 1)
-            strncpy(enc->cur, "\"inf\"\0", 6);
-          else if (inf_or_nan == 2)
-            strncpy(enc->cur, "\"-inf\"\0", 7);
-          else if (inf_or_nan == 3)
-            strncpy(enc->cur, "\"nan\"\0", 6);
-        }
-        else if (enc->json.infnan_mode != 2) {
-          croak ("invalid stringify_infnan mode %c. Must be 0, 1, 2 or 3",
-                 enc->json.infnan_mode);
-        }
-      }
+
       if (!force_conversion && SvPOKp (sv) && !strEQ(enc->cur, SvPVX (sv))) {
         char *str = SvPVX (sv);
         STRLEN len = SvCUR (sv);
@@ -1960,8 +2106,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       }
       else {
         NV intpart;
-        if (!( inf_or_nan || (SvNOKp(sv) && Perl_modf(SvNVX(sv), &intpart)) || (!force_conversion && SvIOK(sv))
-            || strchr(enc->cur,'e') || strchr(enc->cur,'E')
+        if (!( inf_or_nan || (had_nokp && Perl_modf(SvNVX(sv), &intpart)) || (!force_conversion && SvIOK(sv))
+            || strchr(enc->cur,'e') || strchr(enc->cur,'E') || strchr(savecur,'.')
 #if PERL_VERSION < 10
                /* !!1 with 5.8 */
                || (SvPOKp(sv) && strEQc(SvPVX(sv), "1")
