@@ -2262,7 +2262,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                 }
             }
 
-          if ((numtype & IS_NUMBER_GREATER_THAN_UV_MAX) && (enc->json.flags & F_ALLOW_BIGNUM))
+          if ((numtype & (IS_NUMBER_GREATER_THAN_UV_MAX|IS_NUMBER_NOT_INT)) && (enc->json.flags & F_ALLOW_BIGNUM))
             {
               STRLEN len;
               char *str;
