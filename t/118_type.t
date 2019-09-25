@@ -17,7 +17,7 @@ BEGIN {
     }
 }
 
-use Test::More tests => 359;
+use Test::More tests => 360;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types;
 my $bigcjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types->allow_bignum;
@@ -181,13 +181,14 @@ is($bigcjson->encode('-9223372036854775809', JSON_TYPE_INT), '-92233720368547758
 is($bigcjson->encode('-9223372036854775810', JSON_TYPE_INT), '-9223372036854775810');  # -2^63-2
 
 SKIP: {
-  skip 'requires Math::BigFloat 1.35', 5 unless eval { Math::BigFloat->VERSION(1.35) };
+  skip 'requires Math::BigFloat 1.35', 6 unless eval { Math::BigFloat->VERSION(1.35) };
   # float string values outside of range [IV_MIN, UV_MAX] with enabled bignum
   is($bigcjson->encode('18446744073709551616.5', JSON_TYPE_INT), '18446744073709551616');  #  2^64
   is($bigcjson->encode('18446744073709551617.5', JSON_TYPE_INT), '18446744073709551617');  #  2^64+1
   is($bigcjson->encode('18446744073709551618.5', JSON_TYPE_INT), '18446744073709551618');  #  2^64+2
   is($bigcjson->encode('-9223372036854775809.5', JSON_TYPE_INT), '-9223372036854775809');  # -2^63-1
   is($bigcjson->encode('-9223372036854775810.5', JSON_TYPE_INT), '-9223372036854775810');  # -2^63-2
+  is($bigcjson->encode(  '7.37869762948382e+19', JSON_TYPE_INT), '73786976294838200000');
 }
 
 # Math::BigInt values outside of range [IV_MIN, UV_MAX] with enabled bignum
