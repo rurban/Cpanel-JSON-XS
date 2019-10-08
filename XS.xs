@@ -1900,24 +1900,81 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
         }
       else
         {
-#if PERL_VERSION < 8 || (PERL_VERSION == 8 && PERL_SUBVERSION < 8)
-          if (SvPOKp (sv))
+          if (enc->json.flags & F_ALLOW_BIGNUM)
             {
-              int numtype = grok_number (SvPVX (sv), SvCUR (sv), NULL);
+              STRLEN len;
+              char *str;
+              SV *pv;
+              SV *errsv;
+              int numtype;
+
+              str = SvPV_nomg (sv, len);
+
+              numtype = grok_number (str, len, NULL);
               if (UNLIKELY (numtype & IS_NUMBER_INFINITY))
                 nv = (numtype & IS_NUMBER_NEG) ? -NV_INF : NV_INF;
               else if (UNLIKELY (numtype & IS_NUMBER_NAN))
                 nv = NV_NAN;
-              else
+              else if (UNLIKELY (!numtype))
                 nv = SvNV_nomg (sv);
+              else
+                {
+                  pv = newSVpvs ("require Math::BigFloat && Math::BigFloat->new(\"");
+                  sv_catpvn (pv, str, len);
+                  sv_catpvs (pv, "\");");
+
+                  eval_sv (pv, G_SCALAR);
+                  SvREFCNT_dec (pv);
+
+                  /* rethrow current error */
+                  errsv = ERRSV;
+                  if (SvROK (errsv))
+                    croak (NULL);
+                  else if (SvTRUE (errsv))
+                    croak ("%" SVf, SVfARG (errsv));
+
+                  {
+                    dSP;
+                    pv = POPs;
+                    PUTBACK;
+                  }
+
+                  str = SvPV (pv, len);
+                  if (UNLIKELY (str[0] == '+'))
+                    {
+                      str++;
+                      len--;
+                    }
+                  need (aTHX_ enc, len+1);
+                  savecur = enc->cur;
+                  saveend = enc->end;
+                  memcpy (enc->cur, str, len);
+                  *(enc->cur+len) = '\0';
+                  is_bigobj = 1;
+                }
             }
           else
             {
-              nv = SvNV_nomg (sv);
-            }
+
+#if PERL_VERSION < 8 || (PERL_VERSION == 8 && PERL_SUBVERSION < 8)
+              if (SvPOKp (sv))
+                {
+                  int numtype = grok_number (SvPVX (sv), SvCUR (sv), NULL);
+                  if (UNLIKELY (numtype & IS_NUMBER_INFINITY))
+                    nv = (numtype & IS_NUMBER_NEG) ? -NV_INF : NV_INF;
+                  else if (UNLIKELY (numtype & IS_NUMBER_NAN))
+                    nv = NV_NAN;
+                  else
+                    nv = SvNV_nomg (sv);
+                }
+              else
+                {
+                  nv = SvNV_nomg (sv);
+                }
 #else
-          nv = SvNV_nomg (sv);
+              nv = SvNV_nomg (sv);
 #endif
+            }
         }
 
       if (LIKELY (!is_bigobj))
