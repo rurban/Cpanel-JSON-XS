@@ -2225,7 +2225,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                    * but it is not supported by older Math::BigFloat versions.
                    * Older Math::BigFloat versions have also "as_number" method which should
                    * do same thing as "bint" method but it is broken and loose precision.
-                   * This bceil/bfloor logic needs Math::Float 1.35 which is in Perl 5.8.0. */
+                   * This bceil/bfloor logic needs Math::BigFloat 1.16 which is in Perl 5.8.0. */
                   call_method (is_negative ? "bceil" : "bfloor", G_SCALAR);
 
                   SPAGAIN;
@@ -2338,7 +2338,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                  * but it is not supported by older Math::BigFloat versions.
                  * Older Math::BigFloat versions have also "as_number" method which should
                  * do same thing as "bint" method but it is broken and loose precision.
-                 * This bceil/bfloor logic needs Math::Float 1.35 which is in Perl 5.8.0. */
+                 * This bceil/bfloor logic needs Math::BigFloat 1.16 which is in Perl 5.8.0. */
                 sv_catpvs (pv, "\")) && ($obj->is_negative ? $obj->bceil : $obj->bfloor);");
               else
                 sv_catpvs (pv, "\");");
