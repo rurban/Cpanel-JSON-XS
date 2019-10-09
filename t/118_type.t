@@ -17,7 +17,7 @@ BEGIN {
     }
 }
 
-use Test::More tests => 380;
+use Test::More tests => 381;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types;
 my $bigcjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types->allow_bignum;
@@ -298,6 +298,10 @@ SKIP: {
   is($bigcjson->encode(Math::BigFloat->new('inf'), JSON_TYPE_FLOAT), '1.79769313486232e+308');
   is($bigcjson->encode(Math::BigFloat->new('-inf'), JSON_TYPE_FLOAT), '-1.79769313486232e+308');
 }
+
+my $stringified_int = '-9223372036854775810';
+do { my $temp = $stringified_int + 10 };
+is($bigcjson->encode($stringified_int, JSON_TYPE_INT), '-9223372036854775810');
 
 is(encode_json([10, "10", 10.25], [JSON_TYPE_INT, JSON_TYPE_INT, JSON_TYPE_STRING]), '[10,10,"10.25"]');
 is(encode_json([10, "10", 10.25], json_type_arrayof(JSON_TYPE_INT)), '[10,10,10]');

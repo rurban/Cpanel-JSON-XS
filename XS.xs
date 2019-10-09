@@ -2278,7 +2278,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
             }
         }
 
-      if (SvIOKp (sv))
+      if (SvIOK (sv))
         {
           is_neg = !SvIsUV (sv);
           iv = SvIVX (sv);
