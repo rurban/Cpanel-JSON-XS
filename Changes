@@ -2,6 +2,16 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.13 2019-10-14 (rurban)
+        - For JSON_TYPE_INT and JSON_TYPE_FLOAT allow to encode numeric values
+          above 2^64 in PV slot via Math::BigInt/Float (#145, #148, #149 by Pali)
+        - For JSON_TYPE_INT and JSON_TYPE_FLOAT encoder allow to pass Math::BigInt
+          and Math::BigFloat objects with allow_bignum. (#147 by Pali)
+        - Fix encoding floating point values above 2^64 in PV slot to JSON_TYPE_INT
+          (#148, #150 by Pali)
+        - Do not allow serializing objects when convert_blessed is not enabled.
+          (#146 by Pali)
+
 4.12 2019-06-11 (rurban)
         - Make encoder independent on Math::BigInt version (#140 by Pali)
         - Rethrow error from eval_sv and eval_pv() (#138, #139 by Pali),

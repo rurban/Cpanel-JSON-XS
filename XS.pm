@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '4.12';
+our $VERSION = '4.13';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -1552,12 +1552,12 @@ respectively. You can also use C<\1> and C<\0> or C<!0> and C<!1>
 directly if you want.
 
    encode_json [Cpanel::JSON::XS::false, Cpanel::JSON::XS::true] # yields [false,true]
-   encode_json [!1, !0]      # yields [false,true]
+   encode_json [!1, !0], [JSON_TYPE_BOOL, JSON_TYPE_BOOL] # yields [false,true]
 
 eq/ne comparisons with true, false:
 
 false is eq to the empty string or the string 'false' or the special
-empty string C<!!0>, i.e. C<SV_NO>, or the numbers 0 or 0.0.
+empty string C<!!0> or C<!1>, i.e. C<SV_NO>, or the numbers 0 or 0.0.
 
 true is eq to the string 'true' or to the special string C<!0>
 (i.e. C<SV_YES>) or to the numbers 1 or 1.0.
