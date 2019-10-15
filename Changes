@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.14 2019-10-15 (rurban)
+        - Fix tests for nvtype long double (#153)
+        - Fix PREREQ's. E.g. CentOS 7 has not Test::More anymore. (#152 by Pali)
+
 4.13 2019-10-14 (rurban)
         - For JSON_TYPE_INT and JSON_TYPE_FLOAT allow to encode numeric values
           above 2^64 in PV slot via Math::BigInt/Float (#145, #148, #149 by Pali)
