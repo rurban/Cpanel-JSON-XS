@@ -235,26 +235,36 @@ SKIP: {
   }
 }
 
+my $fltinf;
+if ($Config{nvtype} eq 'long double' && $Config{longdblkind} == 3) {
+  $fltinf = '1.18973149535723177e+4932';
+} elsif ($Config{nvtype} eq 'double' && $Config{nvsize} == 8) {
+  $fltinf = '1.79769313486232e+308';
+}
 is($cjson->encode(   int("NaN"), JSON_TYPE_FLOAT), '0.0');
 is($cjson->encode(        'NaN', JSON_TYPE_FLOAT), '0.0');
-is($cjson->encode(  int( 'Inf'), JSON_TYPE_FLOAT), ($] >= 5.008 && $] < 5.008008) ? '0.0' :  '1.79769313486232e+308');
-is($cjson->encode(  int('-Inf'), JSON_TYPE_FLOAT), ($] >= 5.008 && $] < 5.008008) ? '0.0' : '-1.79769313486232e+308');
-is($cjson->encode(        'Inf', JSON_TYPE_FLOAT),  '1.79769313486232e+308');
-is($cjson->encode(       '-Inf', JSON_TYPE_FLOAT), '-1.79769313486232e+308');
-is($cjson->encode(      9**9**9, JSON_TYPE_FLOAT),  '1.79769313486232e+308');
-is($cjson->encode(     -9**9**9, JSON_TYPE_FLOAT), '-1.79769313486232e+308');
+SKIP: {
+  skip "unknown nvtype $Config{nvtype}, longdblkind $Config{longdblkind}", 6
+      unless $fltinf;
+  is($cjson->encode(  int( 'Inf'), JSON_TYPE_FLOAT), ($] >= 5.008 && $] < 5.008008) ? '0.0' :  $fltinf);
+  is($cjson->encode(  int('-Inf'), JSON_TYPE_FLOAT), ($] >= 5.008 && $] < 5.008008) ? '0.0' : "-$fltinf");
+  is($cjson->encode(        'Inf', JSON_TYPE_FLOAT),  $fltinf);
+  is($cjson->encode(       '-Inf', JSON_TYPE_FLOAT), "-$fltinf");
+  is($cjson->encode(      9**9**9, JSON_TYPE_FLOAT),  $fltinf);
+  is($cjson->encode(     -9**9**9, JSON_TYPE_FLOAT), "-$fltinf");
+}
 
 SKIP: {
-  skip 'requires Math::BigFloat', 20 unless eval { require Math::BigFloat };
-
+  skip 'requires Math::BigFloat', 20 unless eval { require Math::BigFloat } or
+    !$fltinf;
   is($bigcjson->encode(   int("NaN"), JSON_TYPE_FLOAT), '0.0');
   is($bigcjson->encode(        'NaN', JSON_TYPE_FLOAT), '0.0');
-  is($bigcjson->encode(  int( 'Inf'), JSON_TYPE_FLOAT), ($] >= 5.008 && $] < 5.008008) ? '0.0' :  '1.79769313486232e+308');
-  is($bigcjson->encode(  int('-Inf'), JSON_TYPE_FLOAT), ($] >= 5.008 && $] < 5.008008) ? '0.0' : '-1.79769313486232e+308');
-  is($bigcjson->encode(        'Inf', JSON_TYPE_FLOAT),  '1.79769313486232e+308');
-  is($bigcjson->encode(       '-Inf', JSON_TYPE_FLOAT), '-1.79769313486232e+308');
-  is($bigcjson->encode(      9**9**9, JSON_TYPE_FLOAT),  '1.79769313486232e+308');
-  is($bigcjson->encode(     -9**9**9, JSON_TYPE_FLOAT), '-1.79769313486232e+308');
+  is($bigcjson->encode(  int( 'Inf'), JSON_TYPE_FLOAT), ($] >= 5.008 && $] < 5.008008) ? '0.0' :  $fltinf);
+  is($bigcjson->encode(  int('-Inf'), JSON_TYPE_FLOAT), ($] >= 5.008 && $] < 5.008008) ? '0.0' : "-$fltinf");
+  is($bigcjson->encode(        'Inf', JSON_TYPE_FLOAT),  $fltinf);
+  is($bigcjson->encode(       '-Inf', JSON_TYPE_FLOAT), "-$fltinf");
+  is($bigcjson->encode(      9**9**9, JSON_TYPE_FLOAT),  $fltinf);
+  is($bigcjson->encode(     -9**9**9, JSON_TYPE_FLOAT), "-$fltinf");
 
   # integer string values outside of range [IV_MIN, UV_MAX] with enabled bignum
   is($bigcjson->encode('18446744073709551616', JSON_TYPE_FLOAT), '18446744073709551616.0');  #  2^64
@@ -276,6 +286,8 @@ SKIP: {
 SKIP: {
   skip 'requires Math::BigInt', 8 unless eval { require Math::BigInt };
   skip 'requires Math::BigFloat', 8 unless eval { require Math::BigFloat };
+  skip "unknown nvtype $Config{nvtype}, longdblkind $Config{longdblkind}", 8
+      unless $fltinf;
 
   # Math::BigInt values with enabled bignum
   is($bigcjson->encode(Math::BigInt->new('18446744073709551616'), JSON_TYPE_FLOAT), '18446744073709551616.0');  #  2^64
@@ -285,12 +297,14 @@ SKIP: {
   is($bigcjson->encode(Math::BigInt->new('-9223372036854775810'), JSON_TYPE_FLOAT), '-9223372036854775810.0');  # -2^63-2
 
   is($bigcjson->encode(Math::BigInt->new('NaN'), JSON_TYPE_FLOAT), '0.0');
-  is($bigcjson->encode(Math::BigInt->new('+inf'), JSON_TYPE_FLOAT), '1.79769313486232e+308');
-  is($bigcjson->encode(Math::BigInt->new('-inf'), JSON_TYPE_FLOAT), '-1.79769313486232e+308');
+  is($bigcjson->encode(Math::BigInt->new('+inf'), JSON_TYPE_FLOAT), $fltinf);
+  is($bigcjson->encode(Math::BigInt->new('-inf'), JSON_TYPE_FLOAT), "-$fltinf");
 }
 
 SKIP: {
   skip 'requires Math::BigFloat', 8 unless eval { require Math::BigFloat };
+  skip "unknown nvtype $Config{nvtype}, longdblkind $Config{longdblkind}", 8
+      unless $fltinf;
 
   # Math::BigFloat values with enabled bignum
   is($bigcjson->encode(Math::BigFloat->new('18446744073709551616.5'), JSON_TYPE_FLOAT), '18446744073709551616.5');  #  2^64
@@ -300,8 +314,8 @@ SKIP: {
   is($bigcjson->encode(Math::BigFloat->new('-9223372036854775810.5'), JSON_TYPE_FLOAT), '-9223372036854775810.5');  # -2^63-2
 
   is($bigcjson->encode(Math::BigFloat->new('NaN'), JSON_TYPE_FLOAT), '0.0');
-  is($bigcjson->encode(Math::BigFloat->new('+inf'), JSON_TYPE_FLOAT), '1.79769313486232e+308');
-  is($bigcjson->encode(Math::BigFloat->new('-inf'), JSON_TYPE_FLOAT), '-1.79769313486232e+308');
+  is($bigcjson->encode(Math::BigFloat->new('+inf'), JSON_TYPE_FLOAT), $fltinf);
+  is($bigcjson->encode(Math::BigFloat->new('-inf'), JSON_TYPE_FLOAT), "-$fltinf");
 }
 
 SKIP: {
