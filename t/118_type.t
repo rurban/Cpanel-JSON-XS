@@ -236,7 +236,10 @@ SKIP: {
 }
 
 my $fltinf;
-if ($Config{nvtype} eq 'long double' && $Config{longdblkind} == 3) {
+if ($Config{nvtype} eq 'long double' &&
+    (exists $Config{longdblkind}
+      ? $Config{longdblkind} == 3
+      : $Config{archname} =~ /86/)) {
   $fltinf = '1.18973149535723177e+4932';
 } elsif ($Config{nvtype} eq 'double' && $Config{nvsize} == 8) {
   $fltinf = '1.79769313486232e+308';
@@ -244,7 +247,8 @@ if ($Config{nvtype} eq 'long double' && $Config{longdblkind} == 3) {
 is($cjson->encode(   int("NaN"), JSON_TYPE_FLOAT), '0.0');
 is($cjson->encode(        'NaN', JSON_TYPE_FLOAT), '0.0');
 SKIP: {
-  skip "unknown nvtype $Config{nvtype}, longdblkind $Config{longdblkind}", 6
+  skip "unknown nvtype $Config{nvtype}, " .
+    exists $Config{longdblkind} ? "longdblkind $Config{longdblkind}" : "", 6
       unless $fltinf;
   is($cjson->encode(  int( 'Inf'), JSON_TYPE_FLOAT), ($] >= 5.008 && $] < 5.008008) ? '0.0' :  $fltinf);
   is($cjson->encode(  int('-Inf'), JSON_TYPE_FLOAT), ($] >= 5.008 && $] < 5.008008) ? '0.0' : "-$fltinf");
