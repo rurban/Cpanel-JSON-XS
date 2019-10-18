@@ -255,8 +255,8 @@ SKIP: {
 }
 
 SKIP: {
-  skip 'requires Math::BigFloat', 20 unless eval { require Math::BigFloat } or
-    !$fltinf;
+  skip 'requires Math::BigFloat', 20 unless eval { require Math::BigFloat };
+  skip 'unknown NV_MAX', 20 if !$fltinf;
   skip 'too old', 20 if $] < 5.008;
   is($bigcjson->encode(   int("NaN"), JSON_TYPE_FLOAT), '0.0');
   is($bigcjson->encode(        'NaN', JSON_TYPE_FLOAT), '0.0');
