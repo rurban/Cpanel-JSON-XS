@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.15 2019-10-21 (rurban)
+        - Fix more tests for nvtype long double
+
 4.14 2019-10-15 (rurban)
         - Fix tests for nvtype long double (#153)
         - Fix PREREQ's. E.g. CentOS 7 has not Test::More anymore. (#152 by Pali)
