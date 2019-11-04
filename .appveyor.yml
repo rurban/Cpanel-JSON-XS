@@ -38,8 +38,8 @@ install:
   - set BITS=64
   - if "%PLATFORM%" == "x86" set BITS=32
   - if "%STRAWBERRY%" == "1" cinst strawberryperl -i
-  - if "%MSVC_CPERL%" == "1" cinst -y curl
-  - if "%MSVC_CPERL%" == "1" curl -O https://github.com/perl11/cperl/releases/download/cperl-5.26.0/cperl-5.26.0-win%BITS%.exe
+  - if "%MSVC_CPERL%" == "1" cinst -y wget
+  - if "%MSVC_CPERL%" == "1" wget -q https://github.com/perl11/cperl/releases/download/cperl-5.26.0/cperl-5.26.0-win%BITS%.exe
   - if "%MSVC_CPERL%" == "1" .\cperl-5.26.0-win%BITS%.exe -y -o"C:\"
 
 build: off
