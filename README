@@ -27,6 +27,9 @@ SYNOPSIS
 
      # and do the same things, except that you have a pure-perl fallback now.
 
+     Note that this module will be replaced by a new JSON::Safe module soon,
+     with the same API just guaranteed safe defaults.
+
 DESCRIPTION
     This module converts Perl data structures to JSON and vice versa. Its
     primary goal is to be *correct* and its secondary goal is to be *fast*.
@@ -159,6 +162,8 @@ DESCRIPTION
       - #72 parsing of illegal unicode or non-unicode characters.
 
       - #96 locale-insensitive numeric conversion
+
+      - #154 numeric conversion fixed since 5.22, using the same strtold as perl5.
 
     - public maintenance and bugtracker
 

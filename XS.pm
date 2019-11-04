@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '4.15';
+our $VERSION = '4.16';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -35,6 +35,9 @@ Cpanel::JSON::XS - cPanel fork of JSON::XS, fast and correct serializing
  use JSON::MaybeXS;
 
  # and do the same things, except that you have a pure-perl fallback now.
+
+ Note that this module will be replaced by a new JSON::Safe module soon,
+ with the same API just guaranteed safe defaults.
 
 =head1 DESCRIPTION
 
@@ -172,6 +175,8 @@ B<Changes to JSON::XS>
   - #72 parsing of illegal unicode or non-unicode characters.
 
   - #96 locale-insensitive numeric conversion
+
+  - #154 numeric conversion fixed since 5.22, using the same strtold as perl5.
 
 - public maintenance and bugtracker
 
