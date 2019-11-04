@@ -693,7 +693,7 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
         }
     }
 
-  /* this relies greatly on the quality of the pow () */
+  /* This relies greatly on the quality of the pow () */
   /* implementation of the platform, but a good */
   /* implementation is hard to beat. */
   /* (IEEE 754 conformant ones are required to be exact) */
@@ -721,8 +721,17 @@ json_atof (const char *s)
       neg = 1;
     }
 
+  /* Fix accuracy mismatches compared to perl (using strtod).
+     Available since v5.21.4, but see perl5 af5a4640bf25a62438c05f73a87c1d6be6096b02.
+     Resets LC_NUMERIC only since v5.29.10. (dot, not comma)
+     See GH #154, where the pow method may return a different result than strtod.
+  */
+#if PERL_VERSION >= 30
+  accum = Perl_strtod (s, NULL);
+#else
   /* a recursion depth of ten gives us >>500 bits */
   json_atof_scan1 (s, &accum, &expo, 0, 10);
+#endif
 
   return neg ? -accum : accum;
 }
