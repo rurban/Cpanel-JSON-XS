@@ -36,7 +36,7 @@ is($obj->{bar},0.1,"normal 0.1");
 # GH 154
 $obj = $pc->decode(q([0.3]));
 TODO: {
-  local $TODO = "strtold vs json_atof_scan1, GH #154" if $] < 5.030;
+  local $TODO = "strtold vs json_atof_scan1, GH #154" if $] < 5.021004;
   is($obj->[0] - 0.3, 0.0, "normal 0.3");
 }
 ok(abs($obj->[0] - 0.3) < 1e-16, "numeric epsilon <1E-16");

@@ -625,6 +625,7 @@ static double fs_powEx(double x, double y)
 }
 #endif
 
+#ifndef Perl_strtod
 /* scan a group of digits, and a trailing exponent */
 static void
 json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
@@ -707,12 +708,15 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
   *expo += eaccum;
 #endif
 }
+#endif
 
 static NV
 json_atof (const char *s)
 {
   NV accum = 0.;
+#ifndef Perl_strtod
   int expo = 0;
+#endif
   int neg  = 0;
 
   if (*s == '-')
@@ -726,7 +730,7 @@ json_atof (const char *s)
      Resets LC_NUMERIC only since v5.29.10. (dot, not comma)
      See GH #154, where the pow method may return a different result than strtod.
   */
-#if PERL_VERSION >= 30
+#ifdef Perl_strtod
   accum = Perl_strtod (s, NULL);
 #else
   /* a recursion depth of ten gives us >>500 bits */
@@ -3782,7 +3786,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                   if (typesv)
                     {
                       value_typesv = newSV (0);
-                      hv_store (typehv, key, len, value_typesv, 0);
+                      (void)hv_store (typehv, key, len, value_typesv, 0);
                     }
 
                   value = decode_sv (aTHX_ dec, value_typesv);
