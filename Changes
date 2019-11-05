@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.17 2019-11-04 (rurban)
+        - Add Changes tests and fixups (see #155)
+
 4.16 2019-11-04 (rurban)
         - Use Perl_strtod instead of self-made atof (via pow), to
           minimize differences from core string-to-float conversions.

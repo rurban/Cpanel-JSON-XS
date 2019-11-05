@@ -181,8 +181,8 @@ sub depend {
 README : \$(VERSION_FROM)
 	pod2text \$(VERSION_FROM) > README
 
-release : dist
-	-git tag \$(VERSION)
+release : xtest dist
+	-git tag -f \$(VERSION)
 	cpan-upload \$(DISTVNAME).tar\$(SUFFIX)
 	git push
 	git push --tags
