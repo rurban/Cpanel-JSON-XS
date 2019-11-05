@@ -111,6 +111,14 @@ WriteMakefile(
             'Test::CPAN::Meta'     => '0.12',
             'Test::Pod'            => '1.00',
             'Test::Pod::Coverage'  => '1.04',
+            'Test::Spelling'       => 0,
+            'Pod::Spell::CommonMistakes' => 0,
+            'Test::CPAN::Changes'  => '0.40',
+            'Test::CheckChanges'   => '1.14',
+            'Class::XSAccessor'    => 0,
+            'Text::CSV_XS'         => 0,
+            'List::MoreUtils'      => 0,
+            'Test::Kwalitee'       => 0,
           }
         }
       },
