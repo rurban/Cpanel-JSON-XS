@@ -410,6 +410,8 @@ t/test_transform/string_3_invalid_codepoints.json
 t/test_transform/string_with_escaped_NULL.json
 t/zero-mojibake.t
 typemap
+xt/changes.t
+xt/checkchanges.t
 xt/gh70-asan.t
 xt/kwalitee.t
 xt/leaktrace.t
