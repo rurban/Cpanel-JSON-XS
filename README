@@ -716,11 +716,27 @@ OBJECT-ORIENTED INTERFACE
     $enable = $json->get_require_types
              $json = $json->require_types([$enable])
 
-        If $enable is true (or missing), then "encode" will require second
-        argument with supplied JSON types. See Cpanel::JSON::XS::Type. When
-        second argument is not provided (or is undef), then "encode" croaks.
-        It also croaks when the type for provided structure in "encode" is
-        incomplete.
+        If $enable is true (or missing), then "encode" will require either
+        enabled "type_all_string" or second argument with supplied JSON
+        types. See Cpanel::JSON::XS::Type. When "type_all_string" is not
+        enabled or second argument is not provided (or is undef), then
+        "encode" croaks. It also croaks when the type for provided structure
+        in "encode" is incomplete.
+
+    $json = $json->type_all_string ([$enable])
+    $enable = $json->get_type_all_string
+             $json = $json->type_all_string([$enable])
+
+        If $enable is true (or missing), then "encode" will always produce
+        stable deterministic JSON string types in resulted output.
+
+        When $enable is false, then result of encoded JSON output may be
+        different for different Perl versions and may depends on loaded
+        modules.
+
+        This is useful it you need deterministic JSON types, independently
+        of used Perl version and other modules, but do not want to write
+        complicated type definitions for Cpanel::JSON::XS::Type.
 
     $json = $json->allow_dupkeys ([$enable])
     $enabled = $json->get_allow_dupkeys
@@ -1417,6 +1433,9 @@ MAPPING
 
         If you want to have stable and deterministic types in JSON encoder
         then use Cpanel::JSON::XS::Type.
+
+        Alternative way for deterministic types is to use "type_all_string"
+        method when all perl scalars are encoded to JSON strings.
 
         Non-deterministic behavior is following: scalars that have last been
         used in a string context before encoding as JSON strings, and
