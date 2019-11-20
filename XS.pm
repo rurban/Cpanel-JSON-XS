@@ -839,10 +839,27 @@ encoders.  So it is not recommended to use it.
      $json = $json->require_types([$enable])
 
 If C<$enable> is true (or missing), then C<encode> will require
-second argument with supplied JSON types. See L<Cpanel::JSON::XS::Type>.
-When second argument is not provided (or is undef), then C<encode>
+either enabled C<type_all_string> or second argument with supplied JSON types.
+See L<Cpanel::JSON::XS::Type>. When C<type_all_string> is not enabled or
+second argument is not provided (or is undef), then C<encode>
 croaks. It also croaks when the type for provided structure in
 C<encode> is incomplete.
+
+=item $json = $json->type_all_string ([$enable])
+
+=item $enable = $json->get_type_all_string
+
+     $json = $json->type_all_string([$enable])
+
+If C<$enable> is true (or missing), then C<encode> will always
+produce stable deterministic JSON string types in resulted output.
+
+When C<$enable> is false, then result of encoded JSON output may be
+different for different Perl versions and may depends on loaded modules.
+
+This is useful it you need deterministic JSON types, independently of used
+Perl version and other modules, but do not want to write complicated type
+definitions for L<Cpanel::JSON::XS::Type>.
 
 =item $json = $json->allow_dupkeys ([$enable])
 
@@ -1589,6 +1606,9 @@ changed by Perl version or any other loaded Perl module.
 
 If you want to have stable and deterministic types in JSON encoder then
 use L<Cpanel::JSON::XS::Type>.
+
+Alternative way for deterministic types is to use C<type_all_string>
+method when all perl scalars are encoded to JSON strings.
 
 Non-deterministic behavior is following: scalars that have last been
 used in a string context before encoding as JSON strings, and anything

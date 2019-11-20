@@ -330,6 +330,7 @@ mingw_modfl(long double x, long double *ip)
 #define F_UNBLESSED_BOOL  0x00400000UL
 #define F_ALLOW_DUPKEYS   0x00800000UL
 #define F_REQUIRE_TYPES   0x01000000UL
+#define F_TYPE_ALL_STRING 0x02000000UL
 #define F_HOOK            0x80000000UL /* some hooks exist, so slow-path processing */
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
@@ -1773,7 +1774,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
   SvGETMAGIC (sv);
   SvGETMAGIC (typesv);
 
-  if (UNLIKELY (!(SvOK (typesv)) && (enc->json.flags & F_REQUIRE_TYPES)))
+  if (UNLIKELY (!(SvOK (typesv)) && (enc->json.flags & F_REQUIRE_TYPES) && !(enc->json.flags & F_TYPE_ALL_STRING)))
     croak ("type for '%s' was not specified", SvPV_nolen (sv));
 
   if (SvROK (sv) && !SvOBJECT (SvRV (sv)))
@@ -1790,6 +1791,9 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
           return;
         }
     }
+
+  if (UNLIKELY (!(SvOK (typesv)) && (enc->json.flags & F_TYPE_ALL_STRING)))
+    typesv = sv_2mortal (newSViv (JSON_TYPE_STRING | JSON_TYPE_CAN_BE_NULL));
 
   if (UNLIKELY (SvOK (typesv)))
     {
@@ -4530,6 +4534,7 @@ void ascii (JSON *self, int enable = 1)
         unblessed_bool  = F_UNBLESSED_BOOL
         allow_dupkeys   = F_ALLOW_DUPKEYS
         require_types   = F_REQUIRE_TYPES
+        type_all_string = F_TYPE_ALL_STRING
     PPCODE:
         if (enable)
           self->flags |=  ix;
@@ -4562,6 +4567,7 @@ void get_ascii (JSON *self)
         get_unblessed_bool  = F_UNBLESSED_BOOL
         get_allow_dupkeys   = F_ALLOW_DUPKEYS
         get_require_types   = F_REQUIRE_TYPES
+        get_type_all_string = F_TYPE_ALL_STRING
     PPCODE:
         XPUSHs (boolSV (self->flags & ix));
 

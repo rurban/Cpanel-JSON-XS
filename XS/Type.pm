@@ -174,6 +174,12 @@ JSON encoder chooses one that matches.
 Like L<C<json_type_anyof>|/json_type_anyof>, but scalar can be only
 perl's C<undef>.
 
+=back
+
+=head2 Recursive specifications
+
+=over 4
+
 =item json_type_weaken
 
 This function can be used as an argument for L</json_type_arrayof>,
@@ -190,6 +196,25 @@ See following example:
       json_type_weaken($struct),
       json_type_arrayof(JSON_TYPE_STRING),
   );
+
+If you want to encode all perl scalars to JSON string types despite
+how complicated is input perl structure you can define JSON type
+specification for alternatives recursively. It could be defined as:
+
+  my $type = json_type_anyof();
+  $type->[0] = JSON_TYPE_STRING_OR_NULL;
+  $type->[1] = json_type_arrayof(json_type_weaken($type));
+  $type->[2] = json_type_hashof(json_type_weaken($type));
+
+  print encode_json([ 10, "10", { key => 10 } ], $type);
+  # ["10","10",{"key":"10"}]
+
+An alternative solution for encoding all scalars to JSON strings is to
+use C<type_all_string> method of L<Cpanel::JSON::XS> itself:
+
+  my $json = Cpanel::JSON::XS->new->type_all_string;
+  print $json->encode([ 10, "10", { key => 10 } ]);
+  # ["10","10",{"key":"10"}]
 
 =back
 
