@@ -1059,8 +1059,6 @@ encode_av (pTHX_ enc_t *enc, AV *av, SV *typesv)
   if (enc->indent >= enc->json.max_depth)
     croak (ERR_NESTING_EXCEEDED);
 
-  SvGETMAGIC (typesv);
-
   if (UNLIKELY (SvOK (typesv)))
     {
       if (SvROK (typesv) &&
@@ -1219,8 +1217,6 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
 
   if (enc->indent >= enc->json.max_depth)
     croak (ERR_NESTING_EXCEEDED);
-
-  SvGETMAGIC (typesv);
 
   if (UNLIKELY (SvOK (typesv)))
     {
@@ -1775,6 +1771,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
   int force_conversion = 0;
 
   SvGETMAGIC (sv);
+  SvGETMAGIC (typesv);
 
   if (UNLIKELY (!(SvOK (typesv)) && (enc->json.flags & F_REQUIRE_TYPES)))
     croak ("type for '%s' was not specified", SvPV_nolen (sv));
@@ -1793,8 +1790,6 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
           return;
         }
     }
-
-  SvGETMAGIC (typesv);
 
   if (UNLIKELY (SvOK (typesv)))
     {
