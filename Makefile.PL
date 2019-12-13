@@ -96,6 +96,10 @@ WriteMakefile(
         runtime => {
           requires => { # just the script, not the module
             'Encode'        => '1.9801',
+          },
+          recommends => {
+            'Math::BigInt'   => 0,
+            'Math::BigFloat' => '1.16',
           }
         },
         test => {
