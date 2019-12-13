@@ -2,6 +2,18 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.18 2019-12-13 (rurban)
+        - Add new method ->type_all_string (#156 by Pali).
+          When type_all_string is set then encode method produce stable deterministic
+          string types in result JSON.
+          This can be an alternative to Cpanel::JSON::XS::Type when having
+          deterministic output is required but string JSON types are enough for any
+          output.
+        - Move SvGETMAGIC() from encode_av() and encode_hv() to encode_sv()
+          (#156 by Pali)
+        - Add Math::BigInt and Math::BigFloat as recommended dependences
+          (#157 by Pali and Grinnz)
+
 4.17 2019-11-04 (rurban)
         - Add Changes tests and fixups (see #155)
 

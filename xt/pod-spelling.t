@@ -13,6 +13,24 @@ add_stopwords(<DATA>);
 all_pod_files_spelling_ok();
 
 __DATA__
+14k
+180k
+18KB
+8MB
+KOI8
+RFC4627
+RFC7158
+RFC7159
+amd64
+favourably
+latin1
+licences
+utf8
+www
+16be
+16le
+32le
+32be
 BMP
 BOM
 BOM's
