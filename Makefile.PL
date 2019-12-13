@@ -88,6 +88,10 @@ WriteMakefile(
   ($ExtUtils::MakeMaker::VERSION gt '6.46'
    ? ('META_MERGE'  =>
     {
+      'meta-spec' => {
+        version => 2,
+      },
+      dynamic_config => 0,
       prereqs => {
         runtime => {
           requires => { # just the script, not the module
@@ -124,10 +128,10 @@ WriteMakefile(
       },
       resources =>
       {
-        license     => 'http://dev.perl.org/licenses/',
-        bugtracker  => 'https://github.com/rurban/Cpanel-JSON-XS/issues',
+        license     => [ 'http://dev.perl.org/licenses/' ],
+        bugtracker  => { web => 'https://github.com/rurban/Cpanel-JSON-XS/issues' },
         # Note: https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS is also observed
-        repository  => 'https://github.com/rurban/Cpanel-JSON-XS',
+        repository  => { url => 'https://github.com/rurban/Cpanel-JSON-XS', type => 'git' },
       },
       x_contributors => [
         'Ashley Willis <ashleyw@cpan.org>',
