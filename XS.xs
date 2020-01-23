@@ -3613,6 +3613,8 @@ decode_av (pTHX_ dec_t *dec, SV *typesv)
       typeav = newAV ();
       typerv = newRV_noinc ((SV *)typeav);
       SvSetMagicSV (typesv, typerv);
+      /* SvSetMagicSV increments refcount of typerv, so we need to decrement it */
+      SvREFCNT_dec (typerv);
     }
 
   if (*dec->cur == ']')
@@ -3686,6 +3688,8 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
       typehv = newHV ();
       typerv = newRV_noinc ((SV *)typehv);
       SvSetMagicSV (typesv, typerv);
+      /* SvSetMagicSV increments refcount of typerv, so we need to decrement it */
+      SvREFCNT_dec (typerv);
     }
 
   if (*dec->cur == '}')
