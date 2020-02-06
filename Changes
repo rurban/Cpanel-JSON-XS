@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.19 2020-02-06 (rurban)
+        - Fix typed decode memory leak (#160 by Pali).
+
 4.18 2019-12-13 (rurban)
         - Add new method ->type_all_string (#156 by Pali).
           When type_all_string is set then encode method produce stable deterministic
