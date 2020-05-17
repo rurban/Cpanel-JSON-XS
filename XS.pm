@@ -274,10 +274,10 @@ For the type argument see L<Cpanel::JSON::XS::Type>.
 
 =item $is_boolean = Cpanel::JSON::XS::is_bool $scalar
 
-Returns true if the passed scalar represents either C<JSON::XS::true>
-or C<JSON::XS::false>, two constants that act like C<1> and C<0>,
+Returns true if the passed scalar represents either C<JSON::PP::true>
+or C<JSON::PP::false>, two constants that act like C<1> and C<0>,
 respectively and are used to represent JSON C<true> and C<false>
-values in Perl.
+values in Perl. (Also recognizes the booleans produced by L<JSON::XS>.)
 
 See MAPPING, below, for more information on how JSON values are mapped
 to Perl.
@@ -718,7 +718,7 @@ This setting has no effect when decoding JSON texts.
 If C<$enable> is true (or missing), then C<decode> will return
 Perl non-object boolean variables (1 and 0) for JSON booleans
 (C<true> and C<false>). If C<$enable> is false, then C<decode>
-will return C<Cpanel::JSON::XS::Boolean> objects for JSON booleans.
+will return C<JSON::PP::Boolean> objects for JSON booleans.
 
 
 =item $json = $json->allow_singlequote ([$enable])
@@ -1485,8 +1485,8 @@ up to but not including the least significant bit.
 When C<unblessed_bool> is set to true, then JSON C<true> becomes C<1> and
 JSON C<false> becomes C<0>.
 
-Otherwise these JSON atoms become C<Cpanel::JSON::XS::true> and
-C<Cpanel::JSON::XS::false>, respectively. They are C<JSON::PP::Boolean>
+Otherwise these JSON atoms become C<JSON::PP::true> and
+C<JSON::PP::false>, respectively. They are C<JSON::PP::Boolean>
 objects and are overloaded to act almost exactly like the numbers C<1>
 and C<0>. You can check whether a scalar is a JSON boolean by using
 the C<Cpanel::JSON::XS::is_bool> function.
