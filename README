@@ -225,10 +225,10 @@ FUNCTIONAL INTERFACE
         For the type argument see Cpanel::JSON::XS::Type.
 
     $is_boolean = Cpanel::JSON::XS::is_bool $scalar
-        Returns true if the passed scalar represents either "JSON::XS::true"
-        or "JSON::XS::false", two constants that act like 1 and 0,
+        Returns true if the passed scalar represents either "JSON::PP::true"
+        or "JSON::PP::false", two constants that act like 1 and 0,
         respectively and are used to represent JSON "true" and "false"
-        values in Perl.
+        values in Perl. (Also recognizes the booleans produced by JSON::XS.)
 
         See MAPPING, below, for more information on how JSON values are
         mapped to Perl.
@@ -615,7 +615,7 @@ OBJECT-ORIENTED INTERFACE
         If $enable is true (or missing), then "decode" will return Perl
         non-object boolean variables (1 and 0) for JSON booleans ("true" and
         "false"). If $enable is false, then "decode" will return
-        "Cpanel::JSON::XS::Boolean" objects for JSON booleans.
+        "JSON::PP::Boolean" objects for JSON booleans.
 
     $json = $json->allow_singlequote ([$enable])
     $enabled = $json->get_allow_singlequote
@@ -1325,11 +1325,11 @@ MAPPING
         When "unblessed_bool" is set to true, then JSON "true" becomes 1 and
         JSON "false" becomes 0.
 
-        Otherwise these JSON atoms become "Cpanel::JSON::XS::true" and
-        "Cpanel::JSON::XS::false", respectively. They are
-        "JSON::PP::Boolean" objects and are overloaded to act almost exactly
-        like the numbers 1 and 0. You can check whether a scalar is a JSON
-        boolean by using the "Cpanel::JSON::XS::is_bool" function.
+        Otherwise these JSON atoms become "JSON::PP::true" and
+        "JSON::PP::false", respectively. They are "JSON::PP::Boolean"
+        objects and are overloaded to act almost exactly like the numbers 1
+        and 0. You can check whether a scalar is a JSON boolean by using the
+        "Cpanel::JSON::XS::is_bool" function.
 
         The other round, from perl to JSON, "!0" which is represented as
         "yes" becomes "true", and "!1" which is represented as "no" becomes
