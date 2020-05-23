@@ -9,7 +9,7 @@ BEGIN { plan tests => 10 };
 use Cpanel::JSON::XS;
 
 my ($js,$obj,$json);
-my $pc = new Cpanel::JSON::XS;
+my $pc = Cpanel::JSON::XS->new;
 
 $obj = {foo => "bar"};
 $js = $pc->encode($obj);

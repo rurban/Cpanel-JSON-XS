@@ -287,7 +287,7 @@ OBJECT-ORIENTED INTERFACE
     The object oriented interface lets you configure your own encoding or
     decoding style, within the limits of supported formats.
 
-    $json = new Cpanel::JSON::XS
+    $json = Cpanel::JSON::XS->new
         Creates a new JSON object that can be used to de/encode JSON
         strings. All boolean flags described below are by default
         *disabled*.
@@ -1123,7 +1123,7 @@ INCREMENTAL PARSING
 
        my $text = "[1,2,3] hello";
 
-       my $json = new Cpanel::JSON::XS;
+       my $json = Cpanel::JSON::XS->new;
 
        my $obj = $json->incr_parse ($text)
           or die "expected JSON object or array at beginning of string";
@@ -1143,7 +1143,7 @@ INCREMENTAL PARSING
     Here is how you'd do it (it is trivial to write this in an event-based
     manner):
 
-       my $json = new Cpanel::JSON::XS;
+       my $json = Cpanel::JSON::XS->new;
 
        # read some data from the socket
        while (sysread $socket, my $buf, 4096) {
@@ -1160,7 +1160,7 @@ INCREMENTAL PARSING
     and here is where the lvalue-ness of "incr_text" comes in useful:
 
        my $text = "[1],[2], [3]";
-       my $json = new Cpanel::JSON::XS;
+       my $json = Cpanel::JSON::XS->new;
 
        # void context, so no parsing done
        $json->incr_parse ($text);
@@ -1185,7 +1185,7 @@ INCREMENTAL PARSING
     objects on their own (this wouldn't work if the array elements could be
     JSON numbers, for example):
 
-       my $json = new Cpanel::JSON::XS;
+       my $json = Cpanel::JSON::XS->new;
 
        # open the monster
        open my $fh, "<bigfile.json"

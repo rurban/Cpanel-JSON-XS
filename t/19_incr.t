@@ -35,7 +35,7 @@ exit if $] < 5.008;
 
 {
    my $text = '[5],{"":1} , [ 1,2, 3], {"3":null}';
-   my $coder = new Cpanel::JSON::XS;
+   my $coder = Cpanel::JSON::XS->new;
    for (0 .. length $text) {
       my $a = substr $text, 0, $_;
       my $b = substr $text, $_;
@@ -59,7 +59,7 @@ exit if $] < 5.008;
 
 {
    my $text = '[x][5]';
-   my $coder = new Cpanel::JSON::XS;
+   my $coder = Cpanel::JSON::XS->new;
    $coder->incr_parse ($text);
    ok (!eval { $coder->incr_parse }, "sparse1");
    ok (!eval { $coder->incr_parse }, "sparse2");
@@ -98,7 +98,7 @@ exit if $] < 5.008;
 # GH 123
 {
    my $text = '[1][5]';
-   my $coder = new Cpanel::JSON::XS;
+   my $coder = Cpanel::JSON::XS->new;
    $coder->incr_parse ($text);
    $coder->incr_text;
    is ($@, '', 'incr_text allowed after incr_parse init');

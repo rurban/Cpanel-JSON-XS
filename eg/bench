@@ -29,8 +29,8 @@ use List::Util;
 
 use utf8;
 
-my $dwiw = new JSON::DWIW;
-my $pc   = new JSON::PC;
+my $dwiw = JSON::DWIW->new;
+my $pc   = JSON::PC->new;
 my $pp   = JSON::PP->new->max_depth (512);
 my $xs2  = Cpanel::JSON::XS->new->utf8->pretty->canonical;
 my $xs3  = Cpanel::JSON::XS->new->utf8->shrink;

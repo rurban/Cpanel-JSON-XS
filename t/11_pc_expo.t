@@ -8,7 +8,7 @@ use Config ();
 
 #########################
 my ($js,$obj);
-my $pc = new Cpanel::JSON::XS;
+my $pc = Cpanel::JSON::XS->new;
 
 $js  = q|[-12.34]|;
 $obj = $pc->decode($js);

@@ -13,7 +13,7 @@ use Cpanel::JSON::XS;
 #########################
 my ($js,$obj,$str);
 
-my $pc = new Cpanel::JSON::XS;
+my $pc = Cpanel::JSON::XS->new;
 
 $obj = {test => qq|abc"def|};
 $str = $pc->encode($obj);

@@ -8,7 +8,7 @@ use utf8;
 
 #########################
 my ($js,$obj);
-my $pc = new Cpanel::JSON::XS;
+my $pc = Cpanel::JSON::XS->new;
 
 $js  = '{"foo":0}';
 $obj = $pc->decode($js);

@@ -11,7 +11,7 @@ use Test::More $has_bignum
 use Cpanel::JSON::XS;
 use Devel::Peek;
 
-my $json = new Cpanel::JSON::XS;
+my $json = Cpanel::JSON::XS->new;
 
 $json->allow_nonref->allow_bignum;
 $json->convert_blessed->allow_blessed;

@@ -362,7 +362,7 @@ decoding style, within the limits of supported formats.
 
 =over 4
 
-=item $json = new Cpanel::JSON::XS
+=item $json = Cpanel::JSON::XS->new
 
 Creates a new JSON object that can be used to de/encode JSON
 strings. All boolean flags described below are by default I<disabled>.
@@ -1274,7 +1274,7 @@ the start of a string and identify the portion after the JSON object:
 
    my $text = "[1,2,3] hello";
 
-   my $json = new Cpanel::JSON::XS;
+   my $json = Cpanel::JSON::XS->new;
 
    my $obj = $json->incr_parse ($text)
       or die "expected JSON object or array at beginning of string";
@@ -1294,7 +1294,7 @@ with C<telnet>...).
 Here is how you'd do it (it is trivial to write this in an event-based
 manner):
 
-   my $json = new Cpanel::JSON::XS;
+   my $json = Cpanel::JSON::XS->new;
 
    # read some data from the socket
    while (sysread $socket, my $buf, 4096) {
@@ -1311,7 +1311,7 @@ or arrays, all separated by (optional) comma characters (e.g. C<[1],[2],
 and here is where the lvalue-ness of C<incr_text> comes in useful:
 
    my $text = "[1],[2], [3]";
-   my $json = new Cpanel::JSON::XS;
+   my $json = Cpanel::JSON::XS->new;
 
    # void context, so no parsing done
    $json->incr_parse ($text);
@@ -1336,7 +1336,7 @@ array parser and let JSON decode the array elements, which are all
 full JSON objects on their own (this wouldn't work if the array
 elements could be JSON numbers, for example):
 
-   my $json = new Cpanel::JSON::XS;
+   my $json = Cpanel::JSON::XS->new;
 
    # open the monster
    open my $fh, "<bigfile.json"
