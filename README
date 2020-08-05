@@ -2075,6 +2075,9 @@ THREADS
     Cpanel::JSON::XS has proper ithreads support, unlike JSON::XS. If you
     encounter any bugs with thread support please report them.
 
+    From Version 4.00 - 4.19 you couldn't encode true with threads::shared
+    magic.
+
 BUGS
     While the goal of the Cpanel::JSON::XS module is to be correct, that
     unfortunately does not mean it's bug-free, only that the author thinks

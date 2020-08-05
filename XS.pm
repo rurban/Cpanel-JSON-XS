@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '4.19';
+our $VERSION = '4.20';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -2274,6 +2274,9 @@ future versions are safe.
 
 Cpanel::JSON::XS has proper ithreads support, unlike JSON::XS. If you
 encounter any bugs with thread support please report them.
+
+From Version 4.00 - 4.19 you couldn't encode true with threads::shared
+magic.
 
 =head1 BUGS
 
