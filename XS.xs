@@ -1551,7 +1551,13 @@ encode_bool_obj (pTHX_ enc_t *enc, SV *sv, int force_conversion, int as_string)
     {
       if (as_string)
         encode_ch (aTHX_ enc, '"');
-      if (SvIV_nomg (sv))
+      /* we need to apply threads_shared magic */
+      if
+#ifdef USE_ITHREADS
+         (SvIV (sv))
+#else
+         (SvIV_nomg (sv))
+#endif
         encode_const_str (aTHX_ enc, "true", 4, 0);
       else
         encode_const_str (aTHX_ enc, "false", 5, 0);
@@ -1857,7 +1863,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
   else if (type == JSON_TYPE_FLOAT)
     {
       int is_bigobj = 0;
-      char *savecur, *saveend;
+      char *savecur = NULL, *saveend = NULL;
       char inf_or_nan = 0;
 #ifdef NEED_NUMERIC_LOCALE_C
 # ifdef HAS_USELOCALE

@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.20 2020-08-?? (rurban)
+        - Fix encode of threads::shared boolean (#166 Sam Bingner).
+
 4.19 2020-02-06 (rurban)
         - Fix typed decode memory leak (#160 by Pali).
 
