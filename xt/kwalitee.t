@@ -23,5 +23,10 @@ plan skip_all => "Test::Kwalitee required"
 
 plan skip_all => 'Test::Kwalitee fails with clang -faddress-sanitizer'
   if $Config{ccflags} =~ /-faddress-sanitizer/;
+if ($^V =~ /c$/) {
+  eval "require Module::CPANTS::Kwalitee::Uses;";
+  plan skip_all => 'bad Module::CPANTS::Kwalitee hashpairs'
+    if $Module::CPANTS::Kwalitee::Uses::VERSION eq '1.01';
+}
 
 Test::Kwalitee->import( tests => [ qw( -use_strict ) ] );
