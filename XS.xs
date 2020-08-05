@@ -80,6 +80,15 @@
 #define HAVE_NEG_NAN
 #define STR_NEG_INF "---"
 #define STR_NEG_NAN "?"
+#elif defined(_AIX)
+/* xlC compiler: __TOS_AIX__ FIXME: This does not work yet. GH #165 */
+#define STR_INF "INF.0"
+#define STR_INF2 "-INF.0"
+#define HAVE_NEG_NAN
+#define HAVE_QNAN
+#define STR_NAN "NaN"
+//#define STR_QNAN "NaNQ"
+#define STR_QNAN "NANQ"
 #else
 #define STR_INF "inf"
 #define STR_NAN "nan"
@@ -149,12 +158,6 @@ mingw_modfl(long double x, long double *ip)
     *ip = truncl(x);
     return (x == *ip ? copysignl(0.0L, x) : x - *ip);
 }
-#endif
-
-#if defined(_AIX)
-#define HAVE_QNAN
-#undef STR_QNAN
-#define STR_QNAN "NANQ"
 #endif
 
 /* some old perls do not have this, try to make it work, no */
