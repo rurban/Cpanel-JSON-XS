@@ -81,9 +81,8 @@ ok (9 eq join ":", @{ $js->decode ('[{"a":9}]') });
 $js->filter_json_single_key_object ("a");
 ok (4 == $js->decode ('[{"a":4}]')->[0]{a});
 
-if ($]<5.008002) {
-  print "ok 18 # skip 5.6 + 5.8.1\n";
-} else {
+SKIP: {
+  skip "5.6 + 5.8.1", 1 if $] < 5.008002;
   $js->filter_json_single_key_object (a => sub { });
   ok (4 == $js->decode ('[{"a":4}]')->[0]{a});
 }
