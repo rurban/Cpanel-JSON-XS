@@ -69,17 +69,17 @@ is( $json->encode( {false => \!!""} ),   '{"false":null}',  'js \!!""');
 $json->allow_unknown->allow_stringify;
 $pp->allow_unknown->allow_blessed->convert_blessed;
 my $e = $pp->encode(  {false => \"some"} ); # pp is a bit inconsistent
-ok( ($e eq '{"false":null}') || ($e eq '{"false":some}'), 'pp stringref' );
-is( $pp->encode  ( {false => \""} ),     '{"false":null}' );
-is( $pp->encode  ( {false => \!!""} ),   '{"false":null}' );
-is( $json->encode( {false => \"some"} ), '{"false":"some"}' );
-is( $json->encode( {false => \""} ),     '{"false":null}' );
-is( $json->encode( {false => \!!""} ),   '{"false":null}' );
+ok( ($e eq '{"false":null}') || ($e eq '{"false":some}'), 'pp \"some"' );
+is( $pp->encode  ( {false => \""} ),     '{"false":null}', 'pp \""' );
+is( $pp->encode  ( {false => \!!""} ),   '{"false":null}', 'pp \!!""' );
+is( $json->encode( {false => \"some"} ), '{"false":"some"}', 'js \"some"');
+is( $json->encode( {false => \""} ),     '{"false":null}', 'js \""' );
+is( $json->encode( {false => \!!""} ),   '{"false":null}', 'js \!!""' );
 
 # GH #124 missing refcnt on stringify result
 package BoolTestOk;
 use overload '""' => sub {"1"};
 package main;
 my $data = {nick => bless({}, 'BoolTestOk')};
-is( $json->convert_blessed->allow_blessed->encode($data), '{"nick":"1"}' );
+is( $json->convert_blessed->allow_blessed->encode($data), '{"nick":"1"}', 'GH #124' );
 

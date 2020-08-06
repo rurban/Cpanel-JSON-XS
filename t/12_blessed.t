@@ -1,24 +1,16 @@
-BEGIN { $| = 1; print "1..22\n"; }
-
+use strict;
 use Cpanel::JSON::XS;
-
-our $test;
-sub ok($;$) {
-  print $_[0] ? "" : "not ", "ok ", ++$test, $_[1]?"\t# ".$_[1]:"", "\n";
-  $_[0]
-}
+use Test::More tests => 22;
 
 package ZZ;
 use overload ('""' => sub { "<ZZ:".${$_[0]}.">" } );
 
 package main;
-sub XX::TO_JSON {
-   {__,""}
-}
+sub XX::TO_JSON { {"__",""} }
 
 my $o1 = bless { a => 3 }, "XX";       # with TO_JSON
-my $o2 = bless \(my $dummy = 1), "YY"; # without stringification
-my $o3 = bless \(my $dummy = 1), "ZZ"; # with stringification
+my $o2 = bless \(my $dummy1 = 1), "YY"; # without stringification
+my $o3 = bless \(my $dummy2 = 1), "ZZ"; # with stringification
 
 if (eval 'require Hash::Util') {
   if ($Hash::Util::VERSION > 0.05) {
@@ -43,9 +35,12 @@ $js->convert_blessed;
 my $r = $js->encode ($o1);
 ok ($js->encode ($o1) eq '{"__":""}', "convert_blessed with TO_JSON $r");
 $r = "";
-eval { $r = $js->encode ($o2) }; ok ($@ =~ /allow_blessed/, "error w/o TO_JSON $r");
+eval { $r = $js->encode ($o2) }; ok ($@ =~ /allow_blessed/, "error w/o TO_JSON $r @_");
 $r = $js->encode ($o3);
-ok ($r =~ /<ZZ:1>/, "w stringify overload $r / $o3");
+TODO: {
+  local $TODO = '5.8.x' if $] < 5.010;
+  ok ($r eq '"<ZZ:1>"', "stringify overload with convert_blessed: $r / $o3");
+}
 
 $js = Cpanel::JSON::XS->new;
 $js->allow_blessed;
@@ -54,15 +49,16 @@ ok ($js->encode ($o2) eq "null");
 ok ($js->encode ($o3) eq "null");
 $js->allow_blessed->convert_blessed;
 ok ($js->encode ($o1) eq '{"__":""}', 'allow_blessed + convert_blessed');
-if ($] < 5.008) {
-  print "ok ",++$test," # skip 5.6\n";
-  print "ok ",++$test," # skip 5.6\n";
-} else {
+SKIP: {
+  skip "5.6", 2 if $[ < 5.008;
   # PP returns null
   $r = $js->encode ($o2);
   ok ($r eq 'null', "$r");
   $r = $js->encode ($o3);
-  ok ($r eq '<ZZ:1>', "$r");
+ TODO: {
+   local $TODO = '5.8.x' if $] < 5.010;
+   ok ($r eq '"<ZZ:1>"', "stringify $r");
+  }
 }
 
 $js->filter_json_object (sub { 5 });
