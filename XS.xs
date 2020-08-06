@@ -1706,15 +1706,15 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
   else if (svt < SVt_PVAV && svt != SVt_PVGV && svt != SVt_PVHV && svt != SVt_PVAV)
     {
       if (!encode_bool_ref (aTHX_ enc, sv))
-      {
-      if (enc->json.flags & F_ALLOW_STRINGIFY)
-        encode_stringify(aTHX_ enc, sv, SvROK(sv));
-      else if (enc->json.flags & F_ALLOW_UNKNOWN)
-        encode_const_str (aTHX_ enc, "null", 4, 0);
-      else
-        croak ("cannot encode reference to scalar '%s' unless the scalar is 0 or 1",
-               SvPV_nolen (sv_2mortal (newRV_inc (sv))));
-      }
+        {
+          if (enc->json.flags & F_ALLOW_STRINGIFY)
+            encode_stringify(aTHX_ enc, sv, SvROK(sv));
+          else if (enc->json.flags & F_ALLOW_UNKNOWN)
+            encode_const_str (aTHX_ enc, "null", 4, 0);
+          else
+            croak ("cannot encode reference to scalar '%s' unless the scalar is 0 or 1",
+                   SvPV_nolen (sv_2mortal (newRV_inc (sv))));
+        }
     }
   else if (enc->json.flags & F_ALLOW_UNKNOWN)
     encode_const_str (aTHX_ enc, "null", 4, 0);
