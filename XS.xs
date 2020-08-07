@@ -1453,7 +1453,11 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
     /* the essential of pp_stringify */
 #if PERL_VERSION > 7
     pv = newSVpvs("");
-    sv_copypv(pv, sv);
+    if (!isref && !(enc->json.flags & F_ALLOW_STRINGIFY)) {
+      sv_copypv(pv, newRV(sv));
+    } else {
+      sv_copypv(pv, sv);
+    }
     SvSETMAGIC(pv);
     str = SvPVutf8_force(pv, len);
 #else
