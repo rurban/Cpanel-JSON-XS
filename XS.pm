@@ -174,9 +174,11 @@ B<Changes to JSON::XS>
 
   - #72 parsing of illegal unicode or non-unicode characters.
 
-  - #96 locale-insensitive numeric conversion
+  - #96 locale-insensitive numeric conversion.
 
   - #154 numeric conversion fixed since 5.22, using the same strtold as perl5.
+
+  - #167 sort tied hashes with canonical.
 
 - public maintenance and bugtracker
 
@@ -682,8 +684,10 @@ as key-value pairs have no inherent ordering in Perl.
 
 This setting has no effect when decoding JSON texts.
 
-This setting has currently no effect on tied hashes.
-
+This is now also done with tied hashes, contrary to L<JSON::XS>.
+But note that with most large tied hashes stored as tree it is advised to
+sort the iterator already and don't sort the hash output here. Most such
+iterators are already sorted, as such e.g. L<DB_File> with C<DB_BTREE>.
 
 =item $json = $json->sort_by (undef, 0, 1 or a block)
 

@@ -203,7 +203,17 @@ mingw_modfl(long double x, long double *ip)
 #  define assert_not_ROK(sv)
 # endif
 #endif
+/* 5.8 problem, it was renamed to HINT_BYTES with 5.8.0 */
+#if PERL_VERSION < 7
+ #ifndef HINT_BYTES
+   #define HINT_BYTES 8
+ #endif
+#endif 
 /* compatibility with perl <5.14 */
+/* added with 5.13.6 */
+#ifndef sv_cmp_flags
+# define sv_cmp_flags(a,b,flags) sv_cmp((a),(b))
+#endif
 #ifndef SvTRUE_nomg
 #define SvTRUE_nomg SvTRUE
 #endif
@@ -1205,12 +1215,21 @@ he_cmp_fast (const void *a_, const void *b_)
   return cmp;
 }
 
-/* compare hash entries, used when some keys are sv's or utf-x */
+/* compare hash entries, used when some keys are SV's or UTF-8 */
 static int
 he_cmp_slow (const void *a, const void *b)
 {
   dTHX;
   return sv_cmp (HeSVKEY_force (*(HE **)b), HeSVKEY_force (*(HE **)a));
+}
+
+/* compare tied hash entries, guaranteed SV's */
+static int
+he_cmp_tied (const void *a, const void *b)
+{
+  dTHX;
+  /* skip GMAGIC */
+  return sv_cmp_flags (HeKEY_sv (*(HE **)b), HeKEY_sv (*(HE **)a), 0);
 }
 
 static void
@@ -1275,30 +1294,35 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
   encode_ch (aTHX_ enc, '{');
 
   /* for canonical output we have to sort by keys first */
-  /* caused by randomised hash orderings */
-  if (enc->json.flags & F_CANONICAL && !SvTIED_mg((SV*)hv, PERL_MAGIC_tied))
+  /* caused by randomised hash orderings or unknown tied behaviour. */
+  if (enc->json.flags & F_CANONICAL)
     {
       RITER_T i, count = hv_iterinit (hv);
+      HE *hes_stack [STACK_HES];
+      HE **hes = hes_stack;
+      int is_tied = 0;
 
       if (SvMAGICAL (hv))
         {
+          if (SvTIED_mg((SV*)hv, PERL_MAGIC_tied))
+            is_tied = 1;
+          /* really should be calling magic_scalarpack(hv, mg) here, but I doubt it will be correct */
+          /* TODO For tied hashes we should check if the iterator is already canonical (same sort order)
+             as it would be with a DB tree e.g. and skip our slow sorting. */
+
           /* need to count by iterating. could improve by dynamically building the vector below */
           /* but I don't care for the speed of this special case. */
-          /* note also that we will run into undefined behaviour when the two iterations */
-          /* do not result in the same count, something I might care for in some later release. */
-
           count = 0;
           while (hv_iternext (hv))
             ++count;
 
-          hv_iterinit (hv);
+          (void)hv_iterinit (hv);
         }
 
-      if (count)
+      /* one key does not need to be sorted */
+      if (count > 0)
         {
-          int fast = 1;
-          HE *hes_stack [STACK_HES];
-          HE **hes = hes_stack;
+          int has_utf8 = 0;
 
           /* allocate larger arrays on the heap */
           if (count > STACK_HES)
@@ -1308,33 +1332,69 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
             }
 
           i = 0;
+          /* fill the HE vector and check if SVKEY or UTF8 */
           while ((he = hv_iternext (hv)))
             {
-              hes [i++] = he;
-              if (HeKLEN (he) < 0 || HeKUTF8 (he))
-                fast = 0;
+              if (UNLIKELY(is_tied))
+                { // tied entries are completely freed in the next iteration
+                  HE *he1 = calloc (1, sizeof (HE));
+                  he1->hent_hek = calloc (1, sizeof (HEK));
+                  HeVAL(he1) = hv_iterval(hv, he);
+                  HeSVKEY_set (he1, hv_iterkeysv(he));
+                  hes[i++] = he1;
+                }
+              else
+                hes[i++] = he;
+              /* check the SV for UTF8 and seperate use bytes handling */
+              if (!has_utf8)
+                {
+                  if (He_IS_SVKEY(he))
+                    has_utf8 = SvUTF8(HeSVKEY(he));
+                  else
+                    has_utf8 = HeKUTF8(he);
+                }
             }
 
+          /* Undefined behaviour when the two iterations do not result in the same count.
+             With threads::shared or broken tie. The last HEs might be NULL then or we'll
+             miss some. */
+          if (i != count)
+            croak ("Unstable %shash key counts %d vs %d in subsequent runs",
+                   is_tied ? "tied " : "", (int)count, (int)i);
           assert (i == count);
 
-          if (fast)
-            qsort (hes, count, sizeof (HE *), he_cmp_fast);
-          else
+          /* one key does not need to be sorted */
+          if (count > 1)
             {
-              /* hack to forcefully disable "use bytes" */
-              COP cop = *PL_curcop;
-              cop.op_private = 0;
 
-              ENTER;
-              SAVETMPS;
+              if (!has_utf8)
+                {
+                  /* TODO With threads::shared check for qsort_r */
+                  qsort (hes, count, sizeof (HE *), is_tied ? he_cmp_tied : he_cmp_fast);
+                }
+              else
+                {
+                  /* hack to forcefully disable "use bytes".
+                     Changed in 5.9.4 a98fe34d09e2476f1a21bfb9dc730dc9ab02b0b4 */
+                  COP cop = *PL_curcop;
+#if PERL_VERSION < 10
+                  cop.op_private &= ~HINT_BYTES;
+#else
+                  cop.cop_hints &= ~HINT_BYTES;
+#endif
 
-              SAVEVPTR (PL_curcop);
-              PL_curcop = &cop;
+                  ENTER;
+                  SAVETMPS;
 
-              qsort (hes, count, sizeof (HE *), he_cmp_slow);
+                  SAVEVPTR (PL_curcop);
+                  PL_curcop = &cop;
 
-              FREETMPS;
-              LEAVE;
+                  /* TODO With threads::shared check for qsort_r */
+                  qsort (hes, count, sizeof (HE *), is_tied ? he_cmp_tied : he_cmp_slow);
+
+                  FREETMPS;
+                  LEAVE;
+                }
             }
 
           encode_nl (aTHX_ enc); ++enc->indent;
@@ -1345,7 +1405,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
               I32 klen;
 
               encode_indent (aTHX_ enc);
-              he = hes [count];
+              he = hes[count];
               retrieve_hk (aTHX_ he, &key, &klen);
               encode_hk (aTHX_ enc, key, klen);
 
@@ -1358,10 +1418,18 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
                   typesv = *typesv_ref;
                 }
 
-              encode_sv (aTHX_ enc, UNLIKELY(SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he), typesv);
+              encode_sv(aTHX_ enc,
+                        (is_tied || !SvMAGICAL(hv)) ? HeVAL(he)
+                        : hv_iterval(hv, he),
+                        typesv);
 
+              if (is_tied)
+                {
+                  free (he->hent_hek);
+                  free (he);
+                }
               if (count)
-                encode_comma (aTHX_ enc);
+                encode_comma(aTHX_ enc);
             }
 
           encode_nl (aTHX_ enc); --enc->indent; encode_indent (aTHX_ enc);
@@ -1392,12 +1460,15 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
                     typesv = *typesv_ref;
                   }
 
-                encode_sv (aTHX_ enc, UNLIKELY(SvMAGICAL (hv)) ? hv_iterval (hv, he) : HeVAL (he), typesv);
+                  encode_sv(aTHX_ enc,
+                            UNLIKELY(SvMAGICAL(hv)) ? hv_iterval(hv, he)
+                                                    : HeVAL(he),
+                            typesv);
 
-                if (!(he = hv_iternext (hv)))
-                  break;
+                  if (!(he = hv_iternext(hv)))
+                    break;
 
-                encode_comma (aTHX_ enc);
+                  encode_comma(aTHX_ enc);
               }
 
             encode_nl (aTHX_ enc); --enc->indent; encode_indent (aTHX_ enc);
