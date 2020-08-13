@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.21 2020-08-13 (rurban)
+        - Fix not enough HEK memory allocation for the new canonical tied hashes
+          feature. (GH #168)
+
 4.20 2020-08-12 (rurban)
         - New feature: sort tied hashes with canonical. (GH #167)
         - Fix encode of threads::shared boolean (#166 Sam Bingner).

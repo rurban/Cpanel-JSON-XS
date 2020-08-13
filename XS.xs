@@ -1337,8 +1337,9 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
             {
               if (UNLIKELY(is_tied))
                 { // tied entries are completely freed in the next iteration
-                  HE *he1 = calloc (1, sizeof (HE));
-                  he1->hent_hek = calloc (1, sizeof (HEK));
+                  HE *he1;
+                  Newz(0,he1,1,HE);
+                  he1->hent_hek = safecalloc (1, sizeof (struct hek) + sizeof (SV*) + 2);
                   HeVAL(he1) = hv_iterval(hv, he);
                   HeSVKEY_set (he1, hv_iterkeysv(he));
                   hes[i++] = he1;
@@ -1425,8 +1426,8 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
 
               if (is_tied)
                 {
-                  free (he->hent_hek);
-                  free (he);
+                  Safefree (he->hent_hek);
+                  Safefree (he);
                 }
               if (count)
                 encode_comma(aTHX_ enc);
