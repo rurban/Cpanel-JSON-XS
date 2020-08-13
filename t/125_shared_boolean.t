@@ -36,8 +36,19 @@ SKIP: {
   eval "require JSON::PP && require JSON::PP::Boolean;";
   skip "JSON::PP required for testing interop", 2 if $@;
   
-  my $json5 = shared_clone({'enabled' => $JSON::PP::true});
-  is( JSON::PP::encode_json( $json5 ), '{"enabled":true}', "JSON::PP shared true");
-  my $json6 = shared_clone({'disabled' => $JSON::PP::false});
-  is( JSON::PP::encode_json( $json6 ), '{"disabled":false}', "JSON::PP shared false");
+ TODO: {
+   local $TODO = "JSON::PP::Boolean $JSON::PP::VERSION looks broken, upgrade"
+     if $JSON::PP::VERSION > 2.2740001 and $JSON::PP::VERSION < 4.0; # return null in both cases
+   # 4.02 ok
+   # 2.97001_04 broken
+   # 2.94_01 broken
+   # 2.27400_02 broken
+   # 2.27400_01 ok
+   # 2.27300 ok
+
+   my $json5 = shared_clone({'enabled' => $JSON::PP::true});
+   is( JSON::PP::encode_json( $json5 ), '{"enabled":true}', "JSON::PP shared true");
+   my $json6 = shared_clone({'disabled' => $JSON::PP::false});
+   is( JSON::PP::encode_json( $json6 ), '{"disabled":false}', "JSON::PP shared false");
+  }
 }
