@@ -3,13 +3,11 @@ use strict;
 use warnings;
 use Test::More;
 BEGIN {
-  eval "require Time::Piece;";
-  if ($@) {
-    plan skip_all => "Time::Piece required";
-    exit 0;
-  }
-  eval 'require JSON;'
-    or plan skip_all => 'JSON required for cross testing';
+  eval 'use Time::Piece (); 1'
+    or plan skip_all => "Time::Piece required";
+  # allow_unknown method added to JSON in 2.09
+  eval 'use JSON 2.09 (); 1'
+    or plan skip_all => 'JSON 2.09 required for cross testing';
   $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
 }
 use Time::Piece;
