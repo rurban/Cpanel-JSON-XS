@@ -1,13 +1,18 @@
 use Test::More;
 BEGIN {
-  eval "require JSON && require JSON::XS;";
+  $ENV{PERL_JSON_BACKEND} = 0;
+  eval "require JSON;";
   if ($@) {
-    plan skip_all => "JSON::XS and JSON required for testing interop";
+    plan skip_all => "JSON required for testing interop";
+    exit 0;
+  }
+  eval "require JSON::XS;";
+  if ($@) {
+    plan skip_all => "JSON::XS required for testing interop";
     exit 0;
   } else {
     plan tests => 4;
   }
-  $ENV{PERL_JSON_BACKEND} = 0;
 }
 
 use JSON (); # limitation: for interop with JSON load JSON before Cpanel::JSON::XS
