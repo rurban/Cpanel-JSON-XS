@@ -5,6 +5,8 @@ use Cpanel::JSON::XS ();
 
 BEGIN {
   plan skip_all => 'no threads' if !$Config{usethreads};
+  eval "require threads::shared 1.21;";
+  plan skip_all => 'no shared_clone' if $@;
   plan tests => 8;
 }
 
