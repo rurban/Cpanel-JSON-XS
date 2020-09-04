@@ -2,7 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-4.22 2020-??-?? (rurban)
+4.22 2020-09-04 (rurban)
+        - Fix t/54_stringify needs JSON 2.09 for allow_unknown (PR #169 madsen)
+        - Fix t/118_type.t for 5.6
+        - Fix t/96_interop.t for missing JSON::XS (GH #83 ribasushi)
         - Possible fix for s390x with long double, untested (GH #83)
 
 4.21 2020-08-13 (rurban)
