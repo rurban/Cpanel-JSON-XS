@@ -3,14 +3,11 @@ use strict;
 use warnings;
 use Test::More;
 BEGIN {
-  eval "require Time::Piece;";
-  if ($@) {
-    plan skip_all => "Time::Piece required";
-    exit 0;
-  }
-  eval 'require JSON;'
-    or plan skip_all => 'JSON required for cross testing';
+  eval { require Time::Piece; 1 }
+    or plan skip_all => "Time::Piece required";
   $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
+  eval { use JSON 2.09 (); 1 }
+    or plan skip_all => 'JSON 2.09 required for cross testing';
 }
 use Time::Piece;
 plan $] < 5.008 ? (skip_all => "5.6 no AMG yet") : (tests => 18);
