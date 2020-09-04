@@ -12,6 +12,7 @@ BEGIN {
         Scalar::Util->import('weaken');
         $have_weaken = 1;
     }
+    $have_weaken = 0 if $] < 5.008;
 }
 
 use Test::More tests => 381;
