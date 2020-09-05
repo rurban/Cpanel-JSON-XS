@@ -3,16 +3,14 @@ use strict;
 use warnings;
 use Test::More;
 BEGIN {
-  eval 'use Time::Piece (); 1'
+  eval 'use Time::Piece; 1'
     or plan skip_all => "Time::Piece required";
   # allow_unknown method added to JSON in 2.09
   eval 'use JSON 2.09 (); 1'
     or plan skip_all => 'JSON 2.09 required for cross testing';
   $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
 }
-use Time::Piece;
 plan $] < 5.008 ? (skip_all => "5.6 no AMG yet") : (tests => 18);
-use JSON ();
 use Cpanel::JSON::XS;
 
 my $time = localtime;

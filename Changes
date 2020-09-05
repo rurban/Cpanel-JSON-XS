@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.23 2020-09-05 (rurban)
+        - Fixup t/54_stringify change for JSON 2.09 (really use PR #169 madsen)
+
 4.22 2020-09-04 (rurban)
         - Fix t/54_stringify needs JSON 2.09 for allow_unknown (PR #169 madsen)
         - Fix t/118_type.t for 5.6
