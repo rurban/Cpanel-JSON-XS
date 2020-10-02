@@ -267,12 +267,14 @@ Note that older decode_json versions in Cpanel::JSON::XS older than
 3.0116 and JSON::XS did not set allow_nonref but allowed them due to a
 bug in the decoder.
 
-If the new optional $allow_nonref argument is set and not false, the
-allow_nonref option will be set and the function will act is described
+If the new 2nd optional $allow_nonref argument is set and not false, the
+C<allow_nonref> option will be set and the function will act is described
 as in the relaxed RFC 7159 allowing all values such as objects,
 arrays, strings, numbers, "null", "true", and "false".
+See L</"OLD" VS. "NEW" JSON (RFC 4627 VS. RFC 7159)> below, why you don't
+want to do that.
 
-For the type argument see L<Cpanel::JSON::XS::Type>.
+For the 3rd optional type argument see L<Cpanel::JSON::XS::Type>.
 
 =item $is_boolean = Cpanel::JSON::XS::is_bool $scalar
 
@@ -1071,7 +1073,7 @@ Note that nesting is implemented by recursion in C. The default value has
 been chosen to be as large as typical operating systems allow without
 crashing.
 
-See SECURITY CONSIDERATIONS, below, for more info on why this is useful.
+See L</SECURITY CONSIDERATIONS>, below, for more info on why this is useful.
 
 =item $json = $json->max_size ([$maximum_string_size])
 

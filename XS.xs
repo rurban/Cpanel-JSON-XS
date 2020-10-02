@@ -4958,10 +4958,10 @@ void DESTROY (JSON *self)
 PROTOTYPES: ENABLE
 
 void encode_json (SV *scalar, SV *typesv = &PL_sv_undef)
-	ALIAS:
+    ALIAS:
         _to_json    = 0
         encode_json = F_UTF8
-	PPCODE:
+    PPCODE:
 {
         JSON json;
         json_init (&json);
@@ -4971,15 +4971,15 @@ void encode_json (SV *scalar, SV *typesv = &PL_sv_undef)
 }
 
 void decode_json (SV *jsonstr, SV *allow_nonref = NULL, SV *typesv = NULL)
-	ALIAS:
+    ALIAS:
         _from_json  = 0
         decode_json = F_UTF8
-	PPCODE:
+    PPCODE:
 {
         JSON json;
         json_init (&json);
         json.flags |= ix;
-        if (ix && allow_nonref)
+        if (ix && SvTRUE (allow_nonref))
           json.flags |= F_ALLOW_NONREF;
         PUTBACK; jsonstr = decode_json (aTHX_ jsonstr, &json, 0, typesv); SPAGAIN;
         XPUSHs (jsonstr);

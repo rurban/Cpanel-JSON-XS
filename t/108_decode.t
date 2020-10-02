@@ -2,7 +2,7 @@
 # decode on Perl 5.005, 5.6, 5.8 or later
 #
 use strict;
-use Test::More tests => 8;
+use Test::More tests => 11;
 
 use Cpanel::JSON::XS;
 use lib qw(t);
@@ -47,3 +47,8 @@ is_deeply $decode, ["a" x 32768], "successful roundtrip"
     close $fh;
   };
 
+$decode = eval { decode_json("true", 0) };
+like($@, qr/^JSON text must be an object or array/, 'treat decode_json 0 as not allow_nonref');
+$decode = eval { decode_json("true", 1) };
+ok(!$@, "treat decode_json 1 as allow_nonref");
+is($decode, 1, "decode true as 1");

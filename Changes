@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.24 2020-10-02 (rurban)
+        - Fix decode_json(scalar, 0) (GH #171 plicease), check 2nd arg for true-ness
+
 4.23 2020-09-05 (rurban)
         - Fixup t/54_stringify change for JSON 2.09 (really use PR #169 madsen)
 
