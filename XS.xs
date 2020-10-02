@@ -516,6 +516,17 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
 /* Since perl 5.14 we can disallow illegal unicode above U+10FFFF.
    Before we could only warn with warnings 'utf8'.
    We accept only valid unicode, unless we are in the relaxed mode. */
+/*    
+   perl 5.32 deprecated utf8n_to_uvuni accepting illegal unicode, so relaxed does not
+   allow such illegal unicode anymore, rather throws a warning in the 'utf8' category.
+   Still looking for a way to get the old correct behavior. */
+/*
+#if PERL_VERSION > 31
+    UV c = utf8_to_uvchr_buf (s, &s[len+1], clen);
+    / * UV c = valid_utf8_to_uvchr (s, clen); * /
+    PERL_UNUSED_ARG(relaxed);
+#elif PERL_VERSION > 12
+*/
 #if PERL_VERSION > 12
     UV c = utf8n_to_uvuni (s, len, clen,
                            UTF8_CHECK_ONLY | (relaxed ? 0 : UTF8_DISALLOW_SUPER));
