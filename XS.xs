@@ -57,6 +57,14 @@
 #define UTF32BOM    "\377\376\000\000"  /* FF FE 00 00 or +UFEFF */
 #define UTF32BOM_BE "\000\000\376\377"  /* 00 00 FE FF */
 
+/* Need to disable broken gcc-9.[0-3] -O1. Assume gcc-10 is also still broken */
+/* Only gcc defines __GNUC_PATCHLEVEL__, clang and icc do define __GNUC__ */
+#if defined(__GNUC__) && defined(__GNUC_PATCHLEVEL__) && \
+    (((__GNUC__ == 9) && (__GNUC_MINOR__ <= 3) || \
+      (__GNUC__ > 9)))
+#  define BROKEN_GCC_OPT
+#endif
+
 /* mingw with USE_LONG_DOUBLE (and implied USE_MINGW_ANSI_STDIO) do use the
    non-msvcrt inf/nan stringification in sprintf(). */
 #if defined(WIN32) && !defined(__USE_MINGW_ANSI_STDIO) && !defined(USE_LONG_DOUBLE)
@@ -4401,6 +4409,12 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
 /*/////////////////////////////////////////////////////////////////////////// */
 /* incremental parser */
 
+/* Note that our good friend gcc-9.x crashes here, which looks like one of the
+   well-known internal gcc tree-optimizer bugs. */
+#ifdef BROKEN_GCC_OPT
+// or __attribute__((optimize("no-tree-vectorize")))
+__attribute__((optimize("O0")))
+#endif
 static void
 incr_parse (JSON *self)
 {
