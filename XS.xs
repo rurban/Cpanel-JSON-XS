@@ -2685,8 +2685,7 @@ INLINE void
 decode_comment (dec_t *dec)
 {
   /* only '#'-style comments allowed a.t.m. */
-
-  while (*dec->cur && *dec->cur != 0x0a && *dec->cur != 0x0d)
+  while (*dec->cur && *dec->cur != 0x0a && *dec->cur != 0x0d && dec->cur < dec->end)
     ++dec->cur;
 }
 
@@ -2712,7 +2711,8 @@ decode_ws (dec_t *dec)
       else if (ch != 0x20 && ch != 0x0a && ch != 0x0d && ch != 0x09)
         break; /* parse error, but let higher level handle it, gives better error messages */
 
-      ++dec->cur;
+      if (dec->cur < dec->end)
+        ++dec->cur;
     }
 }
 

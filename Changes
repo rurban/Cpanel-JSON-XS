@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.25 2020-10-?? (rurban)
+        - Fix decode relaxed with comment at the end of the buffer (GH #174 fgaspar), a regression
+          introduced with 3.0220, to fix n_number_then_00.
+
 4.24 2020-10-02 (rurban)
         - Fix decode_json(scalar, 0) (GH #171 plicease), check 2nd arg for true-ness
 
