@@ -1,0 +1,1 @@
+{"version":1,"ops":[{"type":1,"author":{"id":"42b8049125821cad60d350df07d9d216b854f3f7"},"timestamp":1501171616,"metadata":{"github-id":"MDU6SXNzdWUyNDYwOTE2NTM=","github-url":"https://github.com/rurban/Cpanel-JSON-XS/issues/92","origin":"github"},"title":"fix coverage in the smoker","message":"t/25_boolean.t fails the stringify overloads with -MDevel::Cover","files":null}]}
