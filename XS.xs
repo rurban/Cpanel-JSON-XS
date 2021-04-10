@@ -1358,7 +1358,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
                 { // tied entries are completely freed in the next iteration
                   HE *he1;
                   Newz(0,he1,1,HE);
-                  he1->hent_hek = safecalloc (1, sizeof (struct hek) + sizeof (SV*) + 2);
+                  he1->hent_hek = (HEK*)safecalloc (1, sizeof (struct hek) + sizeof (SV*) + 2);
                   HeVAL(he1) = hv_iterval(hv, he);
                   HeSVKEY_set (he1, hv_iterkeysv(he));
                   hes[i++] = he1;
