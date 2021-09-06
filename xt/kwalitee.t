@@ -12,7 +12,7 @@ plan skip_all => 'This test is only run for the module author'
 
 # Missing XS dependencies are usually not caught by EUMM
 # And they are usually only XS-loaded by the importer, not require.
-for (qw( Class::XSAccessor Text::CSV_XS List::MoreUtils )) {
+for (qw( Class::XSAccessor Text::CSV_XS )) {
   eval "use $_;";
   plan skip_all => "$_ required for Test::Kwalitee"
     if $@;

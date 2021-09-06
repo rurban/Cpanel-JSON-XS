@@ -126,7 +126,6 @@ WriteMakefile(
             'Test::CheckChanges'   => '1.14',
             'Class::XSAccessor'    => 0,
             'Text::CSV_XS'         => 0,
-            'List::MoreUtils'      => 0,
             'Test::Kwalitee'       => 0,
           }
         }
