@@ -5,13 +5,19 @@ use Cpanel::JSON::XS ();
 
 BEGIN {
   plan skip_all => 'no threads' if !$Config{usethreads};
-  eval "require threads::shared 1.21;";
-  plan skip_all => 'no shared_clone' if $@;
-  plan tests => 8;
 }
 
 use threads;
 use threads::shared;
+
+BEGIN {
+  if (eval {threads::shared->VERSION(1.21)}) {
+    plan tests => 8;
+  }
+  else {
+    plan skip_all => 'no shared_clone';
+  }
+}
 
 my $json1 = shared_clone({'enabled' => Cpanel::JSON::XS::true});
 is( Cpanel::JSON::XS::encode_json( $json1 ), '{"enabled":true}', "Cpanel::JSON::XS shared true");
