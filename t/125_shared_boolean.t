@@ -11,7 +11,7 @@ use threads;
 use threads::shared;
 
 BEGIN {
-  if (eval {threads::shared->VERSION(1.21)}) {
+  if (eval {threads::shared->VERSION('1.21')}) {
     plan tests => 8;
   }
   else {
