@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.27 2021-10-13 (rurban)
+        - Only add -Werror=declaration-after-statement for 5.035004 and earlier (PR #186 nwc)
+	- Fix 125_shared_boolean.t for threads (PR #184 Sinan Unur)
+
 4.26 2021-04-12 (rurban)
         - Fix compilation with C++ (GH #177)
 
