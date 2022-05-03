@@ -4627,7 +4627,8 @@ void END(...)
     PPCODE:
         sv = MY_CXT.sv_json;
         MY_CXT.sv_json = NULL;
-        SvREFCNT_dec_NN(sv);
+        if (sv)
+            SvREFCNT_dec_NN(sv);
 	/* skip implicit PUTBACK, returning @_ to caller, more efficient*/
         return;
 
