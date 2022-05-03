@@ -432,6 +432,7 @@ typedef struct {
   int incr_nest;   /* {[]}-nesting level */
   unsigned char incr_mode;
   unsigned char infnan_mode;
+  U32 magic;
 } JSON;
 
 INLINE void
@@ -440,6 +441,7 @@ json_init (JSON *json)
   Zero (json, 1, JSON);
   json->max_depth     = 512;
   json->indent_length = INDENT_STEP;
+  json->magic = 0x4A534F4E; // JSON
 }
 
 /* dTHX/threads TODO*/
@@ -467,6 +469,12 @@ init_MY_CXT(pTHX_ my_cxt_t * cxt)
 
 /*/////////////////////////////////////////////////////////////////////////// */
 /* utility functions */
+
+INLINE bool
+json_validate (pTHX_ JSON *json)
+{
+    return json->magic == 0xDEADBEEF;
+}
 
 /* Unpacks the 2 boolean objects from the global references */
 INLINE SV *
@@ -4627,8 +4635,8 @@ void END(...)
     PPCODE:
         sv = MY_CXT.sv_json;
         MY_CXT.sv_json = NULL;
-        if (sv)
-            SvREFCNT_dec_NN(sv);
+        if (sv && SvOK (sv))
+            SvREFCNT_dec_NN (sv);
 	/* skip implicit PUTBACK, returning @_ to caller, more efficient*/
         return;
 
@@ -4965,9 +4973,7 @@ void incr_reset (JSON *self)
 	CODE:
 {
         if (self->incr_text)
-          {
             SvREFCNT_dec (self->incr_text);
-          }
         self->incr_text = NULL;
         self->incr_pos  = 0;
         self->incr_nest = 0;
@@ -4976,10 +4982,17 @@ void incr_reset (JSON *self)
 
 void DESTROY (JSON *self)
 	CODE:
-        SvREFCNT_dec (self->cb_sk_object);
-        SvREFCNT_dec (self->cb_object);
-        SvREFCNT_dec (self->cb_sort_by);
-        SvREFCNT_dec (self->incr_text);
+        if (!json_validate (self))
+            return;
+        # verify cb_sk_object for a valid HV
+        if (self->cb_sk_object && (SvTYPE (self->cb_sk_object) == SVt_PVHV))
+            SvREFCNT_dec (self->cb_sk_object);
+        if (self->cb_object && SvOK (self->cb_object))
+            SvREFCNT_dec (self->cb_object);
+        if (self->cb_sort_by && SvOK (self->cb_sort_by))
+            SvREFCNT_dec (self->cb_sort_by);
+        if (self->incr_text)
+            SvREFCNT_dec (self->incr_text);
 
 PROTOTYPES: ENABLE
 
