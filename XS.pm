@@ -196,9 +196,9 @@ B<Changes to JSON::XS>
 
 - support many more options and methods from JSON::PP:
   stringify_infnan, allow_unknown, allow_stringify, allow_barekey,
-  encode_stringify, allow_bignum, allow_singlequote, sort_by
-  (partially), escape_slash, convert_blessed, ...  optional
-  decode_json(, allow_nonref) arg.
+  encode_stringify, allow_bignum, allow_singlequote, dupkeys_as_arrayref,
+  sort_by (partially), escape_slash, convert_blessed, ...
+  optional decode_json(, allow_nonref) arg.
   relaxed implements allow_dupkeys.
 
 - support all 5 unicode L<BOM|/BOM>'s: UTF-8, UTF-16LE, UTF-16BE, UTF-32LE,
@@ -664,10 +664,9 @@ L</allow_barekey> option.
 Allow decoding of duplicate keys in hashes. By default duplicate keys are forbidden.
 See L<http://seriot.ch/parsing_json.php#24>:
 RFC 7159 section 4: "The names within an object should be unique."
-See the L</allow_dupkeys> option.
+See the C<allow_dupkeys> option.
 
 =back
-
 
 =item $json = $json->canonical ([$enable])
 
@@ -885,6 +884,26 @@ found.
 
 See L<http://seriot.ch/parsing_json.php#24>:
 RFC 7159 section 4: "The names within an object should be unique."
+
+=item $json = $json->dupkeys_as_arrayref ([$enable])
+
+=item $enabled = $json->get_dupkeys_as_arrayref
+
+If enabled, allow decoding of duplicate keys in hashes and store the
+values as arrayref in the hash instead.  By default duplicate keys are
+forbidden.  Enabling this also enables the L</allow_dupkeys> option,
+but disabling this does not disable the L</allow_dupkeys> option.
+
+Example:
+
+    $json->dupkeys_as_arrayref;
+    print encode_json ($json->decode ('{"a":"b","a":"c"}'));
+
+      => {"a":["b","c"]}
+
+This changes the result structure, thus cannot be enabled by default.
+The client must be aware of it. The resulting arrayref is not yet marked somehow
+(blessed or such).
 
 =item $json = $json->allow_blessed ([$enable])
 
