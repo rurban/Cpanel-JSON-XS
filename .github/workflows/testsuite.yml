@@ -1,0 +1,143 @@
+name: testsuite
+
+on:
+  push:
+    branches:
+      - "*"
+    tags-ignore:
+      - "*"
+  pull_request:
+
+jobs:
+  ubuntu:
+    env:
+      PERL_USE_UNSAFE_INC: 0
+      AUTHOR_TESTING: 1
+      AUTOMATED_TESTING: 1
+      RELEASE_TESTING: 1
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - run: perl -V
+      - name: install cpan deps
+        uses: perl-actions/install-with-cpm@v1.3
+        with:
+          install: |
+            Data::Dumper
+            Devel::Peek
+            Mojo::JSON
+            JSON::XS
+            JSON
+            Test::LeakTrace
+            Test::MinimumVersion
+            Perl::MinimumVersion
+            Test::CPAN::Meta
+            Test::Pod
+            Test::Pod::Coverage
+            Test::Spelling
+            Pod::Spell::CommonMistakes
+            Test::CPAN::Changes
+            Test::CheckChanges
+            Class::XSAccessor
+            Text::CSV_XS
+            List::MoreUtils
+            Test::Kwalitee
+      - run: perl Makefile.PL
+      - run: make test
+
+  linux:
+    name: "perl ${{ matrix.perl-version }}"
+    needs: [ubuntu]
+    env:
+      PERL_USE_UNSAFE_INC: 0
+      AUTOMATED_TESTING: 1
+      AUTHOR_TESTING: 0
+      RELEASE_TESTING: 0
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        perl-version:
+          [
+            "5.34",
+            "5.32",
+            "5.30",
+            "5.28",
+            "5.26",
+            "5.24",
+            "5.22",
+            "5.20",
+            "5.18",
+            "5.16",
+            "5.14",
+            "5.12",
+            "5.10",
+            "5.8",
+          ]
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl-version }}
+      - run: perl -V
+      - name: install cpan deps
+        uses: perl-actions/install-with-cpm@v1.3
+        with:
+          sudo: false
+          install: |
+            Data::Dumper
+            Devel::Peek
+            JSON::XS
+            JSON
+      - run: perl Makefile.PL
+      - run: make test
+
+  macOS:
+    needs: [ubuntu]
+    env:
+      PERL_USE_UNSAFE_INC: 0
+      AUTOMATED_TESTING: 1
+      AUTHOR_TESTING: 0
+      RELEASE_TESTING: 0
+
+    runs-on: macOS-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        perl-version: [latest]
+
+    steps:
+      - uses: actions/checkout@v1
+      - run: perl -V
+      - run: perl Makefile.PL
+      - run: make test
+
+  windows:
+    needs: [ubuntu]
+    env:
+      PERL_USE_UNSAFE_INC: 0
+      AUTOMATED_TESTING: 1
+      AUTHOR_TESTING: 0
+      RELEASE_TESTING: 0
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        perl-version: [latest]
+
+    steps:
+      - uses: actions/checkout@master
+      - run: perl -V
+      - run: perl Makefile.PL
+      #- run: prove -vb t/*.t
+      - run: make test
+        continue-on-error: true
