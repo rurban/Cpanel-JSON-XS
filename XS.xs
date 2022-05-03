@@ -301,6 +301,8 @@ mingw_modfl(long double x, long double *ip)
 # endif
 #endif
 
+#define JSON_MAGIC 0x4A534F4E
+
 /* types */
 #define JSON_TYPE_SCALAR       0x0000
 #define JSON_TYPE_BOOL         0x0001
@@ -441,7 +443,7 @@ json_init (JSON *json)
   Zero (json, 1, JSON);
   json->max_depth     = 512;
   json->indent_length = INDENT_STEP;
-  json->magic = 0x4A534F4E; // JSON
+  json->magic = JSON_MAGIC; // JSON
 }
 
 /* dTHX/threads TODO*/
@@ -471,9 +473,9 @@ init_MY_CXT(pTHX_ my_cxt_t * cxt)
 /* utility functions */
 
 INLINE bool
-json_validate (pTHX_ JSON *json)
+json_validate (JSON *json)
 {
-    return json->magic == 0xDEADBEEF;
+    return json->magic == JSON_MAGIC;
 }
 
 /* Unpacks the 2 boolean objects from the global references */
@@ -1745,6 +1747,9 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
           items = count;
           SPAGAIN;
 
+          if (!json_validate (&enc->json))
+              croak (NULL);
+
           /* catch this surprisingly common error */
           if (SvROK (TOPs) && SvRV (TOPs) == sv)
             croak ("%s::FREEZE method returned same object as was passed instead of a new one",
@@ -1787,6 +1792,9 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
           call_sv ((SV *)GvCV (method), G_SCALAR);
           SPAGAIN;
           
+          if (!json_validate (&enc->json))
+              croak (NULL);
+
           /* catch this surprisingly common error */
           if (SvROK (TOPs) && SvRV (TOPs) == sv)
             croak ("%s::TO_JSON method returned same object as was passed instead of a new one", HvNAME (SvSTASH (sv)));
@@ -2490,6 +2498,9 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
               eval_sv (pv, G_SCALAR);
               SvREFCNT_dec (pv);
 
+              if (!json_validate (&enc->json))
+                  croak (NULL);
+              
               /* rethrow current error */
               errsv = ERRSV;
               if (SvROK (errsv))
@@ -3994,6 +4005,9 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
 
               PUTBACK; count = call_sv (HeVAL (cb), G_ARRAY); SPAGAIN;
 
+              if (!json_validate (&dec->json))
+                  croak (NULL);
+
               if (count == 1)
                 {
                   sv = newSVsv (POPs);
@@ -4016,6 +4030,9 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
           XPUSHs (sv_2mortal (sv));
 
           PUTBACK; count = call_sv (dec->json.cb_object, G_ARRAY); SPAGAIN;
+
+          if (!json_validate (&dec->json))
+              croak (NULL);
 
           if (count == 1)
             {
@@ -4104,6 +4121,8 @@ decode_tag (pTHX_ dec_t *dec)
     call_sv ((SV *)GvCV (method), G_SCALAR);
     SPAGAIN;
 
+    if (!json_validate (&dec->json))
+        croak (NULL);
     SvREFCNT_dec (tag);
     SvREFCNT_dec (val);
     sv = SvREFCNT_inc (POPs);
@@ -4262,6 +4281,8 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
   int converted = 0;
   /*dMY_CXT;*/
 
+  if (!json_validate (json))
+      croak (NULL);
   /* work around bugs in 5.10 where manipulating magic values
    * makes perl ignore the magic in subsequent accesses.
    * also make a copy of non-PV values, to get them into a clean
