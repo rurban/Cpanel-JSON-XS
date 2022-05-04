@@ -2,6 +2,15 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.28 2022-05-05 (rurban)
+        - Validate the JSON struct which might get corrupted by wrong FREEZE/THAW
+          methods, or other serializers, or corrupting our magic object. (GH #192)
+        - Improve our DESTROY and END methods to avoid NULL dereferences.
+          Fixes perl-compiler/#438
+        - Fix 3 tests in t/20_unknown.t with the latest 5.35.10 bool enhancements
+          and JSON::PP (GH #194)
+        - Added github actions
+
 4.27 2021-10-13 (rurban)
         - Only add -Werror=declaration-after-statement for 5.035004 and earlier (PR #186 nwc)
 	- Fix 125_shared_boolean.t for threads (PR #184 Sinan Unur)
