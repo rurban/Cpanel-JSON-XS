@@ -129,7 +129,8 @@ if ($Config{ivsize} == 4) {
   is($cjson->encode(     -9**9**9, JSON_TYPE_INT), '-2147483648');
 } else {
 SKIP: {
-  skip "unknown ivsize $Config{ivsize}", 26 if $Config{ivsize} != 8;
+  skip "Skip testing ivsize $Config{ivsize}, ivtype $Config{ivtype}", 26
+    if $Config{ivsize} != 8 and $Config{ivtype} ne 'long';
 
   # values around signed IV_MAX should work correctly as they can be represented by unsigned UV
   is($cjson->encode( '9223372036854775806', JSON_TYPE_INT),  '9223372036854775806');  #  2^63-2

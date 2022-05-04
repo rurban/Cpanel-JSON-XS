@@ -9,6 +9,7 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
           Fixes perl-compiler/#438
         - Fix 3 tests in t/20_unknown.t with the latest 5.35.10 bool enhancements
           and JSON::PP (GH #194)
+        - Fix t/118_type.t with Windows ivtype long long. (GH #178)
         - Added github actions
 
 4.27 2021-10-13 (rurban)
