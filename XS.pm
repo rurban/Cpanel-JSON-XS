@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '4.27';
+our $VERSION = '4.28';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -156,6 +156,9 @@ B<Changes to JSON::XS>
 - performance optimizations for threaded Perls
 
 - relaxed mode, allowing many popular extensions
+
+- protect our magic object from corruption by wrong or missing external
+  methods, like FREEZE/THAW or serialization with other methods.
 
 - additional fixes for:
 

@@ -1,5 +1,6 @@
 .appveyor.yml
 .github/FUNDING.yml
+.github/workflows/testsuite.yml
 .travis.yml
 .whitesource
 COPYING

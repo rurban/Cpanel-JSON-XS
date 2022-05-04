@@ -476,6 +476,9 @@ init_MY_CXT(pTHX_ my_cxt_t * cxt)
 /*/////////////////////////////////////////////////////////////////////////// */
 /* utility functions */
 
+/* Validate the JSON struct which might get corrupted by wrong FREEZE/THAW
+   methods, or other serializers, or corrupting our magic object.
+   E.g. https://github.com/rurban/Cpanel-JSON-XS/issues/192 */
 INLINE bool
 json_validate (JSON *json)
 {
