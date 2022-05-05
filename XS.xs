@@ -301,6 +301,7 @@ mingw_modfl(long double x, long double *ip)
 # endif
 #endif
 
+// i.e. "JSON" in big-endian
 #define JSON_MAGIC 0x4A534F4E
 
 /* types */
@@ -354,6 +355,8 @@ mingw_modfl(long double x, long double *ip)
 #define F_ALLOW_DUPKEYS   0x00800000UL
 #define F_REQUIRE_TYPES   0x01000000UL
 #define F_TYPE_ALL_STRING 0x02000000UL
+#define F_DUPKEYS_AS_AREF 0x04000000UL
+#define F_DUPKEYS_FIRST   0x08000000UL /* internal only */
 #define F_HOOK            0x80000000UL /* some hooks exist, so slow-path processing */
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
@@ -434,6 +437,8 @@ typedef struct {
   int incr_nest;   /* {[]}-nesting level */
   unsigned char incr_mode;
   unsigned char infnan_mode;
+
+  /* corruption check */
   U32 magic;
 } JSON;
 
@@ -443,12 +448,11 @@ json_init (JSON *json)
   Zero (json, 1, JSON);
   json->max_depth     = 512;
   json->indent_length = INDENT_STEP;
-  json->magic = JSON_MAGIC; // JSON
+  json->magic = JSON_MAGIC;
 }
 
-/* dTHX/threads TODO*/
-/* END dtor call not needed, all of these *s refcnts are owned by the stash
-  treem not C code */
+/* dTHX/threads TODO
+   END dtor not needed for these, all of these *s refcnts are owned by the stash. */
 static void
 init_MY_CXT(pTHX_ my_cxt_t * cxt)
 {
@@ -515,11 +519,11 @@ shrink (pTHX_ SV *sv)
     }
 }
 
-/* decode an utf-8 character and return it, or (UV)-1 in */
-/* case of an error. */
-/* we special-case "safe" characters from U+80 .. U+7FF, */
-/* but use the very good perl function to parse anything else. */
-/* note that we never call this function for a ascii codepoints */
+/* Decode an utf-8 character and return it, or (UV)-1 in
+   case of an error.
+   We special-case "safe" characters from U+80 .. U+7FF,
+   but use the very good perl function to parse anything else.
+   note that we never call this function for a ascii codepoints. */
 INLINE UV
 decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
 {
@@ -737,11 +741,12 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
         }
     }
 
-  /* This relies greatly on the quality of the pow () */
-  /* implementation of the platform, but a good */
-  /* implementation is hard to beat. */
-  /* (IEEE 754 conformant ones are required to be exact) */
-  if (postdp) *expo -= eaccum;
+    /* This relies greatly on the quality of the pow ()
+       implementation of the platform, but a good
+       implementation is hard to beat.
+       (IEEE 754 conformant ones are required to be exact) */
+    if (postdp)
+      *expo -= eaccum;
 #ifdef HAVE_NO_POWL
   /* powf() unfortunately is not accurate enough */
   *accum += uaccum * fs_powEx(10., *expo );
@@ -3811,6 +3816,18 @@ fail:
   return 0;
 }
 
+static void
+hv_store_str (pTHX_ HV* hv, char *key, U32 len, SV* value)
+{
+  /* Note: not a utf8 hash key */
+#if PERL_VERSION > 8 || (PERL_VERSION == 8 && PERL_SUBVERSION >= 9)
+  hv_common (hv, NULL, key, len, 0,
+             HV_FETCH_ISSTORE|HV_FETCH_JUST_SV, value, 0);
+#else
+  hv_store (hv, key, len, value, 0);
+#endif
+}
+
 static SV *
 decode_hv (pTHX_ dec_t *dec, SV *typesv)
 {
@@ -3821,6 +3838,8 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
   int allow_squote = dec->json.flags & F_ALLOW_SQUOTE;
   int allow_barekey = dec->json.flags & F_ALLOW_BAREKEY;
   int allow_dupkeys = dec->json.flags & F_ALLOW_DUPKEYS;
+  int dupkeys_as_arrayref = dec->json.flags & F_DUPKEYS_AS_AREF;
+  int dupkeys_first = dec->json.flags & F_DUPKEYS_FIRST;
   char endstr = '"';
 
   DEC_INC_DEPTH;
@@ -3866,24 +3885,43 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
         {
           SV *value;
           SV *value_typesv = NULL;
+          SV *old_value = NULL;
           char *p = dec->cur;
           char *e = p + 24; /* only try up to 24 bytes */
+          bool key_exists;
 
           for (;;)
             {
               /* the >= 0x80 is false on most architectures */
-              if (!is_bare &&
+              if (UNLIKELY(!is_bare &&
                   (p == e || *p < 0x20 || *(U8*)p >= 0x80 || *p == '\\'
-                   || allow_squote))
+                   || allow_squote)))
                 {
                   /* slow path, back up and use decode_str */
                   /* utf8 hash keys are handled here */
-                  SV *key = _decode_str (aTHX_ dec, endstr);
-                  if (!key)
+                  SV *keysv = _decode_str (aTHX_ dec, endstr);
+                  if (!keysv)
                     goto fail;
 
-                  if (!allow_dupkeys && UNLIKELY(hv_exists_ent (hv, key, 0))) {
-                    ERR ("Duplicate keys not allowed");
+                  key_exists = hv_exists_ent (hv, keysv, 0);
+                  if (UNLIKELY (key_exists)) {
+                    if (!allow_dupkeys)
+                      ERR ("Duplicate keys not allowed");
+                    else if (dupkeys_as_arrayref) {
+                      // extend the value to arrayref or push
+                      old_value = HeVAL(hv_fetch_ent (hv, keysv, 0, 0));
+                      SvREFCNT_inc (old_value);
+                      if (dupkeys_first) {
+                        AV *av = newAV ();
+                        av_extend (av, 2);
+                        if (av_store(av, 0, old_value))
+                          old_value = newRV ((SV*)av);
+                      } else if (SvTYPE (old_value) != SVt_RV &&
+                                 SvTYPE (SvRV (old_value)) != SVt_PVAV) {
+                        // not an AvREF
+                        ERR ("Invalid dupkeys_as_arrayref hash key");
+                      }
+                    } // else overwrite it below
                   }
                   decode_ws (dec); EXPECT_CH (':');
                   decode_ws (dec);
@@ -3891,18 +3929,31 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                   if (typesv)
                     {
                       value_typesv = newSV (0);
-                      (void)hv_store_ent (typehv, key, value_typesv, 0);
+                      (void)hv_store_ent (typehv, keysv, value_typesv, 0);
                     }
 
                   value = decode_sv (aTHX_ dec, value_typesv);
                   if (!value)
                     {
-                      SvREFCNT_dec (key);
+                      SvREFCNT_dec (keysv);
                       goto fail;
                     }
 
-                  (void)hv_store_ent (hv, key, value, 0);
-                  SvREFCNT_dec (key);
+                  if (UNLIKELY (key_exists && dupkeys_as_arrayref && old_value))
+                    {
+                      av_push ((AV*)SvRV (old_value), value);
+                      (void)hv_store_ent (hv, keysv, old_value, 0);
+                      if (dupkeys_first)
+                        {
+                          dupkeys_first = 0;
+                          dec->json.flags &= ~F_DUPKEYS_FIRST;
+                        }
+                    }
+                  else
+                    {
+                      (void)hv_store_ent (hv, keysv, value, 0);
+                    }
+                  SvREFCNT_dec (keysv);
 
                   break;
                 }
@@ -3914,15 +3965,33 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                   /* fast path, got a simple key */
                   char *key = dec->cur;
                   U32 len = p - key;
-                  assert(p >= key && p - key < I32_MAX);
+                  assert(p >= key && (p - key) < I32_MAX);
 #if PTRSIZE >= 8
                   /* hv_store can only handle I32 len, which might overflow */
                   /* perl5 just silently truncates it, cperl panics */
                   if (UNLIKELY(p - key > I32_MAX))
                     ERR ("Hash key too large");
 #endif
-                  if (!allow_dupkeys && UNLIKELY(hv_exists (hv, key, len))) {
-                    ERR ("Duplicate keys not allowed");
+                  key_exists = hv_exists (hv, key, len);
+                  if (UNLIKELY (key_exists)) {
+                    if (!allow_dupkeys)
+                      ERR ("Duplicate keys not allowed");
+                    else if (dupkeys_as_arrayref) {
+                      // extend the value to arrayref or push
+                      SV** rv = hv_fetch (hv, key, len, 0);
+                      old_value = *rv;
+                      SvREFCNT_inc (old_value);
+                      if (dupkeys_first) {
+                        AV *av = newAV ();
+                        av_extend (av, 2);
+                        if (av_store(av, 0, old_value))
+                          old_value = newRV ((SV*)av);
+                      } else if (SvTYPE (old_value) != SVt_RV &&
+                                 SvTYPE (SvRV (old_value)) != SVt_PVAV) {
+                        // not an AvREF
+                        ERR ("Invalid dupkeys_as_arrayref hash key");
+                      }
+                    } // else overwrite it below
                   }
 
                   dec->cur = p + 1;
@@ -3939,16 +4008,23 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                   if (!value)
                     goto fail;
 
-                  /* Note: not a utf8 hash key */
-#if PERL_VERSION > 8 || (PERL_VERSION == 8 && PERL_SUBVERSION >= 9)
-                  hv_common (hv, NULL, key, len, 0,
-                             HV_FETCH_ISSTORE|HV_FETCH_JUST_SV, value, 0);
-#else
-                  hv_store (hv, key, len, value, 0);
-#endif
+                  if (UNLIKELY (key_exists && dupkeys_as_arrayref))
+                    {
+                      av_push ((AV*)SvRV (old_value), value);
+                      hv_store_str (aTHX_ hv, key, len, old_value);
+                      if (dupkeys_first)
+                        {
+                          dupkeys_first = 0;
+                          dec->json.flags &= ~F_DUPKEYS_FIRST;
+                        }
+                    }
+                  else
+                    {
+                      /* Note: not a utf8 hash key */
+                      hv_store_str (aTHX_ hv, key, len, value);
+                    }
                   break;
                 }
-
               ++p;
             }
         }
@@ -4699,11 +4775,16 @@ void ascii (JSON *self, int enable = 1)
         allow_dupkeys   = F_ALLOW_DUPKEYS
         require_types   = F_REQUIRE_TYPES
         type_all_string = F_TYPE_ALL_STRING
+        dupkeys_as_arrayref = F_DUPKEYS_AS_AREF
     PPCODE:
         if (enable)
           self->flags |=  ix;
         else
           self->flags &= ~ix;
+        # Turning on DUPKEYS_AS_AREF also turns on ALLOW_DUPKEYS
+        # But turning off DUPKEYS_AS_AREF does not
+        if (ix == F_DUPKEYS_AS_AREF && enable != 0)
+          self->flags |= F_ALLOW_DUPKEYS | F_DUPKEYS_FIRST;
         XPUSHs (ST (0));
 
 void get_ascii (JSON *self)
@@ -4732,6 +4813,7 @@ void get_ascii (JSON *self)
         get_allow_dupkeys   = F_ALLOW_DUPKEYS
         get_require_types   = F_REQUIRE_TYPES
         get_type_all_string = F_TYPE_ALL_STRING
+        get_dupkeys_as_arrayref = F_DUPKEYS_AS_AREF
     PPCODE:
         XPUSHs (boolSV (self->flags & ix));
 

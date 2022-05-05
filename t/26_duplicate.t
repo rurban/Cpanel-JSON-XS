@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 9;
+use Test::More tests => 12;
 use Cpanel::JSON::XS;
 
 my $json = Cpanel::JSON::XS->new;
@@ -32,7 +32,18 @@ $json->allow_dupkeys(0);
 eval { $json->decode ('{"a":"b","a":"c"}') }; # the XS slow path
 like ($@, qr/^Duplicate keys not allowed/, 'relaxed and allow_dupkeys(0)');
 
+# allow dupkeys
 $json->allow_dupkeys;
 $json->relaxed(0); # tuning off relaxed needs to turn off dupkeys
 eval { $json->decode ('{"a":"b","a":"c"}') };
 like ($@, qr/^Duplicate keys not allowed/, 'relaxed(0)');
+
+# a private extension (GH #193)
+$json->allow_dupkeys(0);
+$json->dupkeys_as_arrayref; # should turn on dupkeys
+is (encode_json ($json->decode ('{"a":"b","a":"c"}')), '{"a":["b","c"]}',
+    'dupkeys_as_arrayref');
+is (encode_json ($json->decode ('{"a":["b"],"a":"c"}')), '{"a":[["b"],"c"]}',
+    'dupkeys_as_arrayref to []');
+is (encode_json ($json->decode ('{"a":["b","c"],"a":["c"]}')), '{"a":[["b","c"],["c"]]}',
+    'dupkeys_as_arrayref to [[]]');

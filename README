@@ -180,9 +180,9 @@ DESCRIPTION
 
     - support many more options and methods from JSON::PP: stringify_infnan,
     allow_unknown, allow_stringify, allow_barekey, encode_stringify,
-    allow_bignum, allow_singlequote, sort_by (partially), escape_slash,
-    convert_blessed, ... optional decode_json(, allow_nonref) arg. relaxed
-    implements allow_dupkeys.
+    allow_bignum, allow_singlequote, dupkeys_as_arrayref, sort_by
+    (partially), escape_slash, convert_blessed, ... optional decode_json(,
+    allow_nonref) arg. relaxed implements allow_dupkeys.
 
     - support all 5 unicode BOM's: UTF-8, UTF-16LE, UTF-16BE, UTF-32LE,
     UTF-32BE, encoding internally to UTF-8.
@@ -759,6 +759,25 @@ OBJECT-ORIENTED INTERFACE
 
         See <http://seriot.ch/parsing_json.php#24>: RFC 7159 section 4: "The
         names within an object should be unique."
+
+    $json = $json->dupkeys_as_arrayref ([$enable])
+    $enabled = $json->get_dupkeys_as_arrayref
+        If enabled, allow decoding of duplicate keys in hashes and store the
+        values as arrayref in the hash instead. By default duplicate keys
+        are forbidden. Enabling this also enables the "allow_dupkeys"
+        option, but disabling this does not disable the "allow_dupkeys"
+        option.
+
+        Example:
+
+            $json->dupkeys_as_arrayref;
+            print encode_json ($json->decode ('{"a":"b","a":"c"}'));
+
+              => {"a":["b","c"]}
+
+        This changes the result structure, thus cannot be enabled by
+        default. The client must be aware of it. The resulting arrayref is
+        not yet marked somehow (blessed or such).
 
     $json = $json->allow_blessed ([$enable])
     $enabled = $json->get_allow_blessed
