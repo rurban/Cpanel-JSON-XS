@@ -30,6 +30,7 @@ jobs:
             Mojo::JSON
             JSON::XS
             JSON
+            JSON::PP
             Test::LeakTrace
             Test::MinimumVersion
             Perl::MinimumVersion
