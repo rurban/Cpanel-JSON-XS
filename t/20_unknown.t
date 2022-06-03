@@ -49,15 +49,15 @@ is( $pp->encode( {null => \"some"} ),   '{"null":null}',   'pp unknown' );
 is( $pp->encode( {null => \""} ),       '{"null":null}',   'pp unknown' );
 # valid special yes/no values even without nonref
 my $e = $pp->encode( {true => !!1} ); # pp is a bit inconsistent
-#if ($JSON::PP::VERSION ne '4.08') {
-ok( ($e eq '{"true":"1"}') || ($e eq  '{"true":1}'),     'pp sv_yes' );
-is( $pp->encode( {false => !!0} ),    '{"false":""}',    'pp sv_no' );
-is( $pp->encode( {false => !!""} ),   '{"false":""}',    'pp sv_no' );
-#} else { # surprisingly using native bool (unblessed) overloads. GH #194
-#  is( $pp->encode( {true => !!1} ),     '{"true":true}',   'pp sv_yes' );
-#  is( $pp->encode( {false => !!0} ),    '{"false":false}', 'pp sv_no' );
-#  is( $pp->encode( {false => !!""} ),   '{"false":false}', 'pp sv_no' );
-#}
+if (JSON::PP->can('CORE_BOOL') && JSON::PP::CORE_BOOL()) {  # native bool
+  is( $pp->encode( {true => !!1} ),       '{"true":true}',   'pp sv_yes' );
+  is( $pp->encode( {false => !!0} ),      '{"false":false}', 'pp sv_no' );
+  is( $pp->encode( {false => !!""} ),     '{"false":false}', 'pp sv_no' );
+} else {
+  ok( ($e eq '{"true":"1"}') || ($e eq '{"true":1}'),        'pp sv_yes' );
+  is( $pp->encode( {false => !!0} ),      '{"false":""}',    'pp sv_no' );
+  is( $pp->encode( {false => !!""} ),     '{"false":""}',    'pp sv_no' );
+}
 is( $pp->encode( {true => \!!1} ),      '{"true":true}',   'pp \sv_yes');
 is( $pp->encode( {false => \!!0} ),     '{"false":null}',  'pp \sv_no' );
 is( $pp->encode( {false => \!!""} ),    '{"false":null}',  'pp \sv_no' );
