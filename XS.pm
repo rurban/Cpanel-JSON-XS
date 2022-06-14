@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '4.29';
+our $VERSION = '4.30';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -113,6 +113,7 @@ or        L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 B<Changes to JSON::XS>
 
 - stricter decode_json() as documented. non-refs are disallowed.
+  safe by default.
   added a 2nd optional argument. decode() honors now allow_nonref.
 
 - fixed encode of numbers for dual-vars. Different string

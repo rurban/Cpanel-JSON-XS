@@ -2,9 +2,13 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.30 2022-06-14 (rurban)
+        - Fix perl 5.37 utf8n_to_uvuni deprecation. GH #196
+
 4.29 2022-05-27 (rurban)
         - Hack: Revert native bool (unblessed) overloads via JSON::PP 4.08.
           JSON::PP ignores unblessed bools for now. GH #194
+
 4.28 2022-05-05 (rurban)
         - Validate the JSON struct which might get corrupted by wrong FREEZE/THAW
           methods, or other serializers, or corrupting our magic object. (GH #192)

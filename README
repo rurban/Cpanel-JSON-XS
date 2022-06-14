@@ -100,8 +100,9 @@ DESCRIPTION
 
     Changes to JSON::XS
 
-    - stricter decode_json() as documented. non-refs are disallowed. added a
-    2nd optional argument. decode() honors now allow_nonref.
+    - stricter decode_json() as documented. non-refs are disallowed. safe by
+    default. added a 2nd optional argument. decode() honors now
+    allow_nonref.
 
     - fixed encode of numbers for dual-vars. Different string
     representations are preserved, but numbers with temporary strings which
