@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.31 2022-08-10 (rurban)
+        - adjust t/20_unknown.t pp bool tests for native bool when supported.
+          GH #198 PR by Graham Knop.
+
 4.30 2022-06-14 (rurban)
         - Fix perl 5.37 utf8n_to_uvuni deprecation. GH #196
 
