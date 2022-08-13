@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '4.31';
+our $VERSION = '4.32';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -2338,10 +2338,16 @@ BEGIN {
   require overload;
 
   local $^W; # silence redefine warnings. no warnings 'redefine' does not help
-  &overload::import( 'overload', # workaround 5.6 reserved keyword warning
-    "0+"     => sub { ${$_[0]} },
-    "++"     => sub { $_[0] = ${$_[0]} + 1 },
-    "--"     => sub { $_[0] = ${$_[0]} - 1 },
+  # These already come with JSON::PP::Boolean. Avoid redefine warning.
+  if (!defined $JSON::PP::Boolean::VERSION or $JSON::PP::VERSION lt '4.00') {
+    &overload::import( 'overload',
+                       "0+"     => sub { ${$_[0]} },
+                       "++"     => sub { $_[0] = ${$_[0]} + 1 },
+                       "--"     => sub { $_[0] = ${$_[0]} - 1 },
+      );
+  }
+  # workaround 5.6 reserved keyword warning
+  &overload::import( 'overload',
     '""'     => sub { ${$_[0]} == 1 ? '1' : '0' }, # GH 29
     'eq'     => sub {
       my ($obj, $op) = $_[2] ? ($_[1], $_[0]) : ($_[0], $_[1]);

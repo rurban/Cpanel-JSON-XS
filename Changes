@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.32 2022-08-13 (rurban)
+        - fix new JSON::PP::Boolean overload redefinition warnings. GH #200
+
 4.31 2022-08-10 (rurban)
         - adjust t/20_unknown.t pp bool tests for native bool when supported.
           GH #198 PR by Graham Knop.
