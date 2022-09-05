@@ -357,6 +357,7 @@ mingw_modfl(long double x, long double *ip)
 #define F_TYPE_ALL_STRING 0x02000000UL
 #define F_DUPKEYS_AS_AREF 0x04000000UL
 #define F_DUPKEYS_FIRST   0x08000000UL /* internal only */
+#define F_UTF8_BYTES      0x10000000UL
 #define F_HOOK            0x80000000UL /* some hooks exist, so slow-path processing */
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
@@ -610,6 +611,15 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
   }
 }
 
+#define UTF8_2BYTE_1(ch) 0xc0 | ( ch >>  6)
+#define UTF8_FINAL(ch)   0x80 | ( ch & 0x3f)
+
+#define UTF8_3BYTE_1(ch)     0xe0 | ( ch >> 12)
+#define UTF8_PENULTIMATE(ch) 0x80 | ((ch >>  6) & 0x3f)
+
+#define UTF8_4BYTE_1(ch) 0xf0 | ( ch >> 18)
+#define UTF8_4BYTE_2(ch) 0x80 | ((ch >> 12) & 0x3f)
+
 /* Likewise for encoding, also never called for ascii codepoints. */
 /* This function takes advantage of this fact, although current gcc's */
 /* seem to optimise the check for >= 0x80 away anyways. */
@@ -619,17 +629,41 @@ encode_utf8 (unsigned char *s, UV ch)
   if    (UNLIKELY(ch < 0x000080))
     *s++ = ch;
   else if (LIKELY(ch < 0x000800))
-    *s++ = 0xc0 | ( ch >>  6),
-    *s++ = 0x80 | ( ch        & 0x3f);
+    *s++ = UTF8_2BYTE_1(ch),
+    *s++ = UTF8_FINAL(ch);
   else if        (ch < 0x010000)
-    *s++ = 0xe0 | ( ch >> 12),
-    *s++ = 0x80 | ((ch >>  6) & 0x3f),
-    *s++ = 0x80 | ( ch        & 0x3f);
+    *s++ = UTF8_3BYTE_1(ch),
+    *s++ = UTF8_PENULTIMATE(ch),
+    *s++ = UTF8_FINAL(ch);
   else if        (ch < 0x110000)
-    *s++ = 0xf0 | ( ch >> 18),
-    *s++ = 0x80 | ((ch >> 12) & 0x3f),
-    *s++ = 0x80 | ((ch >>  6) & 0x3f),
-    *s++ = 0x80 | ( ch        & 0x3f);
+    *s++ = UTF8_4BYTE_1(ch),
+    *s++ = UTF8_4BYTE_2(ch),
+    *s++ = UTF8_PENULTIMATE(ch),
+    *s++ = UTF8_FINAL(ch);
+
+  return s;
+}
+
+INLINE unsigned char *
+double_encode_utf8 (unsigned char *s, UV ch)
+{
+  if    (UNLIKELY(ch < 0x000080))
+    *s++ = ch;
+  else if (LIKELY(ch < 0x000800)) {
+    s = encode_utf8(s, UTF8_2BYTE_1(ch));
+    s = encode_utf8(s, UTF8_FINAL(ch));
+  }
+  else if        (ch < 0x010000) {
+    s = encode_utf8(s, UTF8_3BYTE_1(ch));
+    s = encode_utf8(s, UTF8_PENULTIMATE(ch));
+    s = encode_utf8(s, UTF8_FINAL(ch));
+  }
+  else if        (ch < 0x110000) {
+    s = encode_utf8(s, UTF8_4BYTE_1(ch));
+    s = encode_utf8(s, UTF8_4BYTE_2(ch));
+    s = encode_utf8(s, UTF8_PENULTIMATE(ch));
+    s = encode_utf8(s, UTF8_FINAL(ch));
+  }
 
   return s;
 }
@@ -3477,7 +3511,7 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
                       if (hi >= 0x80)
                         {
                           utf8 = 1;
-                          cur = (char*)encode_utf8 ((U8*)cur, hi);
+                          cur = (char*) (dec->json.flags & F_UTF8_BYTES) ? double_encode_utf8 ((U8*)cur, hi) : encode_utf8 ((U8*)cur, hi);
                         }
                       else
                         *cur++ = hi;
@@ -4690,6 +4724,10 @@ BOOT:
         MY_CXT_INIT;
         init_MY_CXT(aTHX_ &MY_CXT);
 
+        newCONSTSUB( MY_CXT.json_stash, "UTF8_CHARS", newSViv(0) );
+        newCONSTSUB( MY_CXT.json_stash, "UTF8_STANDARD", newSViv(1) );
+        newCONSTSUB( MY_CXT.json_stash, "UTF8_BYTES", newSViv(2) );
+
         stash = gv_stashpvs(JSON_TYPE_CLASS, GV_ADD);
         newCONSTSUB(stash, "JSON_TYPE_BOOL", newSViv(JSON_TYPE_BOOL));
         newCONSTSUB(stash, "JSON_TYPE_INT", newSViv(JSON_TYPE_INT));
@@ -4753,7 +4791,6 @@ void ascii (JSON *self, int enable = 1)
         ascii           = F_ASCII
         latin1          = F_LATIN1
         binary          = F_BINARY
-        utf8            = F_UTF8
         indent          = F_INDENT
         canonical       = F_CANONICAL
         space_before    = F_SPACE_BEFORE
@@ -4787,12 +4824,37 @@ void ascii (JSON *self, int enable = 1)
           self->flags |= F_ALLOW_DUPKEYS | F_DUPKEYS_FIRST;
         XPUSHs (ST (0));
 
+SV* utf8 (JSON *self, int enable_all = 1)
+    PPCODE:
+        switch (enable_all) {
+            case 0:
+                self->flags &= ~F_UTF8;
+                self->flags &= ~F_UTF8_BYTES;
+                break;
+            case 1:
+                self->flags |= F_UTF8;
+                self->flags &= ~F_UTF8_BYTES;
+                break;
+            case 2:
+                self->flags &= ~F_UTF8;
+                self->flags |= F_UTF8_BYTES;
+                break;
+            default:
+                croak("utf8(%d) is invalid", enable_all);
+        }
+        XPUSHs (ST (0));
+
+int get_utf8 (JSON *self)
+    CODE:
+        RETVAL = self->flags & F_UTF8_BYTES ? 2 : self->flags & F_UTF8;
+    OUTPUT:
+        RETVAL
+
 void get_ascii (JSON *self)
     ALIAS:
         get_ascii           = F_ASCII
         get_latin1          = F_LATIN1
         get_binary          = F_BINARY
-        get_utf8            = F_UTF8
         get_indent          = F_INDENT
         get_canonical       = F_CANONICAL
         get_space_before    = F_SPACE_BEFORE

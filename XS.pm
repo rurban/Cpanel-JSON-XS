@@ -484,35 +484,37 @@ non-JSON conformant hex or octal encoding C<\xNN> or C<\NNN>.
   Error: illegal hex character in non-binary string
 
 
-=item $json = $json->utf8 ([$enable])
+=item $json = $json->utf8 ([$mode_constant])
 
-=item $enabled = $json->get_utf8
+=item $mode_constant = $json->get_utf8
 
-If C<$enable> is true (or missing), then the C<encode> method will encode
-the JSON result into UTF-8, as required by many protocols, while the
-C<decode> method expects to be handled an UTF-8-encoded string.  Please
-note that UTF-8-encoded strings do not contain any characters outside the
-range C<0..255>, they are thus useful for bytewise/binary I/O. In future
-versions, enabling this option might enable autodetection of the UTF-16
-and UTF-32 encoding families, as described in RFC4627.
+Determines how $json handles UTF-8 encoding and decoding.
 
-If C<$enable> is false, then the C<encode> method will return the JSON
+$mode_constant is one of the following constants under Cpanel::JSON::XS:
+
+=over
+
+=item * B<UTF8_CHARS> - The C<encode> method will return the JSON
 string as a (non-encoded) Unicode string, while C<decode> expects thus a
 Unicode string.  Any decoding or encoding (e.g. to UTF-8 or UTF-16) needs
 to be done yourself, e.g. using the Encode module.
 
+=item * C<UTF8_STANDARD> - The default if no $mode_constant is given.
+The C<encode> method will encode
+the JSON result into UTF-8, as required by many protocols, while the
+C<decode> method expects to be handed a UTF-8-encoded string.  Please
+note that UTF-8-encoded strings do not contain any characters outside the
+range C<0..255>; they are thus useful for bytewise/binary I/O.
+
+=item * C<UTF8_BYTES> - Like B<UTF8_CHARS>, but C<encode> and C<decode>
+expect and return UTF-8 strings rather than Unicode strings. This mode
+allows arbitrary octets (i.e., invalid UTF-8) to be encoded & decoded,
+which violates the JSON standard but may still be useful.
+
+=back
+
 See also the section I<ENCODING/CODESET FLAG NOTES> later in this
 document.
-
-Example, output UTF-16BE-encoded JSON:
-
-  use Encode;
-  $jsontext = encode "UTF-16BE", Cpanel::JSON::XS->new->encode ($object);
-
-Example, decode UTF-32LE-encoded JSON:
-
-  use Encode;
-  $object = Cpanel::JSON::XS->new->decode (decode "UTF-32LE", $jsontext);
 
 =item $json = $json->pretty ([$enable])
 
@@ -1816,7 +1818,7 @@ idea.
 
 =head1 ENCODING/CODESET FLAG NOTES
 
-The interested reader might have seen a number of flags that signify
+The interested reader might have seen a number of controls that signify
 encodings or codesets - C<utf8>, C<latin1>, C<binary> and
 C<ascii>. There seems to be some confusion on what these do, so here
 is a short comparison:
@@ -1824,7 +1826,7 @@ is a short comparison:
 C<utf8> controls whether the JSON text created by C<encode> (and expected
 by C<decode>) is UTF-8 encoded or not, while C<latin1> and C<ascii> only
 control whether C<encode> escapes character values outside their respective
-codeset range. Neither of these flags conflict with each other, although
+codeset range. Neither of these conflict with each other, although
 some combinations make less sense than others.
 
 Care has been taken to make all flags symmetrical with respect to
@@ -1842,9 +1844,9 @@ the same time, which can be confusing.
 
 =over 4
 
-=item C<utf8> flag disabled
+=item C<utf8> is UTF8_CHARS
 
-When C<utf8> is disabled (the default), then C<encode>/C<decode> generate
+When C<utf8> is UTF8_CHARS (the default), then C<encode>/C<decode> generate
 and expect Unicode strings, that is, characters with high ordinal Unicode
 values (> 255) will be encoded as such characters, and likewise such
 characters are decoded as-is, no changes to them will be done, except
@@ -1858,17 +1860,23 @@ the encoding for you (for example, when printing to a terminal using a
 filehandle that transparently encodes to UTF-8 you certainly do NOT want
 to UTF-8 encode your data first and have Perl encode it another time).
 
-=item C<utf8> flag enabled
+=item C<utf8> is UTF8_STANDARD
 
-If the C<utf8>-flag is enabled, C<encode>/C<decode> will encode all
+If C<utf8> is UTF8_STANDARD, C<encode>/C<decode> will encode all
 characters using the corresponding UTF-8 multi-byte sequence, and will
 expect your input strings to be encoded as UTF-8, that is, no "character"
 of the input string must have any value > 255, as UTF-8 does not allow
 that.
 
-The C<utf8> flag therefore switches between two modes: disabled means you
-will get a Unicode string in Perl, enabled means you get an UTF-8 encoded
-octet/binary string in Perl.
+=item C<utf8> is UTF8_BYTES
+
+When C<utf8> is UTF8_BYTES, C<encode> and C<decode> generate and expect
+UTF-8 strings. This ends up being I<almost> the same as UTF_CHARS except
+that JSON Unicode escapes (e.g., C<"\u00e9">) are output encoded as UTF-8.
+
+This mode also allows arbitrary octet sequences to be decoded. Ordinarily
+that’s undesirable (since it violates the JSON specification), but in some
+applications it may nonetheless be appropriate.
 
 =item C<latin1>, C<binary> or C<ascii> flags enabled
 
@@ -1877,28 +1885,29 @@ characters with ordinal values > 255 (> 127 with C<ascii>) and encode
 the remaining characters as specified by the C<utf8> flag.
 With C<binary> enabled, ordinal values > 255 are illegal.
 
-If C<utf8> is disabled, then the result is also correctly encoded in those
+If C<utf8> is UTF8_CHARS or UTF8_BYTES, then the result is also correctly
+encoded in those
 character sets (as both are proper subsets of Unicode, meaning that a
 Unicode string with all character values < 256 is the same thing as a
 ISO-8859-1 string, and a Unicode string with all character values < 128 is
 the same thing as an ASCII string in Perl).
 
-If C<utf8> is enabled, you still get a correct UTF-8-encoded string,
+If C<utf8> is UTF8_STANDARD, you still get a correct UTF-8-encoded string,
 regardless of these flags, just some more characters will be escaped using
-C<\uXXXX> then before.
+C<\uXXXX> than before.
 
 Note that ISO-8859-1-I<encoded> strings are not compatible with UTF-8
 encoding, while ASCII-encoded strings are. That is because the ISO-8859-1
 encoding is NOT a subset of UTF-8 (despite the ISO-8859-1 I<codeset> being
 a subset of Unicode), while ASCII is.
 
-Surprisingly, C<decode> will ignore these flags and so treat all input
-values as governed by the C<utf8> flag. If it is disabled, this allows you
-to decode ISO-8859-1- and ASCII-encoded strings, as both strict subsets of
-Unicode. If it is enabled, you can correctly decode UTF-8 encoded strings.
+Surprisingly, C<decode> will ignore these and so treat all input
+If it is UTF8_BYTES, this allows you
+to decode ISO-8859-1- and ASCII-encoded strings, as both are strict subsets
+of Unicode. If it is enabled, you can correctly decode UTF-8 encoded strings.
 
-So neither C<latin1>, C<binary> nor C<ascii> are incompatible with the
-C<utf8> flag - they only govern when the JSON output engine escapes a
+So neither C<latin1>, C<binary> nor C<ascii> are incompatible with any
+C<utf8> value - they only govern when the JSON output engine escapes a
 character or not.
 
 The main use for C<latin1> or C<binary> is to relatively efficiently
