@@ -12,24 +12,27 @@ my @chars_to_test = (
     "\x{1f600}",    # smiley
 );
 
-my @chars_to_test_utf8 = map {
-    my $v = $_;
-    utf8::encode($v);
-    $v;
-} @chars_to_test;
-
-my @chars_to_test_escaped_json = map {
-    $JSON_NS->new()->ascii()->allow_nonref->encode($_)
-} @chars_to_test;
-
 my $decoder = $JSON_NS->new()->allow_nonref->utf8( Cpanel::JSON::XS::UTF8_BYTES );
 
-for my $i ( 0 .. $#chars_to_test ) {
-    my $json_str = $chars_to_test_escaped_json[$i];
+my $encoder = $JSON_NS->new()->ascii()->allow_nonref;
+
+for my $char ( @chars_to_test ) {
+    my $json_str = $encoder->encode($char);
 
     my $decoded = $decoder->decode( $json_str );
 
-    is( $decoded, $chars_to_test_utf8[$i], "decode($json_str)" );
+    my $utf8_char = $char;
+    utf8::encode($utf8_char);
+
+    is( $decoded, $utf8_char, "decode($json_str)" );
+
+    # --------------------------------------------------
+    my $utf8_ff = "\xff$utf8_char\xff";
+    substr( $json_str, 1, 0, "\xff" );
+    substr( $json_str, -1, 0, "\xff" );
+    my $decoded_ff = $decoder->decode( $json_str );
+
+    is($decoded_ff, $utf8_ff, "... and preserves 0xff octets");
 }
 
 done_testing;
