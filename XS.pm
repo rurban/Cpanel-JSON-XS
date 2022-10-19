@@ -2340,6 +2340,7 @@ BEGIN {
   local $^W; # silence redefine warnings. no warnings 'redefine' does not help
   # These already come with JSON::PP::Boolean. Avoid redefine warning.
   if (!defined $JSON::PP::Boolean::VERSION or $JSON::PP::VERSION lt '4.00') {
+    &overload::unimport( 'overload', '0+', '++', '--' );
     &overload::import( 'overload',
                        "0+"     => sub { ${$_[0]} },
                        "++"     => sub { $_[0] = ${$_[0]} + 1 },
@@ -2347,6 +2348,7 @@ BEGIN {
       );
   }
   # workaround 5.6 reserved keyword warning
+  &overload::unimport( 'overload', '""', 'eq', 'ne' );
   &overload::import( 'overload',
     '""'     => sub { ${$_[0]} == 1 ? '1' : '0' }, # GH 29
     'eq'     => sub {
