@@ -3821,13 +3821,14 @@ fail:
 static void
 hv_store_str (pTHX_ HV* hv, char *key, U32 len, SV* value)
 {
+  U32 i;
 #if PERL_VERSION > 8 || (PERL_VERSION == 8 && PERL_SUBVERSION >= 9)
   int utf8 = 0;
 #else
   I32 ulen = (I32)len;
 #endif
   /* check utf8 hash key */
-  for (U32 i=0; i<len; i++) {
+  for (i=0; i<len; i++) {
     if ((signed char)key[i] < 0) {
 #if PERL_VERSION > 8 || (PERL_VERSION == 8 && PERL_SUBVERSION >= 9)
       utf8 = HVhek_UTF8;
