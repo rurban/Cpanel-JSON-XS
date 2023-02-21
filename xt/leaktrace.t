@@ -4,7 +4,7 @@
 
 use strict;
 use constant HAS_LEAKTRACE => eval{ require Test::LeakTrace };
-use Test::More HAS_LEAKTRACE ? (tests => 1) : (skip_all => 'require Test::LeakTrace');
+use Test::More HAS_LEAKTRACE ? (tests => 4) : (skip_all => 'require Test::LeakTrace');
 use Test::LeakTrace;
 
 use Cpanel::JSON::XS;
@@ -22,3 +22,23 @@ leaks_cmp_ok{
   $js->encode ( bless { k => 1 }, Temp1:: );
 
 } '<', 1;
+
+# leak on allow_nonref croak, GH 206
+leaks_cmp_ok{
+    eval { decode_json('"asdf"') };
+    #print $@;
+}  '<', 1;
+
+# illegal unicode croak
+leaks_cmp_ok{
+    eval { decode_json("{\"\x{c2}\x{c2}\"}") };
+    #print $@;
+}  '<', 1;
+
+# wrong type croak
+leaks_cmp_ok{
+    use Cpanel::JSON::XS::Type;
+    my $js = Cpanel::JSON::XS->new->canonical->require_types;
+    eval { $js->encode([0], JSON_TYPE_FLOAT) };
+    #print $@;
+}  '<', 1;

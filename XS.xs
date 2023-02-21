@@ -4499,12 +4499,14 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
 #endif
       croak ("%s, at character offset %d (before \"%s\")",
              dec.err,
-             (int)ptr_to_index (aTHX_ string, dec.cur-SvPVX(string)),
+             (int)ptr_to_index (aTHX_ string, dec.cur - SvPVX(string)),
              dec.cur != dec.end ? SvPV_nolen (uni) : "(end of string)");
     }
 
-  if (!(dec.json.flags & F_ALLOW_NONREF) && json_nonref(aTHX_ sv))
+  if (!(dec.json.flags & F_ALLOW_NONREF) && json_nonref(aTHX_ sv)) {
+    SvREFCNT_dec (sv);
     croak ("JSON text must be an object or array (but found number, string, true, false or null, use allow_nonref to allow this)");
+  }
 
   if (UNLIKELY(converted && !(converted - 1))) /* with BOM, and UTF8 was not set */
     json->flags &= ~F_UTF8;
