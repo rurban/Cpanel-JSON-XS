@@ -1,6 +1,6 @@
 use strict;
 use Cpanel::JSON::XS;
-use Test::More tests => 22;
+use Test::More tests => 23;
 
 package ZZ;
 use overload ('""' => sub { "<ZZ:".${$_[0]}.">" } );
@@ -11,6 +11,7 @@ sub XX::TO_JSON { {"__",""} }
 my $o1 = bless { a => 3 }, "XX";       # with TO_JSON
 my $o2 = bless \(my $dummy1 = 1), "YY"; # without stringification
 my $o3 = bless \(my $dummy2 = 1), "ZZ"; # with stringification
+my $o4 = bless \(my $dummy3 = "\x{1f603}"), "ZZ"; # with stringification Unicode
 
 if (eval 'require Hash::Util') {
   if ($Hash::Util::VERSION > 0.05) {
@@ -41,6 +42,8 @@ TODO: {
   local $TODO = '5.8.x' if $] < 5.010;
   ok ($r eq '"<ZZ:1>"', "stringify overload with convert_blessed: $r / $o3");
 }
+$r = $js->encode ($o4);
+ok ($r eq "\"<ZZ:\x{1f603}>\"", "stringify overload Unicode with convert_blessed");
 
 $js = Cpanel::JSON::XS->new;
 $js->allow_blessed;

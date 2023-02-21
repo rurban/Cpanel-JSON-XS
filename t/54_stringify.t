@@ -10,7 +10,7 @@ BEGIN {
     or plan skip_all => 'JSON 2.09 required for cross testing';
   $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
 }
-plan $] < 5.008 ? (skip_all => "5.6 no AMG yet") : (tests => 18);
+plan $] < 5.008 ? (skip_all => "5.6 no AMG yet") : (tests => 19);
 use Cpanel::JSON::XS;
 
 my $time = localtime;
@@ -32,6 +32,12 @@ my $object = bless ["foo"], 'Foo';
 my $enc = $json->encode( { obj => $object } );
 
 is( $enc, '{"obj":"Foo <foo>"}', "mg object stringified" )
+  or diag($enc);
+
+$object = bless ["\x{1f603}"], 'Foo';
+$enc = $json->encode( { obj => $object } );
+
+is( $enc, "{\"obj\":\"Foo <\x{1f603}>\"}", "mg object stringified Unicode" )
   or diag($enc);
 
 $enc = $json->encode( { time => $time } );
