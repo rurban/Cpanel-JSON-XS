@@ -3821,12 +3821,27 @@ fail:
 static void
 hv_store_str (pTHX_ HV* hv, char *key, U32 len, SV* value)
 {
-  /* Note: not a utf8 hash key */
 #if PERL_VERSION > 8 || (PERL_VERSION == 8 && PERL_SUBVERSION >= 9)
-  hv_common (hv, NULL, key, len, 0,
+  int utf8 = 0;
+#else
+  I32 ulen = (I32)len;
+#endif
+  /* check utf8 hash key */
+  for (U32 i=0; i<len; i++) {
+    if ((signed char)key[i] < 0) {
+#if PERL_VERSION > 8 || (PERL_VERSION == 8 && PERL_SUBVERSION >= 9)
+      utf8 = HVhek_UTF8;
+#else
+      ulen = -(I32)len;
+#endif
+      break;
+    }
+  }
+#if PERL_VERSION > 8 || (PERL_VERSION == 8 && PERL_SUBVERSION >= 9)
+  hv_common (hv, NULL, key, len, utf8,
              HV_FETCH_ISSTORE|HV_FETCH_JUST_SV, value, 0);
 #else
-  hv_store (hv, key, len, value, 0);
+  hv_store (hv, key, ulen, value, 0);
 #endif
 }
 
@@ -3872,11 +3887,11 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
           }
           else if (*dec->cur == 0x27)
             endstr = 0x27;
-          is_bare=0;
+          is_bare = 0;
           ++dec->cur;
         } else {
           EXPECT_CH ('"');
-          is_bare=0;
+          is_bare = 0;
         }
 
         /* heuristic: assume that */
@@ -4026,7 +4041,6 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                     }
                   else
                     {
-                      /* Note: not a utf8 hash key */
                       hv_store_str (aTHX_ hv, key, len, value);
                     }
                   break;
