@@ -2,6 +2,13 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.33 2023-02-21 (rurban)
+        - fix a security issue, decoding hash keys without ending :
+          (GH #208)
+        - check all bare hash keys for utf8 (GH #209)
+        - improve overload warnings (Graham Knop PR #205)
+        - fix a croak leak (GH #206)
+
 4.32 2022-08-13 (rurban)
         - fix new JSON::PP::Boolean overload redefinition warnings. GH #200
 

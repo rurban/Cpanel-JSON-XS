@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '4.32';
+our $VERSION = '4.33';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -112,6 +112,8 @@ or        L<https://rt.cpan.org/Public/Dist/Display.html?Queue=Cpanel-JSON-XS>
 
 B<Changes to JSON::XS>
 
+- bare hashkeys are now checked for utf8. (GH #209)
+
 - stricter decode_json() as documented. non-refs are disallowed.
   safe by default.
   added a 2nd optional argument. decode() honors now allow_nonref.
@@ -162,6 +164,9 @@ B<Changes to JSON::XS>
   methods, like FREEZE/THAW or serialization with other methods.
 
 - additional fixes for:
+
+  - #208 - no security-relevant out-of-bounds reading of module memory
+    when decoding hash keys without ending ':'
 
   - [cpan #88061] AIX atof without USE_LONG_DOUBLE
 

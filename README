@@ -100,6 +100,8 @@ DESCRIPTION
 
     Changes to JSON::XS
 
+    - bare hashkeys are now checked for utf8. (GH #209)
+
     - stricter decode_json() as documented. non-refs are disallowed. safe by
     default. added a 2nd optional argument. decode() honors now
     allow_nonref.
@@ -149,6 +151,9 @@ DESCRIPTION
     methods, like FREEZE/THAW or serialization with other methods.
 
     - additional fixes for:
+
+      - #208 - no security-relevant out-of-bounds reading of module memory
+        when decoding hash keys without ending ':'
 
       - [cpan #88061] AIX atof without USE_LONG_DOUBLE
 

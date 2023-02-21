@@ -15,10 +15,13 @@ is($json->decode('{foo:"bar"}')->{foo}, 'bar');
 is($json->decode('{ foo : "bar"}')->{foo}, 'bar', 'with space');
 is($json->decode(qq({\tfoo\t:"bar"}))->{foo}, 'bar', 'with tab');
 
-my $r = $json->decode(qq({"füü": 1}));
-my @k = keys %$r;
-is(utf8::is_utf8($k[0]), 1, 'keep utf8 as string key');
-$r = $json->decode(qq({füü: 1}));
-@k = keys %$r;
-is(utf8::is_utf8($k[0]), 1, 'keep utf8 as bare key');
+SKIP: {
+  skip "5.6 has no is_utf8", 2 if $] < 5.008;
+  my $r = $json->decode(qq({"füü": 1}));
+  my @k = keys %$r;
+  is(utf8::is_utf8($k[0]), 1, 'keep utf8 as string key');
+  $r = $json->decode(qq({füü: 1}));
+  @k = keys %$r;
+  is(utf8::is_utf8($k[0]), 1, 'keep utf8 as bare key');
+}
 
