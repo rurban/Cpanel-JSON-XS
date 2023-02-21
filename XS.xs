@@ -1596,7 +1596,8 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
     }
   } else {
     /* manually call all possible magic on AV, HV, FM */
-    if (SvGMAGICAL(sv)) mg_get(sv);
+    if (SvGMAGICAL(sv))
+      mg_get(sv);
     if (MyAMG(sv)) { /* force a RV here */
       SV* rv = newRV(SvREFCNT_inc(sv));
 #if PERL_VERSION <= 8

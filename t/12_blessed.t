@@ -41,9 +41,9 @@ $r = $js->encode ($o3);
 TODO: {
   local $TODO = '5.8.x' if $] < 5.010;
   ok ($r eq '"<ZZ:1>"', "stringify overload with convert_blessed: $r / $o3");
+  $r = $js->encode ($o4);
+  ok ($r eq "\"<ZZ:\x{1f603}>\"", "stringify overload Unicode with convert_blessed");
 }
-$r = $js->encode ($o4);
-ok ($r eq "\"<ZZ:\x{1f603}>\"", "stringify overload Unicode with convert_blessed");
 
 $js = Cpanel::JSON::XS->new;
 $js->allow_blessed;
