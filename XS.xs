@@ -1616,7 +1616,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
       if (pv && SvPOK(pv)) {
         str = SvPVutf8_force(pv, len);
         encode_ch (aTHX_ enc, '"');
-        encode_str (aTHX_ enc, str, len, 0);
+        encode_str (aTHX_ enc, str, len, 1);
         encode_ch (aTHX_ enc, '"');
         SvREFCNT_dec(rv);
         return;
@@ -1659,7 +1659,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
   else {
     if (isref != 1)
       encode_ch (aTHX_ enc, '"');
-    encode_str (aTHX_ enc, str, len, 0);
+    encode_str (aTHX_ enc, str, len, 1);
     if (isref != 1)
       encode_ch (aTHX_ enc, '"');
   }
