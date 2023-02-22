@@ -176,6 +176,8 @@ DESCRIPTION
 
       - #167 sort tied hashes with canonical.
 
+      - #212 fix utf8 object stringification
+
     - public maintenance and bugtracker
 
     - use ppport.h, sanify XS.xs comment styles, harness C coding style

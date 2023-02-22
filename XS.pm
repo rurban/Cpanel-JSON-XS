@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '4.34';
+our $VERSION = '4.35';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -188,6 +188,8 @@ B<Changes to JSON::XS>
   - #154 numeric conversion fixed since 5.22, using the same strtold as perl5.
 
   - #167 sort tied hashes with canonical.
+
+  - #212 fix utf8 object stringification
 
 - public maintenance and bugtracker
 

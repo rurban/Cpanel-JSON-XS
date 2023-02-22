@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.35 2023-02-22 (rurban)
+        - fix utf8 object stringification (jixam PR #212)
+
 4.34 2023-02-21 (rurban)
         - fix c89 compilation regression, for loop init on centos. GH #211
 
