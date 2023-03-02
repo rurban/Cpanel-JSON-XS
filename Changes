@@ -2,6 +2,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.36 2023-03-02 (rurban)
+        - remove the SAVESTACK_POS noop. Merged from JSON-XS-3.02,
+          removed there with 4.0. requested to remove with
+          L<https://github.com/Perl/perl5/pull/20858>
+
 4.35 2023-02-22 (rurban)
         - fix utf8 object stringification (jixam PR #212)
 
