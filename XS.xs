@@ -1418,8 +1418,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
                   cop.cop_hints &= ~HINT_BYTES;
 #endif
 
-                  ENTER;
-                  SAVETMPS;
+                  ENTER; SAVETMPS;
 
                   SAVEVPTR (PL_curcop);
                   PL_curcop = &cop;
@@ -1743,7 +1742,8 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
           dSP;
           int count, items;
 
-          ENTER; SAVETMPS; SAVESTACK_POS (); PUSHMARK (SP);
+          ENTER; SAVETMPS;
+          PUSHMARK (SP);
           EXTEND (SP, 2);
           PUSHs (rv);
           PUSHs (MY_CXT.sv_json);
@@ -1789,8 +1789,8 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
         {
           dSP;
 
-          ENTER; SAVETMPS; PUSHMARK (SP);
-
+          ENTER; SAVETMPS;
+          PUSHMARK (SP);
           XPUSHs (rv);
 
           /* calling with G_SCALAR ensures that we always get a 1 return value */
@@ -2362,9 +2362,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                   dSP;
                   int is_negative;
 
-                  ENTER;
-                  SAVETMPS;
-
+                  ENTER; SAVETMPS;
                   PUSHMARK (SP);
                   XPUSHs (sv);
                   PUTBACK;
@@ -4101,7 +4099,8 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
               dSP;
               I32 count;
 
-              ENTER; SAVETMPS; SAVESTACK_POS (); PUSHMARK (SP);
+              ENTER; SAVETMPS;
+              PUSHMARK (SP);
               XPUSHs (HeVAL (he));
               sv_2mortal (sv);
 
@@ -4128,7 +4127,8 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
           dSP;
           I32 count;
 
-          ENTER; SAVETMPS; SAVESTACK_POS (); PUSHMARK (SP);
+          ENTER; SAVETMPS;
+          PUSHMARK (SP);
           XPUSHs (sv_2mortal (sv));
 
           PUTBACK; count = call_sv (dec->json.cb_object, G_ARRAY); SPAGAIN;
@@ -4210,7 +4210,8 @@ decode_tag (pTHX_ dec_t *dec)
     if (!method)
       ERR ("cannot decode perl-object (package does not have a THAW method)");
 
-    ENTER; SAVETMPS; SAVESTACK_POS (); PUSHMARK (SP);
+    ENTER; SAVETMPS;
+    PUSHMARK (SP);
     EXTEND (SP, len + 2);
     /* we re-bless the reference to get overload and other niceties right */
     PUSHs (tag);
