@@ -1,6 +1,6 @@
 use strict;
 use constant HAVE_BOOLEANS => ($^V ge v5.36);
-use Test::More tests => 42 + (HAVE_BOOLEANS ? 2 : 0);
+use Test::More tests => 42 + (HAVE_BOOLEANS ? 7 : 0);
 use Cpanel::JSON::XS ();
 use Config;
 
@@ -103,7 +103,6 @@ ok( Cpanel::JSON::XS::is_bool($js->[1]), "false is_bool");
 # GH #53
 ok( !Cpanel::JSON::XS::is_bool( [] ), "[] !is_bool");
 
-
 $js = $unblessed_bool_cjson->decode($booltrue);
 SKIP: {
   skip "no Scalar::Util in $]", 1 unless $have_blessed;
@@ -133,4 +132,20 @@ if(HAVE_BOOLEANS) {
     'true core booleans encode as boolean');
   is($cjson->encode({f => builtin::false}), q({"f":false}),
     'false core booleans encode as boolean');
+
+  BEGIN {
+    warnings->unimport('experimental::builtin') if $] >= 5.036;
+    builtin->import (qw/true false/) if $] >= 5.036;
+  }
+  my $cb = Cpanel::JSON::XS->new->core_bools;
+  is($cb->encode({"is_true" => true}), q({"is_true":true}));
+  is($cb->encode({"is_false" => false}), q({"is_false":false}));
+  is($cb->encode([true, false]), q([true,false]));
+
+  $js = $cb->decode($booltrue);
+  my $v = $js->{is_true};
+  is( $v, true );
+  $js = $cb->decode($boolfalse);
+  $v = $js->{is_false};
+  is( $v, false );
 }
