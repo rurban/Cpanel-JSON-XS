@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 42;
+use Test::More tests => 45;
 use Cpanel::JSON::XS ();
 use Config;
 
@@ -102,7 +102,6 @@ ok( Cpanel::JSON::XS::is_bool($js->[1]), "false is_bool");
 # GH #53
 ok( !Cpanel::JSON::XS::is_bool( [] ), "[] !is_bool");
 
-
 $js = $unblessed_bool_cjson->decode($booltrue);
 SKIP: {
   skip "no Scalar::Util in $]", 1 unless $have_blessed;
@@ -125,3 +124,28 @@ is($cjson->encode(do { my $struct = $unblessed_bool_cjson->decode($truefalse, my
 $js = $unblessed_bool_cjson->decode($truefalse);
 ok eval { $js->[0] = "new value 0" }, "decoded 'true' is modifiable" or diag($@);
 ok eval { $js->[1] = "new value 1" }, "decoded 'false' is modifiable" or diag($@);
+
+# check encode the new builtin::true
+SKIP: {
+    skip "only 5.36 has builtin::true", 3 if $] < 5.036;
+    BEGIN {
+        warnings->unimport('experimental::builtin') if $] >= 5.036;
+        builtin->import (qw/true false/) if $] >= 5.036;
+        # avoid syntax errors on old perls
+        eval q[
+               sub true { !0 }
+               sub false { !1 }
+        ] if $] < 5.036;
+    }
+    my $cb = Cpanel::JSON::XS->new->core_bools;
+    is($cb->encode({"is_true" => true}), q({"is_true":true}));
+    is($cb->encode({"is_false" => false}), q({"is_false":false}));
+    is($cb->encode([true, false]), q([true,false]));
+
+    $js = $cb->decode($booltrue);
+    my $v = $js->{is_true};
+    is( $v, true );
+    $js = $cb->decode($boolfalse);
+    $v = $js->{is_false};
+    is( $v, false );
+}
