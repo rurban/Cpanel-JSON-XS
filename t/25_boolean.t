@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 45;
+use Test::More tests => 47;
 use Cpanel::JSON::XS ();
 use Config;
 
@@ -127,8 +127,9 @@ ok eval { $js->[1] = "new value 1" }, "decoded 'false' is modifiable" or diag($@
 
 # check encode the new builtin::true
 SKIP: {
-    skip "only 5.36 has builtin::true", 3 if $] < 5.036;
+    skip "only 5.36 has builtin::true", 5 if $] < 5.036;
     BEGIN {
+        eval q(use B);
         warnings->unimport('experimental::builtin') if $] >= 5.036;
         builtin->import (qw/true false/) if $] >= 5.036;
         # avoid syntax errors on old perls

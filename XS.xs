@@ -353,7 +353,7 @@ mingw_modfl(long double x, long double *ip)
 #define F_ESCAPE_SLASH    0x00080000UL
 #define F_SORT_BY         0x00100000UL
 #define F_ALLOW_STRINGIFY 0x00200000UL
-#define F_UNBLESSED_BOOL  0x00400000UL
+#define F_UNBLESSED_BOOL  0x00400000UL /* also now the inverse of CORE_BOOLS */
 #define F_ALLOW_DUPKEYS   0x00800000UL
 #define F_REQUIRE_TYPES   0x01000000UL
 #define F_TYPE_ALL_STRING 0x02000000UL
@@ -1980,7 +1980,13 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
   else
     {
       if (UNLIKELY (sv == &PL_sv_yes || sv == &PL_sv_no)) type = JSON_TYPE_BOOL;
-      else if (SvNOKp (sv)) type = JSON_TYPE_FLOAT;
+      else if (SvNOKp (sv)) {
+        if ((enc->json.flags & F_UNBLESSED_BOOL) &&
+            (SvPVX (sv) == PL_Yes || SvPVX (sv) == PL_No))
+          type = JSON_TYPE_BOOL;
+        else
+          type = JSON_TYPE_FLOAT;
+      }
       else if (SvIOKp (sv)) type = JSON_TYPE_INT;
       else if (SvPOKp (sv)) type = JSON_TYPE_STRING;
       else if (SvROK (sv)) process_ref = 1;
@@ -4827,6 +4833,7 @@ void ascii (JSON *self, int enable = 1)
         escape_slash    = F_ESCAPE_SLASH
         allow_stringify = F_ALLOW_STRINGIFY
         unblessed_bool  = F_UNBLESSED_BOOL
+        core_bools      = F_UNBLESSED_BOOL
         allow_dupkeys   = F_ALLOW_DUPKEYS
         require_types   = F_REQUIRE_TYPES
         type_all_string = F_TYPE_ALL_STRING
@@ -4865,6 +4872,7 @@ void get_ascii (JSON *self)
         get_escape_slash    = F_ESCAPE_SLASH
         get_allow_stringify = F_ALLOW_STRINGIFY
         get_unblessed_bool  = F_UNBLESSED_BOOL
+        get_core_bools      = F_UNBLESSED_BOOL
         get_allow_dupkeys   = F_ALLOW_DUPKEYS
         get_require_types   = F_REQUIRE_TYPES
         get_type_all_string = F_TYPE_ALL_STRING
