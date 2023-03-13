@@ -130,7 +130,8 @@ DESCRIPTION
     representations for booleans are accepted and JSON::XS accepts
     Cpanel::JSON::XS booleans [#13, #37] Fixed overloading of booleans.
     Cpanel::JSON::XS::true stringifies again to "1", not "true", analog to
-    all other JSON modules.
+    all other JSON modules, unless it's a perl since 5.36 and "core_bools"
+    or "unblessed_bool" is set.
 
     - native boolean mapping of yes and no to true and false, as in
     YAML::XS. In perl "!0" is yes, "!1" is no. The JSON value true maps to
@@ -638,6 +639,8 @@ OBJECT-ORIENTED INTERFACE
         false, then "decode" will return "JSON::PP::Boolean" objects for
         JSON booleans.
 
+        This is now almost the opposite of the "core_bools" method.
+
     $json = $json->allow_singlequote ([$enable])
     $enabled = $json->get_allow_singlequote
             $json = $json->allow_singlequote([$enable])
@@ -852,6 +855,45 @@ OBJECT-ORIENTED INTERFACE
         If $enable is false (the default), then "encode" will not consider
         this type of conversion, and tagged JSON values will cause a parse
         error in "decode", as if tags were not part of the grammar.
+
+    $json = $json->core_bools ([$enable])
+    $enabled = $json->get_core_bools
+        If $enable is true (or missing), then C>decode>, will produce
+        standard perl boolean values. Equivalent to calling:
+
+            $json->boolean_values(!!1, !!0)
+
+        "get_core_bools" will return true if this has been set. On perl
+        5.36, it will also return true if the boolean values have been set
+        to perl's core booleans using the "boolean_values" method.
+
+        This is an alias to C><unblessed_bool>.
+
+    $json = $json->boolean_values ([$false, $true])
+    ($false, $true) = $json->get_boolean_values()
+        By default, JSON booleans will be decoded as overloaded
+        $JSON::PP::false and $JSON::PP::true objects.
+
+        With this method you can specify your own boolean values for
+        decoding - on decode, JSON "false" will be decoded as a copy of
+        $false, and JSON "true" will be decoded as $true ("copy" here is the
+        same thing as assigning a value to another variable, i.e. "$copy =
+        $false").
+
+        This is useful when you want to pass a decoded data structure
+        directly to other serialisers like YAML, Data::MessagePack and so
+        on.
+
+        Note that this works only when you "decode". You can set
+        incompatible boolean objects (like boolean), but when you "encode" a
+        data structure with such boolean objects, you still need to enable
+        "convert_blessed" (and add a "TO_JSON" method if necessary).
+
+        Calling this method without any arguments will reset the booleans to
+        their default values.
+
+        "get_boolean_values" will return both $false and $true values, or
+        the empty list when they are set to the default.
 
     $json = $json->filter_json_object ([$coderef->($hashref)])
         When $coderef is specified, it will be called from "decode" each
@@ -1367,8 +1409,11 @@ MAPPING
         precision up to but not including the least significant bit.
 
     true, false
-        When "unblessed_bool" is set to true, then JSON "true" becomes 1 and
-        JSON "false" becomes 0.
+        When "unblessed_bool" is set to true, or "core_bools" is set to 0,
+        then JSON "true" becomes 1 and JSON "false" becomes 0.
+
+        If "core_bools" is set to true, then JSON "true" becomes "true" and
+        JSON "false" becomes "false", as with JSON::PP.
 
         Otherwise these JSON atoms become "JSON::PP::true" and
         "JSON::PP::false", respectively. They are "JSON::PP::Boolean"

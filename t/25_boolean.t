@@ -134,8 +134,7 @@ if(HAVE_BOOLEANS) {
     'false core booleans encode as boolean');
 
   BEGIN {
-    warnings->unimport('experimental::builtin') if $] >= 5.036;
-    builtin->import (qw/true false/) if $] >= 5.036;
+    builtin->import (qw/true false/) if HAVE_BOOLEANS;
   }
   my $cb = Cpanel::JSON::XS->new->core_bools;
   is($cb->encode({"is_true" => true}), q({"is_true":true}));

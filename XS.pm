@@ -143,7 +143,8 @@ B<Changes to JSON::XS>
   representations for booleans are accepted and JSON::XS accepts
   Cpanel::JSON::XS booleans [#13, #37]
   Fixed overloading of booleans. Cpanel::JSON::XS::true stringifies again
-  to "1", not "true", analog to all other JSON modules.
+  to "1", not "true", analog to all other JSON modules, unless it's a perl
+  since 5.36 and C<core_bools> or C<unblessed_bool> is set.
 
 - native boolean mapping of yes and no to true and false, as in YAML::XS.
   In perl C<!0> is yes, C<!1> is no.
@@ -216,6 +217,8 @@ B<Changes to JSON::XS>
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw(encode_json decode_json to_json from_json);
+
+sub CORE_BOOL() { defined &builtin::is_bool; }
 
 sub to_json($@) {
    if ($] >= 5.008) {
@@ -737,6 +740,7 @@ strings) for JSON booleans (C<true> and C<false>). If C<$enable> is
 false, then C<decode> will return C<JSON::PP::Boolean> objects for
 JSON booleans.
 
+This is now almost the opposite of the C<core_bools> method.
 
 =item $json = $json->allow_singlequote ([$enable])
 
@@ -979,6 +983,47 @@ them via a call to the C<THAW> method.
 If C<$enable> is false (the default), then C<encode> will not consider
 this type of conversion, and tagged JSON values will cause a parse error
 in C<decode>, as if tags were not part of the grammar.
+
+=item $json = $json->core_bools ([$enable])
+
+=item $enabled = $json->get_core_bools
+
+If C<$enable> is true (or missing), then C>decode>, will produce standard
+perl boolean values. Equivalent to calling:
+
+    $json->boolean_values(!!1, !!0)
+
+C<get_core_bools> will return true if this has been set. On perl 5.36, it
+will also return true if the boolean values have been set to perl's core
+booleans using the "boolean_values" method.
+
+This is an alias to C><unblessed_bool>.
+
+=item $json = $json->boolean_values ([$false, $true])
+
+=item ($false, $true) = $json->get_boolean_values()
+
+By default, JSON booleans will be decoded as overloaded
+C<$JSON::PP::false> and C<$JSON::PP::true> objects.
+
+With this method you can specify your own boolean values for decoding -
+on decode, JSON C<false> will be decoded as a copy of C<$false>, and JSON
+C<true> will be decoded as C<$true> ("copy" here is the same thing as
+assigning a value to another variable, i.e. C<$copy = $false>).
+
+This is useful when you want to pass a decoded data structure directly
+to other serialisers like YAML, Data::MessagePack and so on.
+
+Note that this works only when you C<decode>. You can set incompatible
+boolean objects (like L<boolean>), but when you C<encode> a data structure
+with such boolean objects, you still need to enable C<convert_blessed>
+(and add a C<TO_JSON> method if necessary).
+
+Calling this method without any arguments will reset the booleans
+to their default values.
+
+C<get_boolean_values> will return both C<$false> and C<$true> values, or
+the empty list when they are set to the default.
 
 =item $json = $json->filter_json_object ([$coderef->($hashref)])
 
@@ -1524,8 +1569,11 @@ up to but not including the least significant bit.
 
 =item true, false
 
-When C<unblessed_bool> is set to true, then JSON C<true> becomes C<1> and
-JSON C<false> becomes C<0>.
+When C<unblessed_bool> is set to true, or C<core_bools> is set to 0,
+then JSON C<true> becomes C<1> and JSON C<false> becomes C<0>.
+
+If C<core_bools> is set to true, then JSON C<true> becomes C<true> and
+JSON C<false> becomes C<false>, as with L<JSON::PP>.
 
 Otherwise these JSON atoms become C<JSON::PP::true> and
 C<JSON::PP::false>, respectively. They are C<JSON::PP::Boolean>
@@ -2409,6 +2457,29 @@ sub is_bool($) {
   shift if @_ == 2; # as method call
   (ref($_[0]) and UNIVERSAL::isa( $_[0], JSON::PP::Boolean::))
   or (exists $INC{'Types/Serialiser.pm'} and Types::Serialiser::is_bool($_[0]))
+}
+
+sub boolean_values {
+    my $self = shift;
+    if (@_) {
+        my ($false, $true) = @_;
+        $self->{false} = $false;
+        $self->{true} = $true;
+        if (CORE_BOOL) {
+            BEGIN { CORE_BOOL and warnings->unimport(qw(experimental::builtin)) }
+            if (builtin::is_bool($true) && builtin::is_bool($false) && $true && !$false) {
+                $self->{core_bools} = !!1;
+            }
+            else {
+                delete $self->{core_bools};
+            }
+        }
+    } else {
+        delete $self->{false};
+        delete $self->{true};
+        delete $self->{core_bools};
+    }
+    return $self;
 }
 
 XSLoader::load 'Cpanel::JSON::XS', $XS_VERSION;
