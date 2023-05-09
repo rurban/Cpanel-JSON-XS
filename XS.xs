@@ -3377,7 +3377,16 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
                   case 'n': ++dec_cur; *cur++ = '\012'; break;
                   case 'f': ++dec_cur; *cur++ = '\014'; break;
                   case 'r': ++dec_cur; *cur++ = '\015'; break;
-
+                  case '\'':
+                    {
+                      if( dec->json.flags & F_ALLOW_SQUOTE ) {
+                        *cur++ = *dec_cur++;
+                      } else {
+                        --dec_cur;
+                        ERR ("illegal backslash escape sequence in string");
+                      }
+                      break;
+                    }
                   case 'x':
 		    {
 		      UV c;
