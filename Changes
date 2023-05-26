@@ -2,6 +2,9 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.37 ...
+	- fix NAN/INF for AIX (Tux: AIX-5.3, tested by XSven on AIX-7.3) GH #165
+
 4.36 2023-03-02 (rurban)
         - remove the SAVESTACK_POS noop. Merged from JSON-XS-3.02,
           removed there with 4.0. requested to remove with

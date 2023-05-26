@@ -21,7 +21,7 @@ my (@inf, @neg_inf, @nan, @neg_nan);
 my ($inf, $nan) =
   ($^O eq 'MSWin32') ? ('1.#INF','1.#QNAN') :
   ($^O eq 'solaris') ? ('Infinity','NaN') :
-  ($^O eq 'aix')     ? ('inf','NANQ') :
+  ($^O eq 'aix')     ? ('INF','NaNQ') :
   ($^O eq 'hpux')    ? ('++','-?') :
                        ('inf','nan');
 my $neg_nan =
