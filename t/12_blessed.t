@@ -1,9 +1,13 @@
 use strict;
 use Cpanel::JSON::XS;
-use Test::More tests => 23;
+use Test::More tests => 24;
 
 package ZZ;
 use overload ('""' => sub { "<ZZ:".${$_[0]}.">" } );
+
+package Verbatim;
+use overload ('""' => sub { ${$_[0]} } );
+
 
 package main;
 sub XX::TO_JSON { {"__",""} }
@@ -12,6 +16,7 @@ my $o1 = bless { a => 3 }, "XX";       # with TO_JSON
 my $o2 = bless \(my $dummy1 = 1), "YY"; # without stringification
 my $o3 = bless \(my $dummy2 = 1), "ZZ"; # with stringification
 my $o4 = bless \(my $dummy3 = "\x{1f603}"), "ZZ"; # with stringification Unicode
+my $o5 = bless \(my $dummy4 = ""), "Verbatim"; # with stringification empty string result
 
 if (eval 'require Hash::Util') {
   if ($Hash::Util::VERSION > 0.05) {
@@ -43,6 +48,8 @@ TODO: {
   ok ($r eq '"<ZZ:1>"', "stringify overload with convert_blessed: $r / $o3");
   $r = $js->encode ($o4);
   ok ($r eq "\"<ZZ:\x{1f603}>\"", "stringify overload Unicode with convert_blessed");
+  $r = $js->encode ($o5);
+  ok ($r eq "\"\"", "stringify overload empty string result with convert_blessed");
 }
 
 $js = Cpanel::JSON::XS->new;

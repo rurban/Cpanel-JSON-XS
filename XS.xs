@@ -1590,7 +1590,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
       str = SvPVutf8_force(pv, len);
     }
 #endif
-    if (!len) {
+    if (!len && !SvOBJECT (sv)) {
       encode_const_str (aTHX_ enc, "null", 4, 0);
       SvREFCNT_dec(pv);
       return;
