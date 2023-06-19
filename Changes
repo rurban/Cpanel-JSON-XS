@@ -2,8 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-4.37 ...
-	- fix NAN/INF for AIX (Tux: AIX-5.3, tested by XSven on AIX-7.3) GH #165
+4.37 2023-07-04 (rurban)
+        - Fix NAN/INF for AIX (Tux: AIX-5.3, tested by XSven on AIX-7.3) GH #165
+        - Fix empty string result in object stringification (PR #221 jixam)
+        - Allow \' in strings when allow_singlequote is enabled (PR #217 warpspin)
 
 4.36 2023-03-02 (rurban)
         - remove the SAVESTACK_POS noop. Merged from JSON-XS-3.02,
