@@ -132,7 +132,6 @@ if(HAVE_BOOLEANS) {
     'true core booleans encode as boolean');
   is($cjson->encode({f => builtin::false}), q({"f":false}),
     'false core booleans encode as boolean');
-
   BEGIN {
     builtin->import (qw/true false/) if HAVE_BOOLEANS;
   }
@@ -143,8 +142,8 @@ if(HAVE_BOOLEANS) {
 
   $js = $cb->decode($booltrue);
   my $v = $js->{is_true};
-  is( $v, true );
+  is( $v, true, "core_bools decodes true to true" );
   $js = $cb->decode($boolfalse);
   $v = $js->{is_false};
-  is( $v, false );
+  is( $v, false, "core_bools decodes false to false" );
 }

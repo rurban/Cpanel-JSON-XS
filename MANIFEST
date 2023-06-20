@@ -76,6 +76,7 @@ t/98_56only.t
 t/99_binary.t
 t/_unicode_handling.pm
 t/appveyor-test.bat
+t/core_bools.t
 t/test_parsing/i_number_neg_int_huge_exp.json
 t/test_parsing/i_number_pos_double_huge_exp.json
 t/test_parsing/i_object_key_lone_2nd_surrogate.json

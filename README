@@ -137,6 +137,8 @@ DESCRIPTION
     YAML::XS. In perl "!0" is yes, "!1" is no. The JSON value true maps to
     1, false maps to 0. [#39]
 
+    - core_bools and boolean_values support as in JSON::PP
+
     - support arbitrary stringification with encode, with convert_blessed
     and allow_blessed.
 
@@ -639,7 +641,7 @@ OBJECT-ORIENTED INTERFACE
         false, then "decode" will return "JSON::PP::Boolean" objects for
         JSON booleans.
 
-        This is now almost the opposite of the "core_bools" method.
+        This is an alias for the "core_bools" methods.
 
     $json = $json->allow_singlequote ([$enable])
     $enabled = $json->get_allow_singlequote
@@ -867,7 +869,7 @@ OBJECT-ORIENTED INTERFACE
         5.36, it will also return true if the boolean values have been set
         to perl's core booleans using the "boolean_values" method.
 
-        This is an alias to C><unblessed_bool>.
+        This is an alias to "unblessed_bool".
 
     $json = $json->boolean_values ([$false, $true])
     ($false, $true) = $json->get_boolean_values()

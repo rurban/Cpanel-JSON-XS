@@ -443,6 +443,7 @@ typedef struct {
   int incr_nest;   /* {[]}-nesting level */
   unsigned char incr_mode;
   unsigned char infnan_mode;
+  int bools_set;
 
   /* corruption check */
   U32 magic;
@@ -454,10 +455,10 @@ json_init (JSON *json)
   Zero (json, 1, JSON);
   json->max_depth     = 512;
   json->indent_length = INDENT_STEP;
-  json->magic = JSON_MAGIC;
+  json->magic  = JSON_MAGIC;
 }
 
-/* dTHX/threads TODO
+/* dTHX/threads
    END dtor not needed for these, all of these *s refcnts are owned by the stash. */
 static void
 init_MY_CXT(pTHX_ my_cxt_t * cxt)
@@ -510,6 +511,25 @@ get_bool (pTHX_ const char *name)
   SvREADONLY_on (rv);
   SvREADONLY_on (sv);
   return sv;
+}
+
+void
+set_bools (pTHX_ SV* _true, SV* _false)
+{
+  dMY_CXT;
+#if PERL_VERSION >= 36
+  if (SvPOK (_true) && SvPVX(_true) == PL_Yes
+      && SvPOK (_false) && SvPVX(_false) == PL_No)
+    {
+      MY_CXT.json_true = &PL_sv_yes;
+      MY_CXT.json_true = &PL_sv_no;
+    }
+  else
+#endif
+    {
+      MY_CXT.json_true = _true;
+      MY_CXT.json_false = _false;
+    }
 }
 
 INLINE void
@@ -4849,7 +4869,6 @@ void ascii (JSON *self, int enable = 1)
         escape_slash    = F_ESCAPE_SLASH
         allow_stringify = F_ALLOW_STRINGIFY
         unblessed_bool  = F_UNBLESSED_BOOL
-        core_bools      = F_UNBLESSED_BOOL
         allow_dupkeys   = F_ALLOW_DUPKEYS
         require_types   = F_REQUIRE_TYPES
         type_all_string = F_TYPE_ALL_STRING
@@ -4888,7 +4907,6 @@ void get_ascii (JSON *self)
         get_escape_slash    = F_ESCAPE_SLASH
         get_allow_stringify = F_ALLOW_STRINGIFY
         get_unblessed_bool  = F_UNBLESSED_BOOL
-        get_core_bools      = F_UNBLESSED_BOOL
         get_allow_dupkeys   = F_ALLOW_DUPKEYS
         get_require_types   = F_REQUIRE_TYPES
         get_type_all_string = F_TYPE_ALL_STRING
@@ -4946,6 +4964,78 @@ int get_stringify_infnan (JSON *self)
         RETVAL = (int)self->infnan_mode;
     OUTPUT:
         RETVAL
+
+void get_core_bools (JSON *self)
+    PPCODE:
+        XPUSHs (boolSV (self->flags & F_UNBLESSED_BOOL));
+
+void core_bools (JSON *self, int enable = 1)
+    PPCODE:
+        if (enable)
+          {
+            self->flags |=  F_UNBLESSED_BOOL;
+            MY_CXT.json_true = &PL_sv_yes;
+            MY_CXT.json_true = &PL_sv_no;
+          }
+        else
+          {
+            self->flags &= ~F_UNBLESSED_BOOL;
+            MY_CXT.json_true = get_bool (aTHX_ "Cpanel::JSON::XS::true");
+            MY_CXT.json_false = get_bool (aTHX_ "Cpanel::JSON::XS::false");
+          }
+        XPUSHs (ST(0));
+
+void boolean_values (JSON *self, SV *_true = NULL, SV *_false = NULL)
+    PPCODE:
+      {
+        dMY_CXT;
+        if (items == 3) {
+          self->bools_set = 1;
+#if PERL_VERSION >= 36
+          if (SvPOK (_true) && SvPVX(_true) == PL_Yes
+              && SvPOK (_false) && SvPVX(_false) == PL_No)
+            {
+              MY_CXT.json_true = &PL_sv_yes;
+              MY_CXT.json_true = &PL_sv_no;
+              self->flags |= F_UNBLESSED_BOOL;
+            }
+          else
+#endif
+            {
+              MY_CXT.json_true = _true;
+              MY_CXT.json_false = _false;
+              if (SvPOK (_true) && SvPVX(_true) == PL_Yes
+                  && SvPOK (_false) && SvPVX(_false) == PL_No)
+                {
+                  self->flags |= F_UNBLESSED_BOOL;
+                }
+            }
+        }
+        else
+          {
+            # set the defaults
+            self->flags &= ~F_UNBLESSED_BOOL;
+            self->bools_set = 0;
+#if PERL_VERSION >= 36
+            MY_CXT.json_true = &PL_sv_yes;
+            MY_CXT.json_true = &PL_sv_no;
+#else
+            MY_CXT.json_true = get_bool (aTHX_ "Cpanel::JSON::XS::true");
+            MY_CXT.json_false = get_bool (aTHX_ "Cpanel::JSON::XS::false");
+#endif
+          }
+      }
+
+void get_boolean_values (JSON *self)
+    PPCODE:
+      {
+        dMY_CXT;
+        if (self->bools_set)
+          {
+            XPUSHs (MY_CXT.json_true);
+            XPUSHs (MY_CXT.json_false);
+          }
+      }
 
 void sort_by (JSON *self, SV* cb = &PL_sv_yes)
     PPCODE:
