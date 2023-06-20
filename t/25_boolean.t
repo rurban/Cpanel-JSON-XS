@@ -125,7 +125,7 @@ $js = $unblessed_bool_cjson->decode($truefalse);
 ok eval { $js->[0] = "new value 0" }, "decoded 'true' is modifiable" or diag($@);
 ok eval { $js->[1] = "new value 1" }, "decoded 'false' is modifiable" or diag($@);
 
-# check encode the new builtin::true
+# check encode the new builtin::true, and core_bools
 SKIP: {
     skip "only 5.36 has builtin::true", 5 if $] < 5.036;
     BEGIN {
@@ -139,14 +139,14 @@ SKIP: {
         ] if $] < 5.036;
     }
     my $cb = Cpanel::JSON::XS->new->core_bools;
-    is($cb->encode({"is_true" => true}), q({"is_true":true}));
-    is($cb->encode({"is_false" => false}), q({"is_false":false}));
-    is($cb->encode([true, false]), q([true,false]));
+    is($cb->encode({"is_true" => true}), q({"is_true":true}), "core_bools writes true");
+    is($cb->encode({"is_false" => false}), q({"is_false":false}), "core_bools writes false");
+    is($cb->encode([true, false]), q([true,false]), "core_bools both");
 
     $js = $cb->decode($booltrue);
     my $v = $js->{is_true};
-    is( $v, true );
+    is( $v, true, "core_bools decodes true to true" );
     $js = $cb->decode($boolfalse);
     $v = $js->{is_false};
-    is( $v, false );
+    is( $v, false, "core_bools decodes false to false" );
 }
