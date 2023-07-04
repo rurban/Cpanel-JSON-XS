@@ -633,9 +633,10 @@ OBJECT-ORIENTED INTERFACE
             $json = $json->unblessed_bool([$enable])
 
         If $enable is true (or missing), then "decode" will return Perl
-        non-object boolean variables (1 and 0) for JSON booleans ("true" and
-        "false"). If $enable is false, then "decode" will return
-        "JSON::PP::Boolean" objects for JSON booleans.
+        non-object boolean variables (1 and 0 as numbers or "1" and "" as
+        strings) for JSON booleans ("true" and "false"). If $enable is
+        false, then "decode" will return "JSON::PP::Boolean" objects for
+        JSON booleans.
 
     $json = $json->allow_singlequote ([$enable])
     $enabled = $json->get_allow_singlequote
@@ -2134,9 +2135,9 @@ LICENSE
 SEE ALSO
     The cpanel_json_xs command line utility for quick experiments.
 
-    JSON, JSON::XS, JSON::MaybeXS, Mojo::JSON, Mojo::JSON::MaybeXS,
-    JSON::SL, JSON::DWIW, JSON::YAJL, JSON::Any, Test::JSON,
-    Locale::Wolowitz, <https://metacpan.org/search?q=JSON>
+    JSON::PP, JSON, JSON::XS, JSON::MaybeXS, Mojo::JSON,
+    Mojo::JSON::MaybeXS, JSON::SL, JSON::DWIW, JSON::YAJL, JSON::Any,
+    Test::JSON, Locale::Wolowitz, <https://metacpan.org/search?q=JSON>
 
     <https://tools.ietf.org/html/rfc7159>
 

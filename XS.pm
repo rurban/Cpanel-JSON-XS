@@ -731,10 +731,11 @@ This setting has no effect when decoding JSON texts.
 
     $json = $json->unblessed_bool([$enable])
 
-If C<$enable> is true (or missing), then C<decode> will return
-Perl non-object boolean variables (1 and 0) for JSON booleans
-(C<true> and C<false>). If C<$enable> is false, then C<decode>
-will return C<JSON::PP::Boolean> objects for JSON booleans.
+If C<$enable> is true (or missing), then C<decode> will return Perl
+non-object boolean variables (1 and 0 as numbers or "1" and "" as
+strings) for JSON booleans (C<true> and C<false>). If C<$enable> is
+false, then C<decode> will return C<JSON::PP::Boolean> objects for
+JSON booleans.
 
 
 =item $json = $json->allow_singlequote ([$enable])
@@ -2414,9 +2415,9 @@ XSLoader::load 'Cpanel::JSON::XS', $XS_VERSION;
 
 The F<cpanel_json_xs> command line utility for quick experiments.
 
-L<JSON>, L<JSON::XS>, L<JSON::MaybeXS>, L<Mojo::JSON>, L<Mojo::JSON::MaybeXS>,
-L<JSON::SL>, L<JSON::DWIW>, L<JSON::YAJL>,  L<JSON::Any>, L<Test::JSON>,
-L<Locale::Wolowitz>,
+L<JSON::PP>, L<JSON>, L<JSON::XS>, L<JSON::MaybeXS>, L<Mojo::JSON>,
+L<Mojo::JSON::MaybeXS>, L<JSON::SL>, L<JSON::DWIW>, L<JSON::YAJL>,
+L<JSON::Any>, L<Test::JSON>, L<Locale::Wolowitz>,
 L<https://metacpan.org/search?q=JSON>
 
 L<https://tools.ietf.org/html/rfc7159>
