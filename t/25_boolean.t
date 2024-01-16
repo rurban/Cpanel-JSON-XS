@@ -1,5 +1,6 @@
 use strict;
-use Test::More tests => 42;
+use constant HAVE_BOOLEANS => ($^V ge v5.36);
+use Test::More tests => 42 + (HAVE_BOOLEANS ? 2 : 0);
 use Cpanel::JSON::XS ();
 use Config;
 
@@ -125,3 +126,11 @@ is($cjson->encode(do { my $struct = $unblessed_bool_cjson->decode($truefalse, my
 $js = $unblessed_bool_cjson->decode($truefalse);
 ok eval { $js->[0] = "new value 0" }, "decoded 'true' is modifiable" or diag($@);
 ok eval { $js->[1] = "new value 1" }, "decoded 'false' is modifiable" or diag($@);
+
+if(HAVE_BOOLEANS) {
+  no if HAVE_BOOLEANS, warnings => "experimental::builtin";
+  is($cjson->encode({t => builtin::true}), q({"t":true}),
+    'true core booleans encode as boolean');
+  is($cjson->encode({f => builtin::false}), q({"f":false}),
+    'false core booleans encode as boolean');
+}

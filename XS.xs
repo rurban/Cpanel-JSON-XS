@@ -303,6 +303,10 @@ mingw_modfl(long double x, long double *ip)
 # endif
 #endif
 
+#if (PERL_REVISION > 5) || (PERL_REVISION == 5 && PERL_VERSION >= 36)
+# define PERL_HAVE_BOOLEANS
+#endif
+
 // i.e. "JSON" in big-endian
 #define JSON_MAGIC 0x4A534F4E
 
@@ -1852,9 +1856,17 @@ encode_bool (pTHX_ enc_t *enc, SV *sv)
 
   if (!SvROK (sv))
     {
-      if (UNLIKELY (sv == &PL_sv_yes))
+      if (UNLIKELY (sv == &PL_sv_yes)
+#ifdef PERL_HAVE_BOOLEANS
+        || (SvIsBOOL(sv) && SvTRUE(sv))
+#endif
+      )
         encode_const_str (aTHX_ enc, "true", 4, 0);
-      else if (UNLIKELY (sv == &PL_sv_no))
+      else if (UNLIKELY (sv == &PL_sv_no)
+#ifdef PERL_HAVE_BOOLEANS
+        || (SvIsBOOL(sv) && !SvTRUE(sv))
+#endif
+      )
         encode_const_str (aTHX_ enc, "false", 5, 0);
       else if (!SvOK (sv))
         encode_const_str (aTHX_ enc, "false", 5, 0);
@@ -1979,7 +1991,11 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
     }
   else
     {
-      if (UNLIKELY (sv == &PL_sv_yes || sv == &PL_sv_no)) type = JSON_TYPE_BOOL;
+      if (UNLIKELY (sv == &PL_sv_yes || sv == &PL_sv_no
+#ifdef PERL_HAVE_BOOLEANS
+            || SvIsBOOL(sv)
+#endif
+      )) type = JSON_TYPE_BOOL;
       else if (SvNOKp (sv)) type = JSON_TYPE_FLOAT;
       else if (SvIOKp (sv)) type = JSON_TYPE_INT;
       else if (SvPOKp (sv)) type = JSON_TYPE_STRING;
