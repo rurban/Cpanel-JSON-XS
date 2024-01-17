@@ -7,6 +7,7 @@ BEGIN {
     or plan skip_all => 'JSON::PP 2.09 required for cross testing';
   $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
 }
+use constant HAVE_BOOLEANS => ($^V ge v5.36);
 plan tests => 32;
 use JSON::PP ();
 use Cpanel::JSON::XS ();
@@ -64,9 +65,16 @@ is( $pp->encode( {false => \!!""} ),    '{"false":null}',  'pp \sv_no' );
 
 is( $json->encode( {null => \"some"} ), '{"null":null}',   'js unknown' );
 is( $json->encode( {null => \""} ),     '{"null":null}',   'js unknown' );
-is( $json->encode( {true => !!1} ),     '{"true":1}',      'js sv_yes' );
-is( $json->encode( {false => !!0} ),    '{"false":""}',    'js sv_no' );
-is( $json->encode( {false => !!""} ),   '{"false":""}',    'js sv_no' );
+if(HAVE_BOOLEANS) {
+   is( $json->encode( {true => !!1} ),     '{"true":true}',   'js sv_yes' );
+   is( $json->encode( {false => !!0} ),    '{"false":false}', 'js sv_no' );
+   is( $json->encode( {false => !!""} ),   '{"false":false}', 'js sv_no' );
+}
+else {
+   is( $json->encode( {true => !!1} ),     '{"true":1}',      'js sv_yes' );
+   is( $json->encode( {false => !!0} ),    '{"false":""}',    'js sv_no' );
+   is( $json->encode( {false => !!""} ),   '{"false":""}',    'js sv_no' );
+}
 is( $json->encode( {true => \!!1} ),    '{"true":true}',   'js \sv_yes' );
 is( $json->encode( {false => \!!0} ),   '{"false":null}',  'js \sv_no' );
 is( $json->encode( {false => \!!""} ),  '{"false":null}',  'js \sv_no' );
