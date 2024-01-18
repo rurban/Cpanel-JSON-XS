@@ -9,7 +9,7 @@ BEGIN {
     plan skip_all => "Mojo::JSON::decode_json required for testing interop";
     exit 0;
   }
-  plan tests => 9;
+  plan tests => 12;
 }
 
 use Mojo::JSON ();
@@ -35,18 +35,10 @@ ok( !$js->{is_false}, 'ok !false');
 my $mj = Mojo::JSON::encode_json( $yesno );
 $js = $cjson->decode( $mj );
 
-# fragile
-ok( $js->[0] eq '' or $js->[0] == 0 or !$js->[0], 'can decode Mojo false' );
-is( $js->[1], 1,  'can decode Mojo true' );
-# Note this is fragile. it depends on the internal representation of booleans.
-# It can also be ['0', '1']
-if ($js->[0] eq '') {
-  is_deeply( $js, ['', 1], 'can decode Mojo booleans' )
-    or diag( $mj, $js );
-} else {
- TODO: {
-    local $TODO = 'fragile false => "0"';
-    is_deeply( $js, ['', 1], 'can decode Mojo booleans' )
-      or diag( $mj, $js );
-  }
-}
+ok( !$js->[0], 'decoded Mojo false is false' );
+ok( $js->[0] == 0, 'decoded Mojo false is zero' );
+ok( $js->[0] eq "", 'decoded Mojo false is empty string' );
+
+ok( $js->[1], 'decoded Mojo true is true' );
+ok( $js->[1] == 1, 'decoded Mojo true is one' );
+ok( $js->[1] eq "1", 'decoded Mojo true is "1" string' );
