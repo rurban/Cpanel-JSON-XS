@@ -1206,7 +1206,7 @@ as early as the full parser, for example, it doesn't detect mismatched
 parentheses. The only thing it guarantees is that it starts decoding
 as soon as a syntactically valid JSON text has been seen. This means
 you need to set resource limits (e.g. C<max_size>) to ensure the
-parser will stop parsing in the presence if syntax errors.
+parser will stop parsing in the presence of syntax errors.
 
 The following methods implement this incremental parser.
 
