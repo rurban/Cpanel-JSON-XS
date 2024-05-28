@@ -2,6 +2,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.38 2024-05-27 (rurban)
+        - Encode real core booleans as boolean notation (PR #224 leonerd)
+        - Minor test fixes by leonerd
+        - Fix docs typo (PR #225 karenetheridge)
+
 4.37 2023-07-04 (rurban)
         - Fix NAN/INF for AIX (Tux: AIX-5.3, tested by XSven on AIX-7.3) GH #165
         - Fix empty string result in object stringification (PR #221 jixam)
