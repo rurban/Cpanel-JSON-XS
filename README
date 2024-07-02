@@ -673,6 +673,10 @@ OBJECT-ORIENTED INTERFACE
         integer Perl cannot handle as integer into a Math::BigInt object and
         convert a floating number (any) into a Math::BigFloat.
 
+           $int = $json->allow_nonref->allow_bignum->decode(1); # => 1
+           $bigint = $json->allow_bignum->decode('100000000000000000000000000000000000000');
+           $bigfloat = $json->allow_bignum->decode(1.0);
+
         On the contrary, "encode" converts "Math::BigInt" objects and
         "Math::BigFloat" objects into JSON numbers with "allow_blessed"
         enable.

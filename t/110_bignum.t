@@ -1,4 +1,4 @@
-
+#!/usr/bin/env perl
 use strict;
 my $has_bignum;
 BEGIN {
@@ -6,15 +6,15 @@ BEGIN {
   $has_bignum = $@ ? 0 : 1;
 }
 use Test::More $has_bignum
-  ? (tests => 17)
+  ? (tests => 20)
   : (skip_all => "Can't load Math::BigInt");
 use Cpanel::JSON::XS;
+use Scalar::Util ();
 use Devel::Peek;
 
 my $json = new Cpanel::JSON::XS;
-
-$json->allow_nonref->allow_bignum;
-$json->convert_blessed->allow_blessed;
+$json->allow_bignum; # is implicitly allow_nonref and convert_blessed
+                     # $json->convert_blessed->allow_blessed;
 
 my $num  = $json->decode(q|100000000000000000000000000000000000000|);
 
@@ -71,3 +71,16 @@ is( "$inf", 'null', '-inf default' );
 $exp = "$biginf" =~ /nan/i ? "nan" : "-inf";
 $inf = $json->stringify_infnan(3)->encode($biginf);
 is( "$inf", $exp, '-inf stringify' );
+
+# see if allow_bignum is enough, always decodes to a BigFloat
+my $num = $json->decode(4.5);
+isa_ok( $num, 'Math::BigFloat' );
+is(
+    $num->bcmp('4.5'),
+    0,
+    'decode simple bigfloat'
+) or Dump($num);
+
+# But a short int will not decode to a BigInt
+$num = $json->decode(q|[4]|)->[0];
+ok( Scalar::Util::looks_like_number($num), 'simple IV') or Dump($num);

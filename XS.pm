@@ -781,6 +781,10 @@ If C<$enable> is true (or missing), then C<decode> will convert
 the big integer Perl cannot handle as integer into a L<Math::BigInt>
 object and convert a floating number (any) into a L<Math::BigFloat>.
 
+   $int = $json->allow_nonref->allow_bignum->decode(1); # => 1
+   $bigint = $json->allow_bignum->decode('100000000000000000000000000000000000000');
+   $bigfloat = $json->allow_bignum->decode(1.0);
+
 On the contrary, C<encode> converts C<Math::BigInt> objects and
 C<Math::BigFloat> objects into JSON numbers with C<allow_blessed>
 enable.

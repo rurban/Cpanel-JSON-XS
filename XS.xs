@@ -1630,7 +1630,8 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
       SvREFCNT_dec(rv);
     }
   }
-  if (UNLIKELY(isref == 1 && (enc->json.flags & F_ALLOW_BIGNUM) && str && str[0] == '+')) {
+  if (UNLIKELY(isref == 1
+      && (enc->json.flags & F_ALLOW_BIGNUM) && str && str[0] == '+')) {
     str++;
     len--;
   }
@@ -2349,8 +2350,11 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       }
       else {
         NV intpart;
-        if (!( inf_or_nan || (had_nokp && Perl_modf(SvNVX(sv), &intpart)) || (!force_conversion && SvIOK(sv))
-            || strchr(enc->cur,'e') || strchr(enc->cur,'E') || strchr(savecur,'.')
+        if (!( inf_or_nan || (had_nokp && Perl_modf(SvNVX(sv), &intpart))
+            || (!force_conversion && SvIOK(sv))
+            || strchr(enc->cur,'e')
+            || strchr(enc->cur,'E')
+            || strchr(savecur,'.')
 #if PERL_VERSION < 10
                /* !!1 with 5.8 */
                || (SvPOKp(sv) && strEQc(SvPVX(sv), "1")
@@ -2374,7 +2378,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       IV iv = 0;
       int is_neg = 0;
 
-      if (UNLIKELY (SvROK (sv) && SvOBJECT (SvRV (sv))) && (enc->json.flags & F_ALLOW_BIGNUM))
+      if (UNLIKELY (SvROK (sv) && SvOBJECT (SvRV (sv)))
+          && (enc->json.flags & F_ALLOW_BIGNUM))
         {
           HV *stash = SvSTASH (SvRV (sv));
           int is_bigint = (stash && stash == gv_stashpvs ("Math::BigInt", 0));
@@ -2503,7 +2508,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                 }
             }
 
-          if ((numtype & (IS_NUMBER_GREATER_THAN_UV_MAX|IS_NUMBER_NOT_INT)) && (enc->json.flags & F_ALLOW_BIGNUM))
+          if ((numtype & (IS_NUMBER_GREATER_THAN_UV_MAX|IS_NUMBER_NOT_INT))
+              && (enc->json.flags & F_ALLOW_BIGNUM))
             {
               STRLEN len;
               char *str;
