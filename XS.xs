@@ -2438,7 +2438,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                   need (aTHX_ enc, IVUV_MAXCHARS);
                   savecur = enc->cur;
                   saveend = enc->end;
-                  enc->cur += snprintf (enc->cur, IVUV_MAXCHARS, "%" UVuf, UV_MAX);
+                  enc->cur += snprintf (enc->cur, IVUV_MAXCHARS, "%lu", (unsigned long)UV_MAX);
                 }
               else if (UNLIKELY (strEQc (str, "-inf")))
                 {
