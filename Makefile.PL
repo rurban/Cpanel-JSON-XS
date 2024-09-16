@@ -13,6 +13,10 @@ if ($Config{gccversion} and $Config{gccversion} =~ /^(\d+\.\d+)\./) {
   } elsif ($gccver >= 3.4) {
     $define = '-Wall -Wdeclaration-after-statement -Wextra -W';
   }
+
+  # -Wformat does not support the Windows specific "%I64u" format
+  # and will cause false warnings in compiling 'encode_sv'.
+  if($define && $^O =~/MSWin32/i) { $define .= ' -Wno-format' }
 }
 if ($] < 5.022 && $Config{d_setlocale} && $Config{usethreads}) {
   if (-e "/usr/include/xlocale.h") {
