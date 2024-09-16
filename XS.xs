@@ -1449,7 +1449,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
               retrieve_hk (aTHX_ he, &key, &klen);
               encode_hk (aTHX_ enc, key, klen);
 
-              if (UNLIKELY (PTR2ul (typehv)))
+              if (UNLIKELY (PTR2UV (typehv)))
                 {
                   SV **typesv_ref = hv_fetch (typehv, key, klen, 0);
                   if (UNLIKELY (!typesv_ref))
@@ -1491,7 +1491,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
                 retrieve_hk (aTHX_ he, &key, &klen);
                 encode_hk (aTHX_ enc, key, klen);
 
-                if (UNLIKELY (PTR2ul (typehv)))
+                if (UNLIKELY (PTR2UV (typehv)))
                   {
                     SV **typesv_ref = hv_fetch (typehv, key, klen, 0);
                     if (UNLIKELY (!typesv_ref))
@@ -2155,12 +2155,18 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
               had_nokp = 0;
 #if defined(USE_QUADMATH) && defined(HAVE_ISINFL)
               if (UNLIKELY(isinfl(nv)))
+
+#elif defined(USE_QUADMATH) && defined(WIN32) /* Safest to use isinfq */
+              if (UNLIKELY(isinfq(nv)))
 #else
               if (UNLIKELY(isinf(nv)))
 #endif
                 nv = (nv > 0) ? NV_MAX : -NV_MAX;
 #if defined(USE_QUADMATH) && defined(HAVE_ISNANL)
               if (UNLIKELY(isnanl(nv)))
+
+#elif defined(USE_QUADMATH) && defined(WIN32) /* Safest to use isnanq */
+              if (UNLIKELY(isnanq(nv)))
 #else
               if (UNLIKELY(isnan(nv)))
 #endif
@@ -2171,6 +2177,9 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
             {
 #if defined(USE_QUADMATH) && defined(HAVE_ISINFL)
               if (UNLIKELY(isinfl(nv)))
+
+#elif defined(USE_QUADMATH) && defined(WIN32) /* Safest to use isinfq */
+              if (UNLIKELY(isinfq(nv)))
 #else
               if (UNLIKELY(isinf(nv)))
 #endif
@@ -2180,6 +2189,9 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                 }
 #if defined(USE_QUADMATH) && defined(HAVE_ISNANL)
               if (UNLIKELY(isnanl(nv)))
+
+#elif defined(USE_QUADMATH) && defined(WIN32) /* Safest to use isnanq */
+              if (UNLIKELY(isnanq(nv)))
 #else
               if (UNLIKELY(isnan(nv)))
 #endif
@@ -4134,7 +4146,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
 
           /* the next line creates a mortal sv each time it's called. */
           /* might want to optimise this for common cases. */
-          if (LIKELY((long)he))
+          if (LIKELY((UV)he))
             cb = hv_fetch_ent (dec->json.cb_sk_object, hv_iterkeysv (he), 0, 0);
 
           if (cb)
