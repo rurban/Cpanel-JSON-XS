@@ -2153,20 +2153,20 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
           if (force_conversion)
             {
               had_nokp = 0;
-#if defined(USE_QUADMATH) && defined(HAVE_ISINFL)
-              if (UNLIKELY(isinfl(nv)))
+#if defined(USE_QUADMATH) && defined(WIN32) /* Use Perl_isinf */
+              if (UNLIKELY(Perl_isinf(nv)))
 
-#elif defined(USE_QUADMATH) && defined(WIN32) /* Safest to use isinfq */
-              if (UNLIKELY(isinfq(nv)))
+#elif defined(USE_QUADMATH) && defined(HAVE_ISINFL)
+              if (UNLIKELY(isinfl(nv)))
 #else
               if (UNLIKELY(isinf(nv)))
 #endif
                 nv = (nv > 0) ? NV_MAX : -NV_MAX;
-#if defined(USE_QUADMATH) && defined(HAVE_ISNANL)
-              if (UNLIKELY(isnanl(nv)))
+#if defined(USE_QUADMATH) && defined(WIN32) /* Use Perl_isnan */
+              if (UNLIKELY(Perl_isnan(nv)))
 
-#elif defined(USE_QUADMATH) && defined(WIN32) /* Safest to use isnanq */
-              if (UNLIKELY(isnanq(nv)))
+#elif defined(USE_QUADMATH) && defined(HAVE_ISNANL)
+              if (UNLIKELY(isnanl(nv)))
 #else
               if (UNLIKELY(isnan(nv)))
 #endif
@@ -2175,11 +2175,11 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
           /* With no stringify_infnan we can skip the conversion, returning null. */
           else if (enc->json.infnan_mode == 0)
             {
-#if defined(USE_QUADMATH) && defined(HAVE_ISINFL)
-              if (UNLIKELY(isinfl(nv)))
+#if defined(USE_QUADMATH) && defined(WIN32) /* Use Perl_isinf */
+              if (UNLIKELY(Perl_isinf(nv)))
 
-#elif defined(USE_QUADMATH) && defined(WIN32) /* Safest to use isinfq */
-              if (UNLIKELY(isinfq(nv)))
+#elif defined(USE_QUADMATH) && defined(HAVE_ISINFL)
+              if (UNLIKELY(isinfl(nv)))
 #else
               if (UNLIKELY(isinf(nv)))
 #endif
@@ -2187,11 +2187,11 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                   inf_or_nan = (nv > 0) ? 1 : 2;
                   goto is_inf_or_nan;
                 }
-#if defined(USE_QUADMATH) && defined(HAVE_ISNANL)
-              if (UNLIKELY(isnanl(nv)))
+#if defined(USE_QUADMATH) && defined(WIN32) /* Use Perl_isnan */
+              if (UNLIKELY(Perl_isnan(nv)))
 
-#elif defined(USE_QUADMATH) && defined(WIN32) /* Safest to use isnanq */
-              if (UNLIKELY(isnanq(nv)))
+#elif defined(USE_QUADMATH) && defined(HAVE_ISNANL)
+              if (UNLIKELY(isnanl(nv)))
 #else
               if (UNLIKELY(isnan(nv)))
 #endif
@@ -2588,11 +2588,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
         {
 #if PERL_VERSION < 8
 /* SvIV() and SvUV() in Perl 5.6 does not handle Inf and NaN in NV slot */
-# if defined(USE_QUADMATH) && defined(HAVE_ISINFL) && defined(HAVE_ISNANL)
-          if (SvNOKp (sv) && UNLIKELY (isinfl (SvNVX (sv))))
-# else
           if (SvNOKp (sv) && UNLIKELY (isinf (SvNVX (sv))))
-# endif
             {
               if (SvNVX (sv) < 0)
                 {
@@ -2606,11 +2602,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                   iv = (IV)uv;
                 }
             }
-# if defined(USE_QUADMATH) && defined(HAVE_ISINFL) && defined(HAVE_ISNANL)
-          else if (!SvNOKp (sv) || LIKELY (!isnanl (SvNVX (sv))))
-# else
           else if (!SvNOKp (sv) || LIKELY (!isnan (SvNVX (sv))))
-# endif
 #endif
             sv_to_ivuv (aTHX_ sv, &is_neg, &iv, &uv);
         }
