@@ -347,11 +347,12 @@ a Unicode string encoded in UTF-8, giving you a binary string.
 =item 5. A string containing "high" (> 255) character values is I<not>
 a UTF-8 string.
 
-=item 6. Unicode noncharacters only warn, as in core.
+=item 6. Raw non-Unicode characters below U+10FFFF are allowed.
 
-The 66 Unicode noncharacters U+FDD0..U+FDEF, and U+*FFFE, U+*FFFF just
-warn, see L<http://www.unicode.org/versions/corrigendum9.html>.  But
-illegal surrogate pairs fail to parse.
+The 66 Unicode noncharacters U+FDD0..U+FDEF, and U+*FFFE, U+*FFFF are
+allowed without warning, as JSON::PP does, see
+L<http://www.unicode.org/versions/corrigendum9.html>.  But illegal
+surrogate pairs fail to parse.
 
 =item 7. Raw non-Unicode characters above U+10FFFF are disallowed.
 
@@ -1989,11 +1990,6 @@ output for these property strings, e.g.:
 
 This works because C<__proto__> is not valid outside of strings, so every
 occurrence of C<"__proto__"\s*:> must be a string used as property name.
-
-Unicode non-characters between U+FFFD and U+10FFFF are decoded either
-to the recommended U+FFFD REPLACEMENT CHARACTER (see Unicode PR #121:
-Recommended Practice for Replacement Characters), or in the binary or
-relaxed mode left as is, keeping the illegal non-characters as before.
 
 Raw non-Unicode characters outside the valid unicode range fail now to
 parse, because "A string is a sequence of zero or more Unicode
