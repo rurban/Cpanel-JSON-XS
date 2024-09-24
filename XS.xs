@@ -551,17 +551,19 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
       return ((s[0] & 0x1f) << 6) | (s[1] & 0x3f);
     }
   else {
-/* Since perl 5.14 we can disallow illegal unicode above U+10FFFF.
+/* Since perl 5.14 we can disallow surrogates and illegal unicode above
+   U+10FFFF.
    Before we could only warn with warnings 'utf8'.
-   We accept only valid unicode, unless we are in the relaxed mode,
-   which allows SUPER, above U+10FFFF.
+   Surrogates are never allowed for consistency with unpaired escaped surrogate
+   handling.
+   SUPER, above U+10FFFF is not allowed, unless we are in the relaxed mode.
 */
 #if PERL_VERSION > 36
     UV c = utf8n_to_uvchr (s, len, clen,
-                          UTF8_CHECK_ONLY | (relaxed ? 0 : UTF8_DISALLOW_SUPER));
+                          UTF8_CHECK_ONLY | UTF8_DISALLOW_SURROGATE | (relaxed ? 0 : UTF8_DISALLOW_SUPER));
 #elif PERL_VERSION > 12
     UV c = utf8n_to_uvuni (s, len, clen,
-                           UTF8_CHECK_ONLY | (relaxed ? 0 : UTF8_DISALLOW_SUPER));
+                           UTF8_CHECK_ONLY | UTF8_DISALLOW_SURROGATE | (relaxed ? 0 : UTF8_DISALLOW_SUPER));
 #elif PERL_VERSION >= 8
     UV c = utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
 #endif
