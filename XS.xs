@@ -1857,15 +1857,19 @@ encode_bool (pTHX_ enc_t *enc, SV *sv)
 
   if (!SvROK (sv))
     {
-      if (UNLIKELY (sv == &PL_sv_yes)
+      if (
 #ifdef PERL_HAVE_BOOLEANS
-        || (SvIsBOOL(sv) && SvTRUE(sv))
+        UNLIKELY (sv == &PL_sv_yes) || (SvIsBOOL(sv) && SvTRUE(sv))
+#else
+        UNLIKELY (sv == &PL_sv_yes)
 #endif
       )
         encode_const_str (aTHX_ enc, "true", 4, 0);
-      else if (UNLIKELY (sv == &PL_sv_no)
+      else if (
 #ifdef PERL_HAVE_BOOLEANS
-        || (SvIsBOOL(sv) && !SvTRUE(sv))
+        UNLIKELY (sv == &PL_sv_no) || (SvIsBOOL(sv) && !SvTRUE(sv))
+#else
+        UNLIKELY (sv == &PL_sv_no)
 #endif
       )
         encode_const_str (aTHX_ enc, "false", 5, 0);
@@ -1992,11 +1996,13 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
     }
   else
     {
-      if (UNLIKELY (sv == &PL_sv_yes || sv == &PL_sv_no
+      if (
 #ifdef PERL_HAVE_BOOLEANS
-            || SvIsBOOL(sv)
+        UNLIKELY (sv == &PL_sv_yes || sv == &PL_sv_no || SvIsBOOL(sv))
+#else
+        UNLIKELY (sv == &PL_sv_yes || sv == &PL_sv_no)
 #endif
-      )) type = JSON_TYPE_BOOL;
+     ) type = JSON_TYPE_BOOL;
       else if (SvNOKp (sv)) type = JSON_TYPE_FLOAT;
       else if (SvIOKp (sv)) type = JSON_TYPE_INT;
       else if (SvPOKp (sv)) type = JSON_TYPE_STRING;
