@@ -622,21 +622,33 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
 INLINE unsigned char *
 encode_utf8 (unsigned char *s, UV ch)
 {
+  UV uv_ch;
   if    (UNLIKELY(ch < 0x000080))
-    *s++ = ch;
-  else if (LIKELY(ch < 0x000800))
-    *s++ = 0xc0 | ( ch >>  6),
-    *s++ = 0x80 | ( ch        & 0x3f);
-  else if        (ch < 0x010000)
-    *s++ = 0xe0 | ( ch >> 12),
-    *s++ = 0x80 | ((ch >>  6) & 0x3f),
-    *s++ = 0x80 | ( ch        & 0x3f);
-  else if        (ch < 0x110000)
-    *s++ = 0xf0 | ( ch >> 18),
-    *s++ = 0x80 | ((ch >> 12) & 0x3f),
-    *s++ = 0x80 | ((ch >>  6) & 0x3f),
-    *s++ = 0x80 | ( ch        & 0x3f);
-
+    *s++ = (unsigned char) ch;
+  else if (LIKELY(ch < 0x000800)) {
+    uv_ch = 0xc0 | ( ch >>  6);
+    *s++ = (unsigned char) uv_ch;
+    uv_ch = 0x80 | ( ch        & 0x3f);
+    *s++ = (unsigned char) uv_ch;
+  }
+  else if (ch < 0x010000) {
+    uv_ch = 0xe0 | ( ch >> 12);
+    *s++ = (unsigned char) uv_ch;
+    uv_ch = 0x80 | ((ch >>  6) & 0x3f);
+    *s++ = (unsigned char) uv_ch;
+    uv_ch = 0x80 | ( ch        & 0x3f);
+    *s++ = (unsigned char) uv_ch;
+  }
+  else if (ch < 0x110000) {
+    uv_ch = 0xf0 | ( ch >> 18);
+    *s++ = (unsigned char) uv_ch;
+    uv_ch = 0x80 | ((ch >> 12) & 0x3f);
+    *s++ = (unsigned char) uv_ch;
+    uv_ch = 0x80 | ((ch >>  6) & 0x3f);
+    *s++ = (unsigned char) uv_ch;
+    uv_ch = 0x80 | ( ch        & 0x3f);
+    *s++ = (unsigned char) uv_ch;
+  }
   return s;
 }
 
@@ -1023,13 +1035,13 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
                   else if (enc->json.flags & F_LATIN1)
                     {
                       need (aTHX_ enc, 1);
-                      *enc->cur++ = uch;
+                      *enc->cur++ = (unsigned char)uch;
                       str += clen;
                     }
                   else if (enc->json.flags & F_BINARY)
                     {
                       need (aTHX_ enc, 1);
-                      *enc->cur++ = uch;
+                      *enc->cur++ = (unsigned char)uch;
                       str += clen;
                     }
                   else if (is_utf8)
@@ -3441,13 +3453,13 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
                     }
                   case 'x':
 		    {
-		      UV c;
+		      unsigned char c;
 		      if (!(dec->json.flags & F_BINARY))
                         ERR ("illegal hex character in non-binary string");
 		      ++dec_cur;
                       dec->cur = dec_cur;
-                      c = decode_2hex (dec);
-                      if (c == (UV)-1)
+                      c = (char)decode_2hex (dec);
+                      if (c == (char)-1)
                         goto fail;
 		      *cur++ = c;
 		      dec_cur += 2;
@@ -3456,12 +3468,12 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
                   case '0': case '1': case '2': case '3':
 		  case '4': case '5': case '6': case '7':
 		    {
-		      UV c;
+		      char c;
 		      if (!(dec->json.flags & F_BINARY))
                         ERR ("illegal octal character in non-binary string");
                       dec->cur = dec_cur;
-                      c = decode_3oct (dec);
-                      if (c == (UV)-1)
+                      c = (char)decode_3oct (dec);
+                      if (c == (char)-1)
                         goto fail;
 		      *cur++ = c;
 		      dec_cur += 3;
@@ -3542,7 +3554,7 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
                           cur = (char*)encode_utf8 ((U8*)cur, hi);
                         }
                       else
-                        *cur++ = hi;
+                        *cur++ = (unsigned char)hi;
                     }
                     break;
 
