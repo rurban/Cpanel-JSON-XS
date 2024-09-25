@@ -242,6 +242,7 @@ mingw_modfl(long double x, long double *ip)
 #ifndef HvNAMEUTF8
 # define HvNAMEUTF8(hv) 0
 #endif
+#if 0
 /* since 5.14 check use warnings 'nonchar' */
 #ifdef WARN_NONCHAR
 #define WARNER_NONCHAR(hi)                                      \
@@ -258,6 +259,9 @@ mingw_modfl(long double x, long double *ip)
 #define WARNER_NONCHAR(hi)                                         \
   Perl_warner(aTHX_ packWARN(WARN_UTF8),                           \
               "Unicode non-character U+%04lX is illegal", (unsigned long)hi)
+#endif
+#else
+#define WARNER_NONCHAR(hi)
 #endif
 
 /* since 5.16 */
@@ -547,17 +551,19 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
       return ((s[0] & 0x1f) << 6) | (s[1] & 0x3f);
     }
   else {
-/* Since perl 5.14 we can disallow illegal unicode above U+10FFFF.
+/* Since perl 5.14 we can disallow surrogates and illegal unicode above
+   U+10FFFF.
    Before we could only warn with warnings 'utf8'.
-   We accept only valid unicode, unless we are in the relaxed mode,
-   which allows SUPER, above U+10FFFF.
+   Surrogates are never allowed for consistency with unpaired escaped surrogate
+   handling.
+   SUPER, above U+10FFFF is not allowed, unless we are in the relaxed mode.
 */
 #if PERL_VERSION > 36
     UV c = utf8n_to_uvchr (s, len, clen,
-                          UTF8_CHECK_ONLY | (relaxed ? 0 : UTF8_DISALLOW_SUPER));
+                          UTF8_CHECK_ONLY | UTF8_DISALLOW_SURROGATE | (relaxed ? 0 : UTF8_DISALLOW_SUPER));
 #elif PERL_VERSION > 12
     UV c = utf8n_to_uvuni (s, len, clen,
-                           UTF8_CHECK_ONLY | (relaxed ? 0 : UTF8_DISALLOW_SUPER));
+                           UTF8_CHECK_ONLY | UTF8_DISALLOW_SURROGATE | (relaxed ? 0 : UTF8_DISALLOW_SUPER));
 #elif PERL_VERSION >= 8
     UV c = utf8n_to_uvuni (s, len, clen, UTF8_CHECK_ONLY);
 #endif
@@ -3531,15 +3537,6 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
    The WG's consensus was to leave the full range present
    in the ABNF and add the interoperability guidance about
    values outside the Unicode accepted range.
-
-   http://seriot.ch/parsing_json.html#25 According to the Unicode
-   standard, illformed subsequences should be replaced by U+FFFD
-   REPLACEMENT CHARACTER. (See Unicode PR #121: Recommended Practice
-   for Replacement Characters). Several parsers use replacement
-   characters, while other keep the escaped form or produce an
-   non-Unicode character (see Section 5 - Parsing Contents).  This
-   values are not for interchange, only for application internal use.
-   They are different from private use.  Most parsers accept these.
 */
                           if (UNLIKELY(
                                  !(dec->json.flags & F_RELAXED)
