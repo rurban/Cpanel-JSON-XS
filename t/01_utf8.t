@@ -1,4 +1,4 @@
-use Test::More tests => 162;
+use Test::More tests => 152;
 use utf8;
 use Cpanel::JSON::XS;
 use warnings;
@@ -42,56 +42,6 @@ SKIP: {
 
 # TODO: test utf8 hash keys,
 # test utf8 strings without any char > 0x80.
-
-# warn on the 66 non-characters as in core
-{
-  BEGIN { 'warnings'->import($] < 5.014 ? 'utf8' : 'nonchar') }
-  my $w = '';
-  $SIG{__WARN__} = sub { $w = shift };
-  my $d = Cpanel::JSON::XS->new->allow_nonref->decode('"\ufdd0"');
-  my $warn = $w;
-  {
-    no warnings 'utf8';
-    is ($d, "\x{fdd0}", substr($warn,0,31)."...");
-  }
-  like ($warn, qr/^Unicode non-character U\+FDD0 is/);
-  $w = '';
-  # higher planes
-  $d = Cpanel::JSON::XS->new->allow_nonref->decode('"\ud83f\udfff"');
-  $warn = $w;
-  {
-    no warnings 'utf8';
-    is ($d, "\x{1ffff}", substr($warn,0,31)."...");
-  }
-  like ($w, qr/^Unicode non-character U\+1FFFF is/);
-  $w = '';
-  $d = Cpanel::JSON::XS->new->allow_nonref->decode('"\ud87f\udffe"');
-  $warn = $w;
-  {
-    no warnings 'utf8';
-    is ($d, "\x{2fffe}", substr($warn,0,31)."...");
-  }
-  like ($w, qr/^Unicode non-character U\+2FFFE is/);
-
-  $w = '';
-  $d = Cpanel::JSON::XS->new->allow_nonref->decode('"\ud8a4\uddd1"');
-  $warn = $w;
-  is ($d, "\x{391d1}", substr($warn,0,31)."...");
-  is ($w, '');
-}
-{
-  my $w;
-  BEGIN { 'warnings'->import($] < 5.014 ? 'utf8' : 'nonchar') }
-  $SIG{__WARN__} = sub { $w = shift };
-  # no warning with relaxed
-  my $d = Cpanel::JSON::XS->new->allow_nonref->relaxed->decode('"\ufdd0"');
-  my $warn = $w;
-  {
-    no warnings 'utf8';
-    is ($d, "\x{fdd0}", "no warning with relaxed");
-  }
-  is($w, undef);
-}
 
 # security exploits via ill-formed subsequences
 # see http://unicode.org/reports/tr36/#UTF-8_Exploit

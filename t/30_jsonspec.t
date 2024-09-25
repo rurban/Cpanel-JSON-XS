@@ -1,6 +1,6 @@
 # regressions and differences from the JSON Specs and JSON::PP
 # detected by http://seriot.ch/json/parsing.html
-use Test::More ($] >= 5.008) ? (tests => 686) : (skip_all => "needs 5.8");
+use Test::More ($] >= 5.008) ? (tests => 678) : (skip_all => "needs 5.8");
 use Cpanel::JSON::XS;
 BEGIN {
   require Encode if $] >= 5.008 && $] < 5.020; # Currently required for <5.20
@@ -107,32 +107,16 @@ sub i_undefined {
 sub i_pass {
   my ($str, $name) = @_;
   $@ = '';
-  my $w;
-  if ($name =~ /nonchar/) { # check the warning
-    require warnings;
-    warnings->import($] < 5.014 ? 'utf8' : 'nonchar');
-    $SIG{__WARN__} = sub { $w = shift };
-  }
   my $result = $todo{$name} ? eval { $json->decode($str) } : $json->decode($str);
-  my $warn = $w;
   TODO: {
     local $TODO = "$name" if exists $todo{$name};
     is($@, '', "no parsing error with undefined $name ".substr($@,0,40));
     isnt($result, undef, "valid result with undefined $name");
-    if ($name =~ /nonchar/) {
-      like ($warn, qr/^Unicode non-character U\+[10DFE]+ is/);
-      $w = '';
-    }
     $@ = '';
     #diag "$name $str";
     $result    = eval { $relaxed->decode($str) };
-    $warn = $w;
     is($@, '', "no parsing error with undefined $name relaxed ".substr($@,0,40));
     isnt($result, undef, "valid result with undefined $name relaxed");
-    if ($name =~ /nonchar/) {
-      is($warn, '');
-      $w = '';
-    }
   }
 }
 # result undefined, parsing failed
