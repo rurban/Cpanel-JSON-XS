@@ -3456,8 +3456,8 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
                         ERR ("illegal hex character in non-binary string");
 		      ++dec_cur;
                       dec->cur = dec_cur;
-                      c = (char)decode_2hex (dec);
-                      if (c == (char)-1)
+                      c = (unsigned char)decode_2hex (dec);
+                      if (c == (unsigned char)((UV)-1))
                         goto fail;
 		      *cur++ = c;
 		      dec_cur += 2;
