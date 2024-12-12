@@ -2,6 +2,17 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.39 2024-12-12 (rurban)
+        - Fix Windows -Dusequadmath (sisyphus GH #235, GH #229)
+        - Fix inconsistent behavior between decoding escaped and unescaped
+          surrogates, and escaped non-characters vs non-escaped non-characters.
+          Now aligned to JSON::PP (Gavin Hayes GH #233, GH #227)
+        - Add type_all_string tests (Bernhard Schmalhofer GH #236)
+        - Silence UV to char cast warnings  (bulk88 GH #232)
+        - Fix MSVC preprocessor errors (bulk88 GH #232)
+        - Fix -Wformat warnings on Windows (sisyphus GH #228)
+        - Clarify BigInt decoding (GH #226)
+
 4.38 2024-05-27 (rurban)
         - Encode real core booleans as boolean notation (PR #224 leonerd)
         - Minor test fixes by leonerd

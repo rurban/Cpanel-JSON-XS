@@ -1,5 +1,5 @@
 package Cpanel::JSON::XS;
-our $VERSION = '4.38';
+our $VERSION = '4.39';
 our $XS_VERSION = $VERSION;
 # $VERSION = eval $VERSION;
 
@@ -368,7 +368,7 @@ Since RFC 3629, U+D800 through U+DFFF are not legal Unicode values and
 their UTF-8 encodings must be treated as an invalid byte sequence.
 RFC 8259 section 8.2 admits the spec allows string values that contain
 bit sequences that cannot encode Unicode characters and that the
-behavior of software that recieves such values is unpredictable. To
+behavior of software that receives such values is unpredictable. To
 avoid introducing non-Unicode strings into Perl we use the
 UTF8_DISALLOW_SURROGATE flag when parsing Unicode and verify escaped
 surrogates form valid pairs.
@@ -2012,7 +2012,7 @@ Since RFC 3629, U+D800 through U+DFFF are not legal Unicode values and
 their UTF-8 encodings must be treated as an invalid byte sequence.
 RFC 8259 section 8.2 admits the spec allows string values that contain
 bit sequences that cannot encode Unicode characters and that the
-behavior of software that recieves such values is unpredictable. To
+behavior of software that receives such values is unpredictable. To
 avoid introducing non-Unicode strings into Perl we use the
 UTF8_DISALLOW_SURROGATE flag when parsing Unicode and verify escaped
 surrogates form valid pairs.
