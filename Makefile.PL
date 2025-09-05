@@ -196,12 +196,40 @@ sub depend {
 README : \$(VERSION_FROM)
 	pod2text \$(VERSION_FROM) > README
 
+release-test : xtest dist
+	if test \"\$(shell git rev-parse --abbrev-ref HEAD)\" != \"master\" || \\
+           test \"\$(shell git diff --raw)\" != \"\" || \\
+           test \"\$(shell git diff --cached --raw)\" != \"\" ; then \\
+          echo 'You are not on a clean master branch, aborting.'; \\
+          exit 1; \\
+	fi
+	if test \"\$(shell git ls --show-signature -n 1 | head -n2 | tail -n1 | cut -c1-5)\" != \"gpg: \" ; then \\
+            echo 'need git commit with -S'; \\
+            exit 1; \\
+	fi
+	if test \"\$(shell git ls --no-show-signature -n 1 | head -n5 | tail -n1 | cut -c5-11)\" != \"Release\" ; then \\
+            echo 'need git commit with -m Release'; \\
+            exit 1; \\
+	fi
+	echo -git tag -f \$(VERSION)
+	echo cpan-upload \$(DISTVNAME).tar\$(SUFFIX)
+	echo git push
+	echo git push --tags
+
 release : xtest dist
 	if test \"\$(shell git rev-parse --abbrev-ref HEAD)\" != \"master\" || \\
            test \"\$(shell git diff --raw)\" != \"\" || \\
            test \"\$(shell git diff --cached --raw)\" != \"\" ; then \\
           echo 'You are not on a clean master branch, aborting.'; \\
           exit 1; \\
+	fi
+	if test \"\$(shell git ls --show-signature -n 1 | head -n2 | tail -n1 | cut -c1-5)\" != \"gpg: \" ; then \\
+            echo 'need git commit with -S'; \\
+            exit 1; \\
+	fi
+	if test \"\$(shell git ls --no-show-signature -n 1 | head -n5 | tail -n1 | cut -c5-11)\" != \"Release\" ; then \\
+            echo 'need git commit with -m Release'; \\
+            exit 1; \\
 	fi
 	-git tag -f \$(VERSION)
 	cpan-upload \$(DISTVNAME).tar\$(SUFFIX)
