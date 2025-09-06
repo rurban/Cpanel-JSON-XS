@@ -710,16 +710,16 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
   /* if we recurse too deep, skip all remaining digits */
   /* to avoid a stack overflow attack */
   if (UNLIKELY(--maxdepth <= 0))
-    while (((U8)*s - '0') < 10)
+    while (*s >= '0' && *s <= '9')
       ++s;
 
   for (;;)
     {
-      U8 dig = (U8)*s - '0';
+      U8 dig = (U8)(*s - '0');
 
       if (UNLIKELY(dig >= 10))
         {
-          if (dig == (U8)((U8)'.' - (U8)'0'))
+          if (dig == (U8)('.' - '0'))
             {
               ++s;
               json_atof_scan1 (s, accum, expo, 1, maxdepth);
@@ -739,7 +739,7 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
               else if (*s == '+')
                 ++s;
 
-              while ((dig = (U8)*s - '0') < 10)
+              while (*s >= '0' && *s <= '9')
                 exp2 = exp2 * 10 + *s++ - '0';
 
               *expo += neg ? -exp2 : exp2;
