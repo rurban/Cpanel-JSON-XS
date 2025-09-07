@@ -721,6 +721,8 @@ json_atof_scan1 (const char *s, NV *accum, int *expo, int postdp, int maxdepth)
         {
           if (dig == (U8)('.' - '0'))
             {
+              if (postdp)
+                break;
               ++s;
               json_atof_scan1 (s, accum, expo, 1, maxdepth);
             }
@@ -3677,6 +3679,8 @@ decode_num (pTHX_ dec_t *dec, SV *typesv)
           ++dec->cur;
         }
       while (*dec->cur >= '0' && *dec->cur <= '9');
+      if (*dec->cur == '.')
+        ERR ("malformed number (two decimal points)");
 
       is_nv = 1;
     }
@@ -3697,6 +3701,8 @@ decode_num (pTHX_ dec_t *dec, SV *typesv)
           ++dec->cur;
         }
       while (*dec->cur >= '0' && *dec->cur <= '9');
+      if (*dec->cur == '.' && is_nv == 1)
+        ERR ("malformed number (two decimal points)");
 
       is_nv = 1;
     }

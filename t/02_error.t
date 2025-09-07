@@ -1,4 +1,4 @@
-use Test::More tests => 36;
+use Test::More tests => 41;
 
 use utf8;
 use Cpanel::JSON::XS;
@@ -52,3 +52,9 @@ eval { decode_json ("true") }; ok $@ =~ /JSON text must be an object or array/, 
 eval { decode_json ("false") }; ok $@ =~ /JSON text must be an object or array/, "false $@";
 eval { decode_json ("1") }; ok $@ =~ /JSON text must be an object or array/, "wrong 1";
 
+# more malformed numbers
+eval { Cpanel::JSON::XS->new->allow_nonref->decode ('001') }; ok $@ =~ /malformed number/;
+eval { Cpanel::JSON::XS->new->allow_nonref->decode ('1.0.1') }; ok !!$@;
+eval { Cpanel::JSON::XS->new->allow_nonref->decode ('1.0.') }; ok !!$@;
+eval { Cpanel::JSON::XS->new->allow_nonref->decode ('1.') }; ok $@ =~ /malformed number/;
+eval { Cpanel::JSON::XS->new->allow_nonref->decode ('-') }; ok $@ =~ /malformed number/;
