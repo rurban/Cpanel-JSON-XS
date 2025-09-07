@@ -73,7 +73,7 @@ $inf = $json->stringify_infnan(3)->encode($biginf);
 is( "$inf", $exp, '-inf stringify' );
 
 # see if allow_bignum is enough, always decodes to a BigFloat
-my $num = $json->decode(4.5);
+$num = $json->decode(4.5);
 isa_ok( $num, 'Math::BigFloat' );
 is(
     $num->bcmp('4.5'),
