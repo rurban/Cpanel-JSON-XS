@@ -4502,8 +4502,6 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
         converted = 1 + (json->flags & F_UTF8);
         json->flags |= F_UTF8;
         offset = 3;
-        SvPV_set(string, SvPVX_mutable (string) + 3);
-        SvCUR_set(string, len - 3);
         SvUTF8_on(string);
         /* omitting the endian name will skip the BOM in the result */
       } else if (len >= 4 && memEQc(s, UTF32BOM)) {
@@ -4538,7 +4536,7 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
     SvGROW (string, SvCUR (string) + 1);
 
   dec.json  = *json;
-  dec.cur   = SvPVX (string);
+  dec.cur   = SvPVX (string) + offset;
   dec.end   = SvEND (string);
   dec.err   = 0;
   dec.depth = 0;
@@ -4552,10 +4550,11 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
   sv = decode_sv (aTHX_ &dec, typesv);
 
   if (offset_return) {
-    if (dec.cur < SvPVX (string) || dec.cur > SvEND (string))
+    char *base = SvPVX (string) + offset;
+    if (dec.cur < base || dec.cur > SvEND (string))
       *offset_return = 0;
     else
-      *offset_return = dec.cur - SvPVX (string);
+      *offset_return = dec.cur - base;
   }
 
   if (!(offset_return || !sv))
@@ -4570,12 +4569,6 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
           sv = NULL;
         }
     }
-  /* restore old utf8 string with BOM */
-  if (UNLIKELY(offset)) {
-    SvPV_set(string, SvPVX_mutable (string) - offset);
-    SvCUR_set(string, len);
-  }
-
   if (!sv)
     {
       SV *uni = sv_newmortal ();
