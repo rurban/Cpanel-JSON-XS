@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 12;
+use Test::More tests => 17;
 use Cpanel::JSON::XS;
 
 my $json = Cpanel::JSON::XS->new;
@@ -47,3 +47,33 @@ is (encode_json ($json->decode ('{"a":["b"],"a":"c"}')), '{"a":[["b"],"c"]}',
     'dupkeys_as_arrayref to []');
 is (encode_json ($json->decode ('{"a":["b","c"],"a":["c"]}')), '{"a":[["b","c"],["c"]]}',
     'dupkeys_as_arrayref to [[]]');
+
+# fast path: short ASCII keys
+is_deeply ($json->decode ('{"a":1,"a":2,"b":3,"b":4}'),
+           { a => [1, 2], b => [3, 4] },
+           'dupkeys_as_arrayref: two distinct duplicated keys, fast path');
+
+# slow path: keys longer than 24 bytes force _decode_str
+{
+  my $k1 = 'a' x 30;
+  my $k2 = 'b' x 30;
+  my $in = qq({"$k1":1,"$k1":2,"$k2":3,"$k2":4});
+  is_deeply ($json->decode ($in),
+             { $k1 => [1, 2], $k2 => [3, 4] },
+             'dupkeys_as_arrayref: two distinct duplicated keys, slow path');
+}
+
+# three distinct duplicated keys - confirms fix past the first transition
+is_deeply ($json->decode ('{"a":1,"a":2,"b":3,"b":4,"c":5,"c":6}'),
+           { a => [1, 2], b => [3, 4], c => [5, 6] },
+           'dupkeys_as_arrayref: three distinct duplicated keys');
+
+# triple duplicate of a second key - further dups should append, not re-wrap
+is_deeply ($json->decode ('{"a":1,"a":2,"b":3,"b":4,"b":5}'),
+           { a => [1, 2], b => [3, 4, 5] },
+           'dupkeys_as_arrayref: triple dup of second key');
+
+# pre-existing arrayref values combine correctly across multiple keys
+is_deeply ($json->decode ('{"a":["x"],"a":"y","b":["p"],"b":"q"}'),
+           { a => [['x'], 'y'], b => [['p'], 'q'] },
+           'dupkeys_as_arrayref: existing array values, two distinct keys');

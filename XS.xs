@@ -366,7 +366,6 @@ mingw_modfl(long double x, long double *ip)
 #define F_REQUIRE_TYPES   0x01000000UL
 #define F_TYPE_ALL_STRING 0x02000000UL
 #define F_DUPKEYS_AS_AREF 0x04000000UL
-#define F_DUPKEYS_FIRST   0x08000000UL /* internal only */
 #define F_HOOK            0x80000000UL /* some hooks exist, so slow-path processing */
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
@@ -3924,7 +3923,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
   int allow_barekey = dec->json.flags & F_ALLOW_BAREKEY;
   int allow_dupkeys = dec->json.flags & F_ALLOW_DUPKEYS;
   int dupkeys_as_arrayref = dec->json.flags & F_DUPKEYS_AS_AREF;
-  int dupkeys_first = dec->json.flags & F_DUPKEYS_FIRST;
+  HV *dupkeys_seen = NULL;
   char endstr = '"';
 
   DEC_INC_DEPTH;
@@ -3996,16 +3995,21 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                       // extend the value to arrayref or push
                       old_value = HeVAL(hv_fetch_ent (hv, keysv, 0, 0));
                       SvREFCNT_inc (old_value);
-                      if (dupkeys_first) {
-                        AV *av = newAV ();
-                        av_extend (av, 2);
-                        if (av_store(av, 0, old_value))
-                          old_value = newRV ((SV*)av);
-                      } else if (SvTYPE (old_value) != SVt_RV &&
-                                 SvTYPE (SvRV (old_value)) != SVt_PVAV) {
-                        // not an AvREF
-                        ERR ("Invalid dupkeys_as_arrayref hash key");
-                      }
+                      if (!dupkeys_seen
+                          || !hv_exists_ent (dupkeys_seen, keysv, 0))
+                        {
+                          AV *av = newAV ();
+                          av_extend (av, 2);
+                          if (av_store (av, 0, old_value))
+                            old_value = newRV ((SV*)av);
+                          if (!dupkeys_seen)
+                            {
+                              dupkeys_seen = newHV ();
+                              sv_2mortal ((SV *)dupkeys_seen);
+                            }
+                          (void)hv_store_ent (dupkeys_seen, keysv,
+                                              newSV (0), 0);
+                        }
                     } // else overwrite it below
                   }
                   decode_ws (dec);
@@ -4029,11 +4033,6 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                     {
                       av_push ((AV*)SvRV (old_value), value);
                       (void)hv_store_ent (hv, keysv, old_value, 0);
-                      if (dupkeys_first)
-                        {
-                          dupkeys_first = 0;
-                          dec->json.flags &= ~F_DUPKEYS_FIRST;
-                        }
                     }
                   else
                     {
@@ -4067,16 +4066,21 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                       SV** rv = hv_fetch (hv, key, len, 0);
                       old_value = *rv;
                       SvREFCNT_inc (old_value);
-                      if (dupkeys_first) {
-                        AV *av = newAV ();
-                        av_extend (av, 2);
-                        if (av_store(av, 0, old_value))
-                          old_value = newRV ((SV*)av);
-                      } else if (SvTYPE (old_value) != SVt_RV &&
-                                 SvTYPE (SvRV (old_value)) != SVt_PVAV) {
-                        // not an AvREF
-                        ERR ("Invalid dupkeys_as_arrayref hash key");
-                      }
+                      if (!dupkeys_seen
+                          || !hv_exists (dupkeys_seen, key, len))
+                        {
+                          AV *av = newAV ();
+                          av_extend (av, 2);
+                          if (av_store (av, 0, old_value))
+                            old_value = newRV ((SV*)av);
+                          if (!dupkeys_seen)
+                            {
+                              dupkeys_seen = newHV ();
+                              sv_2mortal ((SV *)dupkeys_seen);
+                            }
+                          (void)hv_store (dupkeys_seen, key, len,
+                                          newSV (0), 0);
+                        }
                     } // else overwrite it below
                   }
 
@@ -4101,11 +4105,6 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                     {
                       av_push ((AV*)SvRV (old_value), value);
                       hv_store_str (aTHX_ hv, key, len, old_value);
-                      if (dupkeys_first)
-                        {
-                          dupkeys_first = 0;
-                          dec->json.flags &= ~F_DUPKEYS_FIRST;
-                        }
                     }
                   else
                     {
@@ -4886,7 +4885,7 @@ void ascii (JSON *self, int enable = 1)
         # Turning on DUPKEYS_AS_AREF also turns on ALLOW_DUPKEYS
         # But turning off DUPKEYS_AS_AREF does not
         if (ix == F_DUPKEYS_AS_AREF && enable != 0)
-          self->flags |= F_ALLOW_DUPKEYS | F_DUPKEYS_FIRST;
+          self->flags |= F_ALLOW_DUPKEYS;
         XPUSHs (ST (0));
 
 void get_ascii (JSON *self)
