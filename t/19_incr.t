@@ -2,7 +2,7 @@
 
 use strict;
 no warnings;
-use Test::More $] < 5.008 ? (tests => 39) : (tests => 702);
+use Test::More $] < 5.008 ? (tests => 39) : (tests => 713);
 
 use Cpanel::JSON::XS;
 
@@ -109,4 +109,52 @@ exit if $] < 5.008;
    is ($@, '', 'incr_text is allowed after incr_reset');
    is (encode_json($coder->incr_parse($text)), '[1]', "incr_parse1");
    is (encode_json($coder->incr_parse), '[5]', "incr_parse2");
+}
+
+# allow_singlequote: } inside single-quoted string must not close the object
+{
+   my $coder = Cpanel::JSON::XS->new->allow_singlequote(1);
+
+   # feed partial input: the } is inside the single-quoted value, must not trigger done
+   ok (!defined $coder->incr_parse("{'a':'}'"), "sqstr-incr: } inside single-quote does not close object");
+
+   # complete the object
+   my $r = $coder->incr_parse("}");
+   ok (defined $r, "sqstr-incr: object completes after closing brace");
+   is_deeply ($r, {a => "}"}, "sqstr-incr: decoded value correct");
+}
+
+# allow_singlequote: chunked streaming with structural chars inside single-quoted string
+{
+   my $coder = Cpanel::JSON::XS->new->allow_singlequote(1);
+
+   # feed one byte at a time to exercise every state transition
+   my $json = "{'x':'}[{'}";
+   my $r;
+   for my $ch (split //, $json) {
+      $r = $coder->incr_parse($ch);
+   }
+   ok (defined $r, "sqstr-incr chunked: defined result");
+   is_deeply ($r, {x => "}[{"}, "sqstr-incr chunked: decoded value correct");
+}
+
+# allow_singlequote: backslash inside single-quoted string does not cause premature end
+{
+   my $coder = Cpanel::JSON::XS->new->allow_singlequote(1);
+
+   ok (!defined $coder->incr_parse("{'k':'a\\'"), "sqstr-incr BS: partial with escaped quote waits");
+   my $r = $coder->incr_parse("b'}");
+   ok (defined $r, "sqstr-incr BS: completes after full input");
+   is_deeply ($r, {k => "a'b"}, "sqstr-incr BS: decoded value correct");
+}
+
+# allow_singlequote: single-quoted array element containing structural chars
+{
+   my $coder = Cpanel::JSON::XS->new->allow_singlequote(1);
+   my $r;
+   $r = $coder->incr_parse("['he");
+   ok (!defined $r, "sqstr-incr array: partial waits");
+   $r = $coder->incr_parse("llo}']");
+   ok (defined $r, "sqstr-incr array: completes");
+   is_deeply ($r, ['hello}'], "sqstr-incr array: value correct");
 }

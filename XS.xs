@@ -425,7 +425,9 @@ enum {
   INCR_M_BS,     /* inside backslash */
   INCR_M_C0,     /* inside comment in initial whitespace sequence */
   INCR_M_C1,     /* inside comment in other places */
-  INCR_M_JSON    /* outside anything, count nesting */
+  INCR_M_JSON,   /* outside anything, count nesting */
+  INCR_M_SQSTR,  /* inside single-quoted string (allow_singlequote) */
+  INCR_M_SQBS    /* inside backslash inside single-quoted string */
 };
 
 #define INCR_DONE(json) ((json)->incr_nest <= 0 && (json)->incr_mode == INCR_M_JSON)
@@ -4659,6 +4661,15 @@ incr_parse (JSON *self)
             self->incr_mode = INCR_M_STR;
             goto incr_m_str;
 
+          /* skip a single char inside a single-quoted string (for \\-processing) */
+          case INCR_M_SQBS:
+            if (!*p)
+              goto interrupt;
+
+            ++p;
+            self->incr_mode = INCR_M_SQSTR;
+            goto incr_m_sqstr;
+
           /* inside #-style comments */
           case INCR_M_C0:
           case INCR_M_C1:
@@ -4709,6 +4720,37 @@ incr_parse (JSON *self)
                 ++p;
               }
 
+          /* inside a single-quoted string (allow_singlequote) */
+          case INCR_M_SQSTR:
+          incr_m_sqstr:
+            for (;;)
+              {
+                if (*p == '\'')
+                  {
+                    ++p;
+                    self->incr_mode = INCR_M_JSON;
+
+                    if (!self->incr_nest)
+                      goto interrupt;
+
+                    goto incr_m_json;
+                  }
+                else if (*p == '\\')
+                  {
+                    ++p;
+
+                    if (!*p)
+                      {
+                        self->incr_mode = INCR_M_SQBS;
+                        goto interrupt;
+                      }
+                  }
+                else if (!*p)
+                  goto interrupt;
+
+                ++p;
+              }
+
           /* after initial ws, outside string */
           case INCR_M_JSON:
           incr_m_json:
@@ -4734,6 +4776,14 @@ incr_parse (JSON *self)
                     case '"':
                       self->incr_mode = INCR_M_STR;
                       goto incr_m_str;
+
+                    case '\'':
+                      if (self->flags & F_ALLOW_SQUOTE)
+                        {
+                          self->incr_mode = INCR_M_SQSTR;
+                          goto incr_m_sqstr;
+                        }
+                      break;
 
                     case '[':
                     case '{':
