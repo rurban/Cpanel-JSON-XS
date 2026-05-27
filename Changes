@@ -2,6 +2,14 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.41 2026-05-27 (rurban)
+	- Fix BOM-shift PV-corruption SIGABRT (CVE-2026-9516) (patch by Paul Johnson)
+        - Fix dupkeys_as_arrayref type confusion (CVE-2026-9334) (patch by Paul Johnson)
+        - Fix incr_parse single-quote string delimiter (GH #245, reported by
+          Paul Johnson)
+        - Fix a one-byte out-of-bounds heap read reachable via allow_barekey on
+          truncated input (GH #244, reported by Paul Johnson)
+
 4.40 2025-09-07 (rurban)
 	- Fix CVE-2025-40929 overflow with overlong numbers, fuzzing only.
 	- Detect more malformed numbers, with two decimal points.
