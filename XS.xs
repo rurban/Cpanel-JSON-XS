@@ -3979,9 +3979,11 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
           for (;;)
             {
               /* the >= 0x80 is false on most architectures */
-              if (UNLIKELY(!is_bare &&
+              /* !*p must be checked before !is_bare: a bare-key scan has no
+                 bounds guard and would run one byte past dec->end otherwise */
+              if (UNLIKELY(!*p || (!is_bare &&
                   (p == e || *p < 0x20 || *(U8*)p >= 0x80 || *p == '\\'
-                   || allow_squote)))
+                   || allow_squote))))
                 {
                   /* slow path, back up and use decode_str */
                   /* utf8 hash keys are handled here */
