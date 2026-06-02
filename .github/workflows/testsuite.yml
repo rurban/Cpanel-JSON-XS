@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: perl -V
       - name: install cpan deps
-        uses: perl-actions/install-with-cpm@b7eeb5ea204d9c9bd434e01162ae97629cf7fa36 # v2.4
+        uses: perl-actions/install-with-cpanm@0f3cc9bc0b055cc20750d218061ebbdebd101bb3 # stable
         with:
           install: |
             Data::Dumper
@@ -91,9 +91,8 @@ jobs:
           perl-version: ${{ matrix.perl-version }}
       - run: perl -V
       - name: install cpan deps
-        uses: perl-actions/install-with-cpm@b7eeb5ea204d9c9bd434e01162ae97629cf7fa36 # v2.4
+        uses: perl-actions/install-with-cpanm@0f3cc9bc0b055cc20750d218061ebbdebd101bb3 # stable
         with:
-          sudo: false
           install: |
             Data::Dumper
             Devel::Peek
