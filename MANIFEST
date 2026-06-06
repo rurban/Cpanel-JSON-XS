@@ -45,6 +45,7 @@ t/119_type_decode.t
 t/11_pc_expo.t
 t/120_type_all_string.t
 t/121_memleak.t
+t/122_type_encode.t
 t/125_shared_boolean.t
 t/12_blessed.t
 t/13_limit.t
