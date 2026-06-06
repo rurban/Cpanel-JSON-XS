@@ -2390,6 +2390,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       else {
         NV intpart;
         if (!( inf_or_nan || (had_nokp && Perl_modf(SvNVX(sv), &intpart))
+            || (!force_conversion && had_nokp
+                && (SvNVX(sv) > (NV)UV_MAX || SvNVX(sv) < (NV)IV_MIN))
             || (!force_conversion && SvIOK(sv))
             || strchr(enc->cur,'e')
             || strchr(enc->cur,'E')

@@ -3,7 +3,7 @@ use Cpanel::JSON::XS;
 use Test::More;
 use Config;
 plan skip_all => "Yet unhandled inf/nan with $^O" if $^O eq 'dec_osf';
-plan tests => 25;
+plan tests => 28;
 
 # infnan_mode = 0:
 is encode_json([9**9**9]),         '[null]', "inf -> null stringify_infnan(0)";
@@ -133,3 +133,13 @@ is encode_json({test => [$num, $str]}), qq|{"test":[$resnum,"bar"]}|,
   is encode_json({"invalid" => 123.45}), qq|{"invalid":123.45}|,
     "numeric radix";
 }
+
+
+# GH #112: On 32-bit Perl, whole-number NVs exceeding UV_MAX (e.g. large
+# IDs) were encoded with trailing .0 because Perl stores them as float.
+# Fix: skip the .0 when the NV value exceeds native integer range,
+# since Perl was forced to use NV (not because user wrote a float literal).
+# Floats that fit in native range (like 1.0) still get .0.
+is encode_json([1.0]), '[1.0]', 'GH#112 float 1.0 stays 1.0';
+is encode_json([5439409363]), '[5439409363]', 'GH#112 large int (in IV) no .0';
+is encode_json([3.14]), '[3.14]', 'GH#112 fractional float unchanged';
