@@ -1,6 +1,6 @@
 use strict;
 use constant HAVE_BOOLEANS => ($^V ge v5.36);
-use Test::More tests => 42 + (HAVE_BOOLEANS ? 2 : 0);
+use Test::More tests => 63 + (HAVE_BOOLEANS ? 2 : 0);
 use Cpanel::JSON::XS ();
 use Config;
 
@@ -127,6 +127,34 @@ $js = $unblessed_bool_cjson->decode($truefalse);
 ok eval { $js->[0] = "new value 0" }, "decoded 'true' is modifiable" or diag($@);
 ok eval { $js->[1] = "new value 1" }, "decoded 'false' is modifiable" or diag($@);
 
+
+# GH #207: boolean eq/ne must not match undef (which stringifies to "")
+# NOTE: we intentionally differ from JSON::PP by accepting "false" and ""
+# as eq to false, and "true" as eq to true (semantic boolean matching).
+ok(!($false eq undef),    'false ne undef via eq');    # the bug fix
+ok(!($true  eq undef),    'true ne undef via eq');
+ok( $false eq "",         q{false eq "" via eq});       # intentional: !!0 / SV_NO
+ok( $false eq "false",    q{false eq "false" via eq});   # intentional: semantic
+ok( $true  eq "true",     q{true eq "true" via eq});     # intentional: semantic
+ok( $true  ne "",         q{true ne "" via eq});
+ok( $false eq 0,          'false eq 0 via eq');
+ok( $false eq "0",        q{false eq "0" via eq});
+ok( $true  eq 1,          'true eq 1 via eq');
+ok( $true  eq "1",        q{true eq "1" via eq});
+ok( $false eq !!0,        'false eq !!0 (SV_NO) via eq'); # intentional
+# ne (must be consistent with eq)
+ok( $false ne undef,      'false ne undef via ne');
+ok(!($false ne ""),       q{false eq "" via ne});
+ok(!($false ne 0),        'false eq 0 via ne');
+# cmp must agree with eq for the undef case (GH #207)
+is($false cmp undef, 1, 'false cmp undef -> 1 (ne)');
+is($false cmp "",    1, q{false cmp "" -> 1 (ne, but eq is true)});
+is($false cmp 0,     0, 'false cmp 0 -> 0 (eq)');
+# boolean-to-boolean eq
+ok( $false eq $false,    'false eq false');
+ok( $true  eq $true,      'true eq true');
+ok(!($false eq $true),   'false ne true');
+ok(!($true  eq $false),   'true ne false');
 if(HAVE_BOOLEANS) {
   no if HAVE_BOOLEANS, warnings => "experimental::builtin";
   is($cjson->encode({t => builtin::true}), q({"t":true}),

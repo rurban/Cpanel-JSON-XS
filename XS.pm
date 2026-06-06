@@ -2379,15 +2379,19 @@ BEGIN {
   &overload::unimport( 'overload', '""', 'eq', 'ne' );
   &overload::import( 'overload',
     '""'     => sub { ${$_[0]} == 1 ? '1' : '0' }, # GH 29
+    # NOTE: unlike JSON::PP::Boolean which relies on fallback and has no
+    # explicit eq/ne overload, we provide semantic boolean matching:
+    # false eq "false", false eq "", false eq !!0, true eq "true".
+    # JSON::PP would return FALSE for all of these (plain string eq).
     'eq'     => sub {
       my ($obj, $op) = $_[2] ? ($_[1], $_[0]) : ($_[0], $_[1]);
-      #warn "eq obj:$obj op:$op len:", length($op) > 0, " swap:$_[2]";
       if (ref $op) { # if 2nd also blessed might recurse endlessly
         return $obj ? 1 == $op : 0 == $op;
       }
       # if string, only accept numbers or true|false or "" (e.g. !!0 / SV_NO)
       elsif ($op !~ /^[0-9]+$/) {
-        return "$obj" eq '1' ? 'true' eq $op : 'false' eq $op || "" eq $op;
+        return "$obj" eq '1' ? 'true' eq $op
+             : 'false' eq $op || (defined($op) && "" eq $op); # GH #207
       }
       else {
         return $obj ? 1 == $op : 0 == $op;
