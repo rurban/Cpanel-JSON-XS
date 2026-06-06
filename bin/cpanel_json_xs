@@ -126,7 +126,7 @@ correctly - use "dump" instead.
 
 Evaluate perl code after reading the data and before writing it out again
 - can be used to filter, create or extract data. The data that has been
-written is in C<$_>, and whatever is in there is written out afterwards.
+read is in C<$_>, and whatever is in there is written out afterwards.
 
 =back
 
