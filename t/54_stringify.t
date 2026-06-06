@@ -10,7 +10,7 @@ BEGIN {
     or plan skip_all => 'JSON 2.09 required for cross testing';
   $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
 }
-plan $] < 5.008 ? (skip_all => "5.6 no AMG yet") : (tests => 19);
+plan $] < 5.008 ? (skip_all => "5.6 no AMG yet") : (tests => 21);
 use Cpanel::JSON::XS;
 
 my $time = localtime;
@@ -84,4 +84,18 @@ use overload '""' => sub {"1"};
 package main;
 my $data = {nick => bless({}, 'BoolTestOk')};
 is( $json->convert_blessed->allow_blessed->encode($data), '{"nick":"1"}', 'GH #124' );
+
+# GH #128: recursion via "" overload must not crash
+{
+  my $j = Cpanel::JSON::XS->new;
+  {
+    package StringifiyRec;
+    use overload '""' => sub { $j->encode($_[0]) };
+  }
+  my $data = bless [], 'StringifiyRec';
+  my $result = eval { $j->convert_blessed->allow_blessed->encode($data) };
+  ok(!$@, 'GH #128: recursion via "" overload does not crash')
+    or diag "Error: $@";
+  is($result, '"null"', 'GH #128: recursion returns null from allow_blessed');
+}
 

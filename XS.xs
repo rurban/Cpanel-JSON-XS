@@ -886,6 +886,7 @@ typedef struct
   char *end;  /* SvEND (sv) */
   SV *sv;     /* result scalar */
   JSON json;
+  JSON *orig_json; /* pointer to original JSON object (for recursion guard) */
   U32 indent; /* indentation level */
   UV limit;   /* escape character values >= this value when encoding */
 } enc_t;
@@ -1634,7 +1635,17 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
         SvFLAGS(sv) |= SVf_AMAGIC;
       }
 #endif
-#if PERL_VERSION > 13
+#if PERL_VERSION > 22
+      {
+        /* GH #128: protect from endless recursion via "" overload.
+           Temporarily clear convert_blessed and allow_stringify on the
+           original JSON object so re-entrant encode calls won't loop. */
+        U32 flags = enc->orig_json->flags;
+        enc->orig_json->flags &= ~(F_ALLOW_STRINGIFY|F_CONV_BLESSED);
+        pv = AMG_CALLunary(rv, string_amg);
+        enc->orig_json->flags = flags;
+      }
+#elif PERL_VERSION > 13
       pv = AMG_CALLunary(rv, string_amg);
 #else
       pv = AMG_CALLun(rv, string);
@@ -2789,6 +2800,7 @@ encode_json (pTHX_ SV *scalar, JSON *json, SV *typesv)
     croak ("hash- or arrayref expected (not a simple scalar, use allow_nonref to allow this)");
 
   enc.json      = *json;
+  enc.orig_json = json;
   enc.sv        = sv_2mortal (NEWSV (0, INIT_SIZE));
   enc.cur       = SvPVX (enc.sv);
   enc.end       = SvEND (enc.sv);
