@@ -8,6 +8,9 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
         - Fix Boolean eq overload matching undef (GH #207, reported by fd-t).
           Cpanel::JSON::XS::Boolean overloaded eq would match undef as equal
           to false because undef stringifies to "". Added defined() guard.
+        - Fix error messages showing overloaded stringification for blessed
+          objects (GH #191, reported by karenetheridge). Error messages now
+          use ClassName=TYPE(addr) format, bypassing any "" overload.
         - Fix minor t/12_blessed.t typo.
         - Fix GH #112: encode large whole-number NV values without .0 on
           32-bit Perl (values exceeding UV_MAX that Perl stores as float).

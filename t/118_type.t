@@ -15,7 +15,7 @@ BEGIN {
     $have_weaken = 0 if $] < 5.008;
 }
 
-use Test::More tests => 381;
+use Test::More tests => 385;
 
 my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types;
 my $bigcjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types->allow_bignum;
@@ -618,3 +618,25 @@ like($@, qr/type for '1' was not specified/);
 
 ok(!defined eval { $cjson->encode(bless({}, 'Object'), JSON_TYPE_STRING) });
 like($@, qr/encountered object.*but neither allow_blessed, convert_blessed nor allow_tags settings are enabled/);
+
+# GH #191: error messages must use ClassName=TYPE(addr) format,
+# not the overloaded "" stringification of the object.
+{
+  package OverloadedError;
+  use overload q("") => sub { "CONFUSING_STRING" }, fallback => 1;
+  sub new { bless { x => 1 }, shift }
+}
+my $obj = OverloadedError->new;
+
+# non-type path (via encode_rv)
+my $plain = Cpanel::JSON::XS->new;
+ok(!defined eval { $plain->encode($obj) },
+   'encode blessed object without flags -> error');
+like($@, qr/encountered object 'OverloadedError=HASH\(0x[0-9a-f]+\)'/,
+     'error msg uses ClassName=TYPE(addr), not overloaded stringification');
+
+# type-path (via encode_sv)
+ok(!defined eval { $plain->encode($obj, JSON_TYPE_STRING) },
+   'encode blessed object with type -> error');
+like($@, qr/encountered object 'OverloadedError=HASH\(0x[0-9a-f]+\)'/,
+     'type-path error msg also uses ClassName=TYPE(addr)');
