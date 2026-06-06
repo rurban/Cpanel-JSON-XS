@@ -2,6 +2,14 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+
+4.53 2026-??-?? (rurban)
+	- Fix boolean documentation (GH #180): remove misleading
+          JSON_TYPE_BOOL example for !0/!1 (native booleans need no
+          type hints), clarify JSON<->Perl boolean mapping in both
+          directions, replace internal SV_NO/SV_YES terminology with
+          user-facing !0/!1, document builtin::true/false support.
+
 4.51 2026-09-11 (rurban)
 	- Add faster SIMD UTF-8 validation (GH #213, Zhang Boyang)
 	  https://github.com/cyb70289/utf8, MIT.
