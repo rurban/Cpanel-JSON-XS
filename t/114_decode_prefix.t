@@ -5,7 +5,7 @@ use Test::More tests => 12;
 
 use Cpanel::JSON::XS;
 
-my $json = Cpanel::JSON::XS->new;
+my $json = Cpanel::JSON::XS->new->allow_nonref(0);
 
 my $complete_text = qq/{"foo":"bar"}/;
 my $garbaged_text  = qq/{"foo":"bar"}\n/;

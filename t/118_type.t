@@ -17,8 +17,8 @@ BEGIN {
 
 use Test::More tests => 385;
 
-my $cjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types;
-my $bigcjson = Cpanel::JSON::XS->new->canonical->allow_nonref->require_types->allow_bignum;
+my $cjson = Cpanel::JSON::XS->new->canonical->require_types;
+my $bigcjson = Cpanel::JSON::XS->new->canonical->require_types->allow_bignum;
 
 foreach my $false (Cpanel::JSON::XS::false, undef, 0, 0.0, 0E0, !!0, !1, "0", "", \0) {
     is($cjson->encode($false, JSON_TYPE_BOOL), 'false');

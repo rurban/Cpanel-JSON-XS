@@ -22,6 +22,11 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
           When new() is called on an existing object (e.g. $json->new->new),
           the class name is now extracted from the object's stash rather than
           using the stringified reference.
+        - Change allow_nonref default to true (GH #241, matching JSON::PP and
+          JSON::XS 4.0+ and the insecure RFC 7159).
+          encode and decode now accept non-reference values by default.
+          decode_json() with an explicit 0/1 second argument still works.
+          allow_nonref(0) to disable scalars-only for secure JSON.
         - Fix minor t/12_blessed.t typo.
         - Fix GH #112: encode large whole-number NV values without .0 on
           32-bit Perl (values exceeding UV_MAX that Perl stores as float).

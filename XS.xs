@@ -457,6 +457,7 @@ INLINE void
 json_init (JSON *json)
 {
   Zero (json, 1, JSON);
+  json->flags        = F_ALLOW_NONREF;  /* GH #241: default like JSON::XS 4.0 */
   json->max_depth     = 512;
   json->indent_length = INDENT_STEP;
   json->magic = JSON_MAGIC;
@@ -5337,8 +5338,11 @@ void decode_json (SV *jsonstr, SV *allow_nonref = NULL, SV *typesv = NULL)
         JSON json;
         json_init (&json);
         json.flags |= ix;
-        if (ix && SvTRUE (allow_nonref))
-          json.flags |= F_ALLOW_NONREF;
+        if (items > 1) {
+          /* allow_nonref arg explicitly given: override the default */
+          if (!SvTRUE (allow_nonref))
+            json.flags &= ~F_ALLOW_NONREF;
+        }
         PUTBACK; jsonstr = decode_json (aTHX_ jsonstr, &json, 0, typesv); SPAGAIN;
         XPUSHs (jsonstr);
 }

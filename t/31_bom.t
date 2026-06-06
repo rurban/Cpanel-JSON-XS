@@ -8,7 +8,7 @@ use Encode; # Currently required for <5.20
 use charnames qw(:short);
 use utf8;
 
-my $json = Cpanel::JSON::XS->new->utf8->allow_nonref;
+my $json = Cpanel::JSON::XS->new->utf8;
 
 # parser need to succeed, result should be valid
 sub y_pass {

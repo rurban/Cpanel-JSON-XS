@@ -5,7 +5,7 @@ use Test::More tests => 4;
 
 use Cpanel::JSON::XS;
 
-my $json = Cpanel::JSON::XS->new->allow_nonref();
+my $json = Cpanel::JSON::XS->new;
 
 my @vs = $json->incr_parse('"a\"bc');
 
@@ -16,7 +16,7 @@ ok( not scalar(@vs) );
 is( $vs[0], "a\"bc" );
 
 
-$json = Cpanel::JSON::XS->new;
+$json = Cpanel::JSON::XS->new->allow_nonref(0);
 
 @vs = $json->incr_parse('"a\"bc');
 ok( not scalar(@vs) );

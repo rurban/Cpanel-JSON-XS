@@ -1,4 +1,4 @@
-use Test::More tests => 41;
+use Test::More tests => 44;
 
 use utf8;
 use Cpanel::JSON::XS;
@@ -20,7 +20,7 @@ eval { Cpanel::JSON::XS->new->allow_nonref (1)->decode ('"\u1234\udc00"') }; ok 
 eval { Cpanel::JSON::XS->new->allow_nonref->decode ('"\ud800"') }; ok $@ =~ /missing low /;
 eval { Cpanel::JSON::XS->new->allow_nonref (1)->decode ('"\ud800\u1234"') }; ok $@ =~ /surrogate pair /;
 
-eval { Cpanel::JSON::XS->new->decode ('null') }; ok $@ =~ /allow_nonref/;
+eval { Cpanel::JSON::XS->new->allow_nonref(0)->decode ('null') }; ok $@ =~ /allow_nonref/;
 eval { Cpanel::JSON::XS->new->allow_nonref (1)->decode ('+0') }; ok $@ =~ /malformed/;
 eval { Cpanel::JSON::XS->new->allow_nonref->decode ('.2') }; ok $@ =~ /malformed/;
 eval { Cpanel::JSON::XS->new->allow_nonref (1)->decode ('bare') }; ok $@ =~ /malformed/;
@@ -32,8 +32,8 @@ eval { Cpanel::JSON::XS->new->allow_nonref->decode ('-0e') }; ok $@ =~ /exp sign
 eval { Cpanel::JSON::XS->new->allow_nonref (1)->decode ('-e+1') }; ok $@ =~ /initial minus/;
 eval { Cpanel::JSON::XS->new->allow_nonref->decode ("\"\n\"") }; ok $@ =~ /invalid character/;
 eval { Cpanel::JSON::XS->new->allow_nonref (1)->decode ("\"\x01\"") }; ok $@ =~ /invalid character/;
-eval { decode_json ("[\"\xa0]") }; ok $@ =~ /malformed.*character/;
-eval { decode_json ("[\"\xa0\"]") }; ok $@ =~ /malformed.*character/;
+eval { decode_json ("[\"\xa0]", 0) }; ok $@ =~ /malformed.*character/;
+eval { decode_json ("[\"\xa0\"]", 0) }; ok $@ =~ /malformed.*character/;
 }
 
 eval { Cpanel::JSON::XS->new->decode ('[5') }; ok $@ =~ /parsing array/;
@@ -47,10 +47,10 @@ eval { Cpanel::JSON::XS->new->decode (\*STDERR) }; ok $@ =~ /malformed/;
 eval { Cpanel::JSON::XS->new->decode (*STDERR) }; ok !!$@; # cannot coerce GLOB
 
 # RFC 7159: missing optional 2nd allow_nonref arg
-eval { decode_json ("null") }; ok $@ =~ /JSON text must be an object or array/, "null";
-eval { decode_json ("true") }; ok $@ =~ /JSON text must be an object or array/, "true $@";
-eval { decode_json ("false") }; ok $@ =~ /JSON text must be an object or array/, "false $@";
-eval { decode_json ("1") }; ok $@ =~ /JSON text must be an object or array/, "wrong 1";
+eval { decode_json ("null", 0) }; ok $@ =~ /JSON text must be an object or array/, "null";
+eval { decode_json ("true", 0) }; ok $@ =~ /JSON text must be an object or array/, "true $@";
+eval { decode_json ("false", 0) }; ok $@ =~ /JSON text must be an object or array/, "false $@";
+eval { decode_json ("1", 0) }; ok $@ =~ /JSON text must be an object or array/, "wrong 1";
 
 # more malformed numbers
 eval { Cpanel::JSON::XS->new->allow_nonref->decode ('001') }; ok $@ =~ /malformed number/;
@@ -58,3 +58,13 @@ eval { Cpanel::JSON::XS->new->allow_nonref->decode ('1.0.1') }; ok !!$@;
 eval { Cpanel::JSON::XS->new->allow_nonref->decode ('1.0.') }; ok !!$@;
 eval { Cpanel::JSON::XS->new->allow_nonref->decode ('1.') }; ok $@ =~ /malformed number/;
 eval { Cpanel::JSON::XS->new->allow_nonref->decode ('-') }; ok $@ =~ /malformed number/;
+
+# GH #241: allow_nonref now defaults to true (like JSON::XS 4.0),
+# but must still be possible to disable explicitly.
+eval { Cpanel::JSON::XS->new->allow_nonref(0)->encode ("string") };
+ok $@ =~ /hash- or arrayref expected/, 'allow_nonref(0) encode rejects scalar';
+eval { Cpanel::JSON::XS->new->allow_nonref(0)->decode ('"string"') };
+ok $@ =~ /allow_nonref/, 'allow_nonref(0) decode rejects scalar';
+# re-enabling must work
+my $v = Cpanel::JSON::XS->new->allow_nonref(0)->allow_nonref(1)->decode ('42');
+is $v, 42, 'allow_nonref(0)->allow_nonref(1) restores nonref decode';

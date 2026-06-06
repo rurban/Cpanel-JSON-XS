@@ -3,27 +3,27 @@ use utf8;
 use Cpanel::JSON::XS;
 use warnings;
 
-is(Cpanel::JSON::XS->new->allow_nonref->utf8->encode("ü"), "\"\xc3\xbc\"");
-is(Cpanel::JSON::XS->new->allow_nonref->encode("ü"), "\"ü\"");
+is(Cpanel::JSON::XS->new->utf8->encode("ü"), "\"\xc3\xbc\"");
+is(Cpanel::JSON::XS->new->encode("ü"), "\"ü\"");
 
-is(Cpanel::JSON::XS->new->allow_nonref->ascii->utf8->encode(chr 0x8000), '"\u8000"');
-is(Cpanel::JSON::XS->new->allow_nonref->ascii->utf8->pretty->encode(chr 0x10402), "\"\\ud801\\udc02\"\n");
+is(Cpanel::JSON::XS->new->ascii->utf8->encode(chr 0x8000), '"\u8000"');
+is(Cpanel::JSON::XS->new->ascii->utf8->pretty->encode(chr 0x10402), "\"\\ud801\\udc02\"\n");
 
-ok not defined eval { Cpanel::JSON::XS->new->allow_nonref->utf8->decode('"ü"') };
+ok not defined eval { Cpanel::JSON::XS->new->utf8->decode('"ü"') };
 like $@, qr/malformed UTF-8/;
 
-is(Cpanel::JSON::XS->new->allow_nonref->decode('"ü"'), "ü");
-is(Cpanel::JSON::XS->new->allow_nonref->decode('"\u00fc"'), "ü");
+is(Cpanel::JSON::XS->new->decode('"ü"'), "ü");
+is(Cpanel::JSON::XS->new->decode('"\u00fc"'), "ü");
 
 ok not defined eval { decode_json ('"\ud801\udc02' . "\x{10204}\"", 1) };
 like $@, qr/Wide character/;
 
 SKIP: {
   skip "5.6", 1 if $] < 5.008;
-  is(Cpanel::JSON::XS->new->allow_nonref->decode('"\ud801\udc02' . "\x{10204}\""), "\x{10402}\x{10204}");
+  is(Cpanel::JSON::XS->new->decode('"\ud801\udc02' . "\x{10204}\""), "\x{10402}\x{10204}");
 }
 
-is(Cpanel::JSON::XS->new->allow_nonref->decode('"\"\n\\\\\r\t\f\b"'), "\"\012\\\015\011\014\010");
+is(Cpanel::JSON::XS->new->decode('"\"\n\\\\\r\t\f\b"'), "\"\012\\\015\011\014\010");
 
 my $utf8_love = "I \342\235\244 perl";
 is(Cpanel::JSON::XS->new->ascii->encode([$utf8_love]), '["I \u00e2\u009d\u00a4 perl"]', 'utf8 enc ascii');

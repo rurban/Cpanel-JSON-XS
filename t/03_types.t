@@ -7,10 +7,10 @@ sub ok($;$) {
   print $_[0] ? "" : "not ", "ok ", ++$test;
   print @_ > 1 ? " # $_[1]\n" : "\n";
 }
-ok (!defined Cpanel::JSON::XS->new->allow_nonref->decode ('null'));
-my $null   = Cpanel::JSON::XS->new->allow_nonref->decode ('null');
-my $true   = Cpanel::JSON::XS->new->allow_nonref->decode ('true');
-my $false  = Cpanel::JSON::XS->new->allow_nonref->decode ('false');
+ok (!defined Cpanel::JSON::XS->new->decode ('null'));
+my $null   = Cpanel::JSON::XS->new->decode ('null');
+my $true   = Cpanel::JSON::XS->new->decode ('true');
+my $false  = Cpanel::JSON::XS->new->decode ('false');
 
 ok ($true == 1, sprintf("true: numified %d", 0+$true));
 ok ($false == 0, sprintf("false: numified %d", 0+$false));
@@ -41,13 +41,13 @@ ok (++$false == 1); # turns it into true! not sure if we want that
 ok (!Cpanel::JSON::XS::is_bool $false);
 ok (!Cpanel::JSON::XS::is_bool "JSON::PP::Boolean");
 
-ok (Cpanel::JSON::XS->new->allow_nonref (1)->decode ('5') == 5);
-ok (Cpanel::JSON::XS->new->allow_nonref (1)->decode ('-5') == -5);
-ok (Cpanel::JSON::XS->new->allow_nonref (1)->decode ('5e1') == 50);
-ok (Cpanel::JSON::XS->new->allow_nonref (1)->decode ('-333e+0') == -333);
-ok (Cpanel::JSON::XS->new->allow_nonref (1)->decode ('2.5') == 2.5);
+ok (Cpanel::JSON::XS->new->decode ('5') == 5);
+ok (Cpanel::JSON::XS->new->decode ('-5') == -5);
+ok (Cpanel::JSON::XS->new->decode ('5e1') == 50);
+ok (Cpanel::JSON::XS->new->decode ('-333e+0') == -333);
+ok (Cpanel::JSON::XS->new->decode ('2.5') == 2.5);
 
-ok (Cpanel::JSON::XS->new->allow_nonref (1)->decode ('""') eq "");
+ok (Cpanel::JSON::XS->new->decode ('""') eq "");
 ok ('[1,2,3,4]' eq encode_json decode_json ('[1,2, 3,4]'));
 ok ('[{},[],[],{}]' eq encode_json decode_json ('[{},[], [ ] ,{ }]'));
 ok ('[{"1":[5]}]' eq encode_json [{1 => [5]}]);

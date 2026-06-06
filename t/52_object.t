@@ -3,7 +3,7 @@ BEGIN { $^W = 0 } # hate
 
 use Cpanel::JSON::XS;
 
-$json = Cpanel::JSON::XS->new->convert_blessed->allow_tags->allow_nonref;
+$json = Cpanel::JSON::XS->new->convert_blessed->allow_tags;
 
 print "ok 1\n";
 

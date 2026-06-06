@@ -23,7 +23,7 @@ use Test;
     my $expected_str3 = '{"var2":["first_element",{"sub_element2":"sub_val2","sub_element":"sub_val"}],"var1":"val1"}';
     my $expected_str4 = '{"var1":"val1","var2":["first_element",{"sub_element2":"sub_val2","sub_element":"sub_val"}]}';
 
-    my $json_obj = Cpanel::JSON::XS->new->allow_nonref (1);
+    my $json_obj = Cpanel::JSON::XS->new;
     my $json_str;
     # print STDERR "\n" . $json_str . "\n\n";
 

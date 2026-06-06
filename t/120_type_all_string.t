@@ -5,7 +5,7 @@ use Cpanel::JSON::XS;
 
 use Test::More tests => 12;
 
-my $sjson = Cpanel::JSON::XS->new->canonical->require_types->type_all_string->allow_nonref;
+my $sjson = Cpanel::JSON::XS->new->canonical->require_types->type_all_string;
 
 is($sjson->encode(0), '"0"');
 is($sjson->encode("0"), '"0"');

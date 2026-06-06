@@ -7,7 +7,7 @@ BEGIN {
     use _unicode_handling;
 }
 
-my $json = Cpanel::JSON::XS->new->allow_nonref->utf8;
+my $json = Cpanel::JSON::XS->new->utf8;
 my $str  = '\\u00c8';
 
 my $value = $json->decode( '"\\u00c8"' );

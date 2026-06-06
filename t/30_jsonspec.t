@@ -5,8 +5,8 @@ use Cpanel::JSON::XS;
 BEGIN {
   require Encode if $] >= 5.008 && $] < 5.020; # Currently required for <5.20
 }
-my $json    = Cpanel::JSON::XS->new->utf8->allow_nonref;
-my $relaxed = Cpanel::JSON::XS->new->utf8->allow_nonref->relaxed;
+my $json    = Cpanel::JSON::XS->new->utf8;
+my $relaxed = Cpanel::JSON::XS->new->utf8->relaxed;
 
 # fixme:
 # done:

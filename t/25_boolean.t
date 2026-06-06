@@ -19,7 +19,7 @@ my $cjson = Cpanel::JSON::XS->new;
 my $true  = Cpanel::JSON::XS::true;
 my $false = Cpanel::JSON::XS::false;
 
-my $nonref_cjson = Cpanel::JSON::XS->new->allow_nonref;
+my $nonref_cjson = Cpanel::JSON::XS->new;
 my $unblessed_bool_cjson = Cpanel::JSON::XS->new->unblessed_bool;
 
 # from JSON::MaybeXS

@@ -13,7 +13,7 @@ BEGIN {
 
 no utf8;
 
-my $json = Cpanel::JSON::XS->new->allow_nonref;
+my $json = Cpanel::JSON::XS->new;
 
 is($json->encode("ü"),                   q|"ü"|); # as is
 

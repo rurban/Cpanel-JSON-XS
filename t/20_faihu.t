@@ -11,17 +11,17 @@ use Encode qw(encode decode);
 
 my ($faihu, $faihu_json, $roundtrip, $js) = "\x{10346}";
 
-$js = Cpanel::JSON::XS->new->allow_nonref->ascii;
+$js = Cpanel::JSON::XS->new->ascii;
 $faihu_json = $js->encode($faihu);
 $roundtrip = $js->decode($faihu_json);
 is ($roundtrip, $faihu, 'JSON in ASCII roundtrips correctly');
 
-$js = Cpanel::JSON::XS->new->allow_nonref->utf8;
+$js = Cpanel::JSON::XS->new->utf8;
 $faihu_json = $js->encode ($faihu);
 $roundtrip = $js->decode ($faihu_json);
 is ($roundtrip, $faihu, 'JSON in UTF-8 roundtrips correctly');
 
-$js = Cpanel::JSON::XS->new->allow_nonref;
+$js = Cpanel::JSON::XS->new;
 $faihu_json = encode 'UTF-16BE', $js->encode ($faihu);
 $roundtrip = $js->decode( decode 'UTF-16BE', $faihu_json);
 is ($roundtrip, $faihu, 'JSON with external recoding roundtrips correctly' );

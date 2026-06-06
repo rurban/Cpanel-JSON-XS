@@ -6,7 +6,7 @@ use Cpanel::JSON::XS::Type;
 
 use Test::More tests => 24;
 
-my $cjson = Cpanel::JSON::XS->new->allow_nonref;
+my $cjson = Cpanel::JSON::XS->new;
 
 {
     my $value = $cjson->decode('false', my $type);

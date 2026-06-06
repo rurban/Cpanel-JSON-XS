@@ -278,12 +278,12 @@ Note that older decode_json versions in Cpanel::JSON::XS older than
 3.0116 and JSON::XS did not set allow_nonref but allowed them due to a
 bug in the decoder.
 
-If the new 2nd optional $allow_nonref argument is set and not false, the
-C<allow_nonref> option will be set and the function will act is described
-as in the relaxed RFC 7159 allowing all values such as objects,
-arrays, strings, numbers, "null", "true", and "false".
-See L</"OLD" VS. "NEW" JSON (RFC 4627 VS. RFC 7159)> below, why you don't
-want to do that.
+Since version 4.42, C<allow_nonref> is enabled by default, matching
+JSON::XS 4.0+.  The 2nd optional C<$allow_nonref> argument can be set
+to false (C<0>) to disable it.  When enabled, the function accepts all
+JSON values: objects, arrays, strings, numbers, C<null>, C<true>, and
+C<false>.  See L</"OLD" VS. "NEW" JSON (RFC 4627 VS. RFC 7159)> for
+why you might not want this.
 
 For the 3rd optional type argument see L<Cpanel::JSON::XS::Type>.
 
@@ -823,16 +823,17 @@ convert a non-reference into its corresponding string, number or null
 JSON value, which is an extension to RFC4627. Likewise, C<decode> will
 accept those JSON values instead of croaking.
 
-If C<$enable> is false, then the C<encode> method will croak if it isn't
-passed an arrayref or hashref, as JSON texts must either be an object
-or array. Likewise, C<decode> will croak if given something that is not a
-JSON object or array.
+B<This option is now enabled by default> (since version 4.42), matching
+the behavior of JSON::XS 4.0+ and the broken RFC 7159.  JSON texts
+consisting of a bare scalar (string, number, C<true>, C<false>, C<null>)
+are accepted by C<encode> and C<decode> without explicitly requesting it.
+If you need strict RFC 4627 compliance, you must explicitly disable it:
 
-Example, encode a Perl scalar as JSON value with enabled C<allow_nonref>,
-resulting in an invalid JSON text:
+   Cpanel::JSON::XS->new->allow_nonref(0);
 
-   Cpanel::JSON::XS->new->allow_nonref->encode ("Hello, World!")
-   => "Hello, World!"
+When disabled, C<encode> will croak if it isn't passed an arrayref or
+hashref, as JSON texts must either be an object or array. Likewise,
+C<decode> will croak if given something that is not a JSON object or array.
 
 =item $json = $json->allow_unknown ([$enable])
 
@@ -2290,43 +2291,52 @@ special escape rules to prevent from XSS attacks.
 
 =head1 "OLD" VS. "NEW" JSON (RFC 4627 VS. RFC 7159)
 
-TL;DR: Due to security concerns, Cpanel::JSON::XS will not allow
-scalar data in JSON texts by default - you need to create your own
-Cpanel::JSON::XS object and enable C<allow_nonref>:
+B<Note: Since version 4.42, Cpanel::JSON::XS defaults to the broken RFC
+7159 behavior> (like JSON::XS 4.0+), accepting scalar top-level JSON values
+without requiring C<allow_nonref>.  This was done for compatibility with the
+larger Perl JSON ecosystem, despite the security concerns outlined below.
 
+If you rely on the old strict behavior, explicitly disable it:
 
-   my $json = JSON::XS->new->allow_nonref;
+   my $json = Cpanel::JSON::XS->new->allow_nonref(0);
 
-   $text = $json->encode ($data);
-   $data = $json->decode ($text);
+The rationale for the original (pre-4.42) default, and the reason you might
+want to keep it off, follows:
+
+TL;DR: The original JSON RFC 4627 required JSON texts to be arrays or
+objects.  The IETF later standardized a broken revision (RFC 7159) that
+allows bare scalars at top-level, opening a class of protocol confusion
+attacks.
 
 The long version: JSON being an important and supposedly stable format,
 the IETF standardized it as RFC 4627 in 2006. Unfortunately the inventor
 of JSON Douglas Crockford unilaterally changed the definition of JSON in
 javascript. Rather than create a fork, the IETF decided to standardize the
-new syntax (apparently, so I as told, without finding it very amusing).
+new syntax (apparently, so I was told, without finding it very amusing).
 
 The biggest difference between the original JSON and the new JSON is that
 the new JSON supports scalars (anything other than arrays and objects) at
 the top-level of a JSON text. While this is strictly backwards compatible
+the top-level of a JSON text. While this is supposedly backwards compatible
 to older versions, it breaks a number of protocols that relied on sending
-JSON back-to-back, and is a minor security concern.
+JSON back-to-back, and is a security concern.
 
 For example, imagine you have two banks communicating, and on one side,
 the JSON coder gets upgraded. Two messages, such as C<10> and C<1000>
-might then be confused to mean C<101000>, something that couldn't happen
+might then be confused to mean C<101000>, something that could not happen
 in the original JSON, because neither of these messages would be valid
 JSON.
 
 If one side accepts these messages, then an upgrade in the coder on either
 side could result in this becoming exploitable.
 
-This module has always allowed these messages as an optional extension, by
-default disabled. The security concerns are the reason why the default is
-still disabled, but future versions might/will likely upgrade to the newer
-RFC as default format, so you are advised to check your implementation
-and/or override the default with C<< ->allow_nonref (0) >> to ensure that
-future versions are safe.
+The IETF's own I-JSON profile (RFC 7493, also edited by Tim Bray who
+authored RFC 7159) acknowledges this mistake: Section 4.1 states that
+"there are software implementations, coded to the older specification
+[RFC4627], which only accept JSON objects or JSON arrays at the top
+level of JSON texts.  For maximum interoperability with such
+implementations, protocol designers SHOULD NOT use top-level JSON
+texts that are neither objects nor arrays."
 
 =head1 THREADS
 

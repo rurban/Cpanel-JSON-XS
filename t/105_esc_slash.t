@@ -4,7 +4,7 @@ use strict;
 use Cpanel::JSON::XS;
 #########################
 
-my $json = Cpanel::JSON::XS->new->allow_nonref;
+my $json = Cpanel::JSON::XS->new;
 
 my $js = '/';
 

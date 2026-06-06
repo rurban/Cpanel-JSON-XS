@@ -2,7 +2,7 @@ use Cpanel::JSON::XS;
 no utf8;
 use Test::More tests => 12;
 
-my $xs = Cpanel::JSON::XS->new->latin1->allow_nonref;
+my $xs = Cpanel::JSON::XS->new->latin1;
 
 is($xs->encode ("\x{12}\x{89}       "), "\"\\u0012\x{89}       \"");
 is($xs->encode ("\x{12}\x{89}\x{abc}"), "\"\\u0012\x{89}\\u0abc\"");

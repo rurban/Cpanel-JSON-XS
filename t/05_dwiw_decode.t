@@ -17,7 +17,7 @@ use Test;
 
     my $json_str = '{"var1":"val1","var2":["first_element",{"sub_element":"sub_val","sub_element2":"sub_val2"}],"var3":"val3"}';
 
-    my $json_obj = Cpanel::JSON::XS->new->allow_nonref(1);
+    my $json_obj = Cpanel::JSON::XS->new;
     my $data = $json_obj->decode($json_str);
 
     my $pass = 1;
