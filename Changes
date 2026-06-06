@@ -2,7 +2,7 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-4.42 2026-06-26 (rurban)
+4.42 2026-06-27 (rurban)
 	- Ensure encode with a type spec hashref does not change the hashref argument (GH #240)
         - Fix -e docs: "written" → "read" (GH #239, reported by Ron Savage).
         - Fix Boolean eq overload matching undef (GH #207, reported by fd-t).
