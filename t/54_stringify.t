@@ -86,7 +86,9 @@ my $data = {nick => bless({}, 'BoolTestOk')};
 is( $json->convert_blessed->allow_blessed->encode($data), '{"nick":"1"}', 'GH #124' );
 
 # GH #128: recursion via "" overload must not crash
-{
+# (guard requires AMG_CALLunary, Perl 5.14+)
+SKIP: {
+  skip "GH #128 guard needs Perl 5.14+", 2 if $] < 5.014;
   my $j = Cpanel::JSON::XS->new;
   {
     package StringifiyRec;
@@ -98,4 +100,3 @@ is( $json->convert_blessed->allow_blessed->encode($data), '{"nick":"1"}', 'GH #1
     or diag "Error: $@";
   is($result, '"null"', 'GH #128: recursion returns null from allow_blessed');
 }
-

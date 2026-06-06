@@ -1635,7 +1635,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
         SvFLAGS(sv) |= SVf_AMAGIC;
       }
 #endif
-#if PERL_VERSION > 22
+#if PERL_VERSION > 13
       {
         /* GH #128: protect from endless recursion via "" overload.
            Temporarily clear convert_blessed and allow_stringify on the
@@ -1645,8 +1645,6 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
         pv = AMG_CALLunary(rv, string_amg);
         enc->orig_json->flags = flags;
       }
-#elif PERL_VERSION > 13
-      pv = AMG_CALLunary(rv, string_amg);
 #else
       pv = AMG_CALLun(rv, string);
 #endif
