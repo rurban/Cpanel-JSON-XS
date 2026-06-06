@@ -145,9 +145,8 @@ B<Changes to JSON::XS>
   Fixed overloading of booleans. Cpanel::JSON::XS::true stringifies again
   to "1", not "true", analog to all other JSON modules.
 
-- native boolean mapping of yes and no to true and false, as in YAML::XS.
-  In perl C<!0> is yes, C<!1> is no.
-  The JSON value true maps to 1, false maps to 0. [#39]
+- native boolean mapping: C<!0> and C<!1> (and C<builtin::true>/C<builtin::false>
+  on Perl 5.36+) map to JSON C<true> and C<false>, as in YAML::XS. [#39, #180, #214]
 
 - support arbitrary stringification with encode, with convert_blessed
   and allow_blessed.
@@ -743,11 +742,11 @@ This setting has no effect when decoding JSON texts.
 
     $json = $json->unblessed_bool([$enable])
 
-If C<$enable> is true (or missing), then C<decode> will return Perl
-non-object boolean variables (1 and 0 as numbers or "1" and "" as
-strings) for JSON booleans (C<true> and C<false>). If C<$enable> is
-false, then C<decode> will return C<JSON::PP::Boolean> objects for
-JSON booleans.
+If C<$enable> is true (or missing), then C<decode> will return
+Perl's native boolean values (C<!0> and C<!1>, or C<builtin::true>
+and C<builtin::false> on Perl 5.36+) for JSON C<true> and C<false>.
+If C<$enable> is false, then C<decode> will return
+C<JSON::PP::Boolean> objects for JSON booleans.
 
 
 =item $json = $json->allow_singlequote ([$enable])
@@ -1536,8 +1535,11 @@ up to but not including the least significant bit.
 
 =item true, false
 
-When C<unblessed_bool> is set to true, then JSON C<true> becomes C<1> and
-JSON C<false> becomes C<0>.
+When C<unblessed_bool> is set to true, then JSON C<true> and C<false>
+decode to Perl's native boolean values: the same scalars as C<!0>
+and C<!1> (or C<builtin::true> and C<builtin::false> on Perl 5.36+).
+These behave as C<1> and C<0> in numeric context, and C<"1"> and C<"">
+in string context.
 
 Otherwise these JSON atoms become C<JSON::PP::true> and
 C<JSON::PP::false>, respectively. They are C<JSON::PP::Boolean>
@@ -1545,16 +1547,11 @@ objects and are overloaded to act almost exactly like the numbers C<1>
 and C<0>. You can check whether a scalar is a JSON boolean by using
 the C<Cpanel::JSON::XS::is_bool> function.
 
-The other round, from perl to JSON, C<!0> which is represented as
-C<yes> becomes C<true>, and C<!1> which is represented as
-C<no> becomes C<false>.
-
-Via L<Cpanel::JSON::XS::Type> you can now even force negation in C<encode>,
-without overloading of C<!>:
-
-    my $false = Cpanel::JSON::XS::false;
-    print($json->encode([!$false], [JSON_TYPE_BOOL]));
-    => [true]
+The reverse mapping -- encoding Perl booleans back to JSON -- works for
+C<!0> and C<!1> (and C<builtin::true> and C<builtin::false>), the
+blessed C<JSON::PP::Boolean> objects, and references to the integers
+C<0> and C<1> (C<\0> and C<\1>).
+See L</"Cpanel::JSON::XS::true, Cpanel::JSON::XS::false"> for details.
 
 =item null
 
@@ -1628,15 +1625,15 @@ respectively. You can also use C<\1> and C<\0> or C<!0> and C<!1>
 directly if you want.
 
    encode_json [Cpanel::JSON::XS::false, Cpanel::JSON::XS::true] # yields [false,true]
-   encode_json [!1, !0], [JSON_TYPE_BOOL, JSON_TYPE_BOOL] # yields [false,true]
+   encode_json [!1, !0] # yields [false,true]
 
-eq/ne comparisons with true, false:
+In C<eq> comparisons:
 
-false is eq to the empty string or the string 'false' or the special
-empty string C<!!0> or C<!1>, i.e. C<SV_NO>, or the numbers 0 or 0.0.
+  Cpanel::JSON::XS::false is eq to C<"">, C<"false">,
+  C<!1>, C<!!0>, C<0>, and C<0.0>.
 
-true is eq to the string 'true' or to the special string C<!0>
-(i.e. C<SV_YES>) or to the numbers 1 or 1.0.
+  Cpanel::JSON::XS::true is eq to C<"1">, C<"true">,
+  C<!0>, C<!!1>, C<1>, and C<1.0>.
 
 =item blessed objects
 

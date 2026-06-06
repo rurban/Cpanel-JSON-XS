@@ -3,6 +3,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
 4.42 2026-06-26 (rurban)
+	- Fix boolean documentation (GH #180): remove misleading
+          JSON_TYPE_BOOL example for !0/!1 (native booleans need no
+          type hints), clarify JSON<->Perl boolean mapping in both
+          directions, replace internal SV_NO/SV_YES terminology with
+          user-facing !0/!1, document builtin::true/false support.
 	- Ensure encode with a type spec hashref does not change the hashref argument (GH #240)
         - Fix minor t/12_blessed.t typo.
         - Fix GH #112: encode large whole-number NV values without .0 on

@@ -132,9 +132,9 @@ DESCRIPTION
     Cpanel::JSON::XS::true stringifies again to "1", not "true", analog to
     all other JSON modules.
 
-    - native boolean mapping of yes and no to true and false, as in
-    YAML::XS. In perl "!0" is yes, "!1" is no. The JSON value true maps to
-    1, false maps to 0. [#39]
+    - native boolean mapping: "!0" and "!1" (and
+    "builtin::true"/"builtin::false" on Perl 5.36+) map to JSON "true" and
+    "false", as in YAML::XS. [#39, #180, #214]
 
     - support arbitrary stringification with encode, with convert_blessed
     and allow_blessed.
@@ -643,11 +643,11 @@ OBJECT-ORIENTED INTERFACE
     $enabled = $json->get_unblessed_bool
             $json = $json->unblessed_bool([$enable])
 
-        If $enable is true (or missing), then "decode" will return Perl
-        non-object boolean variables (1 and 0 as numbers or "1" and "" as
-        strings) for JSON booleans ("true" and "false"). If $enable is
-        false, then "decode" will return "JSON::PP::Boolean" objects for
-        JSON booleans.
+        If $enable is true (or missing), then "decode" will return Perl's
+        native boolean values ("!0" and "!1", or "builtin::true" and
+        "builtin::false" on Perl 5.36+) for JSON "true" and "false". If
+        $enable is false, then "decode" will return "JSON::PP::Boolean"
+        objects for JSON booleans.
 
     $json = $json->allow_singlequote ([$enable])
     $enabled = $json->get_allow_singlequote
@@ -1378,8 +1378,11 @@ MAPPING
         precision up to but not including the least significant bit.
 
     true, false
-        When "unblessed_bool" is set to true, then JSON "true" becomes 1 and
-        JSON "false" becomes 0.
+        When "unblessed_bool" is set to true, then JSON "true" and "false"
+        decode to Perl's native boolean values: the same scalars as "!0" and
+        "!1" (or "builtin::true" and "builtin::false" on Perl 5.36+). These
+        behave as 1 and 0 in numeric context, and "1" and "" in string
+        context.
 
         Otherwise these JSON atoms become "JSON::PP::true" and
         "JSON::PP::false", respectively. They are "JSON::PP::Boolean"
@@ -1387,16 +1390,11 @@ MAPPING
         and 0. You can check whether a scalar is a JSON boolean by using the
         "Cpanel::JSON::XS::is_bool" function.
 
-        The other round, from perl to JSON, "!0" which is represented as
-        "yes" becomes "true", and "!1" which is represented as "no" becomes
-        "false".
-
-        Via Cpanel::JSON::XS::Type you can now even force negation in
-        "encode", without overloading of "!":
-
-            my $false = Cpanel::JSON::XS::false;
-            print($json->encode([!$false], [JSON_TYPE_BOOL]));
-            => [true]
+        The reverse mapping -- encoding Perl booleans back to JSON -- works
+        for "!0" and "!1" (and "builtin::true" and "builtin::false"), the
+        blessed "JSON::PP::Boolean" objects, and references to the integers
+        0 and 1 ("\0" and "\1"). See "Cpanel::JSON::XS::true,
+        Cpanel::JSON::XS::false" for details.
 
     null
         A JSON null atom becomes "undef" in Perl.
@@ -1459,15 +1457,15 @@ MAPPING
         directly if you want.
 
            encode_json [Cpanel::JSON::XS::false, Cpanel::JSON::XS::true] # yields [false,true]
-           encode_json [!1, !0], [JSON_TYPE_BOOL, JSON_TYPE_BOOL] # yields [false,true]
+           encode_json [!1, !0] # yields [false,true]
 
-        eq/ne comparisons with true, false:
+        In "eq" comparisons:
 
-        false is eq to the empty string or the string 'false' or the special
-        empty string "!!0" or "!1", i.e. "SV_NO", or the numbers 0 or 0.0.
+          Cpanel::JSON::XS::false is eq to C<"">, C<"false">,
+          C<!1>, C<!!0>, C<0>, and C<0.0>.
 
-        true is eq to the string 'true' or to the special string "!0" (i.e.
-        "SV_YES") or to the numbers 1 or 1.0.
+          Cpanel::JSON::XS::true is eq to C<"1">, C<"true">,
+          C<!0>, C<!!1>, C<1>, and C<1.0>.
 
     blessed objects
         Blessed objects are not directly representable in JSON, but
