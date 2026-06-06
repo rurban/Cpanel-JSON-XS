@@ -2024,7 +2024,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
         UNLIKELY (sv == &PL_sv_yes || sv == &PL_sv_no)
 #endif
      ) type = JSON_TYPE_BOOL;
-      else if (SvNOKp (sv)) type = JSON_TYPE_FLOAT;
+      else if (SvNOK (sv)) type = JSON_TYPE_FLOAT;
       else if (SvIOKp (sv)) type = JSON_TYPE_INT;
       else if (SvPOKp (sv)) type = JSON_TYPE_STRING;
       else if (SvROK (sv)) process_ref = 1;

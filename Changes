@@ -7,6 +7,8 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
         - Fix minor t/12_blessed.t typo.
         - Fix GH #112: encode large whole-number NV values without .0 on
           32-bit Perl (values exceeding UV_MAX that Perl stores as float).
+        - Fix GH #197: prefer IOK over pNOK when encoding values where
+          IV is accurate but NV is imprecise (SvNOK not set).
 
 4.41 2026-05-27 (rurban)
 	- Fix BOM-shift PV-corruption SIGABRT (CVE-2026-9516) (patch by Paul Johnson)
