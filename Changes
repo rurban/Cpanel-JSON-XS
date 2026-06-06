@@ -11,6 +11,9 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
         - Fix error messages showing overloaded stringification for blessed
           objects (GH #191, reported by karenetheridge). Error messages now
           use ClassName=TYPE(addr) format, bypassing any "" overload.
+        - Fix type_all_string overriding allow_blessed/convert_blessed (GH #175,
+          reported by alpha6). With type_all_string + allow_blessed, blessed
+          objects are now encoded as null (not stringified as HASH address).
         - Fix minor t/12_blessed.t typo.
         - Fix GH #112: encode large whole-number NV values without .0 on
           32-bit Perl (values exceeding UV_MAX that Perl stores as float).

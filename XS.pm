@@ -894,6 +894,11 @@ This is useful it you need deterministic JSON types, independently of used
 Perl version and other modules, but do not want to write complicated type
 definitions for L<Cpanel::JSON::XS::Type>.
 
+When combined with L</allow_blessed> and/or L</convert_blessed>, blessed
+objects are handled by those options first, B<not> stringified by
+C<type_all_string>.  For example, with C<allow_blessed + type_all_string>,
+blessed objects are encoded as the JSON value C<null> (not C<"null">).
+
 =item $json = $json->allow_dupkeys ([$enable])
 
 =item $enabled = $json->get_allow_dupkeys

@@ -2003,7 +2003,15 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
     }
 
   if (UNLIKELY (!(SvOK (typesv)) && (enc->json.flags & F_TYPE_ALL_STRING)))
-    typesv = sv_2mortal (newSViv (JSON_TYPE_STRING | JSON_TYPE_CAN_BE_NULL));
+    {
+      /* Don't force STRING on blessed objects that would be handled by
+         allow_blessed/convert_blessed/allow_tags (GH #175). */
+      if (!(SvROK (sv) && SvOBJECT (SvRV (sv))
+            && (enc->json.flags & (F_ALLOW_BLESSED|F_CONV_BLESSED|F_ALLOW_TAGS))
+            && !is_bool_obj (aTHX_ SvRV (sv))
+            && !is_bignum_obj (aTHX_ SvRV (sv))))
+        typesv = sv_2mortal (newSViv (JSON_TYPE_STRING | JSON_TYPE_CAN_BE_NULL));
+    }
 
   if (UNLIKELY (SvOK (typesv)))
     {

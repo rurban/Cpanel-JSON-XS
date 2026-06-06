@@ -774,6 +774,12 @@ OBJECT-ORIENTED INTERFACE
         of used Perl version and other modules, but do not want to write
         complicated type definitions for Cpanel::JSON::XS::Type.
 
+        When combined with "allow_blessed" and/or "convert_blessed", blessed
+        objects are handled by those options first, not stringified by
+        "type_all_string". For example, with "allow_blessed +
+        type_all_string", blessed objects are encoded as the JSON value
+        "null" (not "null").
+
     $json = $json->allow_dupkeys ([$enable])
     $enabled = $json->get_allow_dupkeys
         If $enable is true (or missing), then the "decode" method will not
