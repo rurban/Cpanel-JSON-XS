@@ -60,7 +60,7 @@ ok ($js->encode ($o3) eq "null");
 $js->allow_blessed->convert_blessed;
 ok ($js->encode ($o1) eq '{"__":""}', 'allow_blessed + convert_blessed');
 SKIP: {
-  skip "5.6", 2 if $[ < 5.008;
+  skip "5.6", 2 if $] < 5.008;
   # PP returns null
   $r = $js->encode ($o2);
   ok ($r eq 'null', "$r");
