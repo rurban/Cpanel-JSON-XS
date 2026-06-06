@@ -4945,14 +4945,23 @@ void END(...)
         return;
 
 void new (char *klass)
+    PREINIT:
+        HV *stash;
     PPCODE:
         dMY_CXT;
-  	SV *pv = NEWSV (0, sizeof (JSON));
+        SV *pv = NEWSV (0, sizeof (JSON));
         SvPOK_only (pv);
         json_init ((JSON *)SvPVX (pv));
+        if (SvROK (ST(0))) {
+          /* called as $obj->new — extract real class name from the object */
+          stash = SvSTASH (SvRV (ST(0)));
+          if (!stash)
+            croak ("Cannot create a %s object from an unblessed reference", klass);
+        } else {
+          stash = strEQc (klass, "Cpanel::JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1);
+        }
         XPUSHs (sv_2mortal (sv_bless (
-           newRV_noinc (pv),
-           strEQc (klass, "Cpanel::JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1)
+           newRV_noinc (pv), stash
         )));
 
 void ascii (JSON *self, int enable = 1)

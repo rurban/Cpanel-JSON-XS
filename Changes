@@ -18,6 +18,10 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
           (GH #128, reported by pbrthemaster). The recursion guard temporarily
           clears convert_blessed and allow_stringify flags on the JSON object
           before calling the overload, preventing re-entrant encode loops.
+        - Fix $obj->new creating a broken object (GH #93, reported by cpansprout).
+          When new() is called on an existing object (e.g. $json->new->new),
+          the class name is now extracted from the object's stash rather than
+          using the stringified reference.
         - Fix minor t/12_blessed.t typo.
         - Fix GH #112: encode large whole-number NV values without .0 on
           32-bit Perl (values exceeding UV_MAX that Perl stores as float).
