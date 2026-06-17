@@ -1291,8 +1291,6 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
   U8 *ap = (U8 *)SvPV_const (a_sv, alen);
   U8 *bp = (U8 *)SvPV_const (b_sv, blen);
   U16 pending_a = 0, pending_b = 0;
-  int a_is_utf8 = SvUTF8 (a_sv);
-  int b_is_utf8 = SvUTF8 (b_sv);
 
   for (;;)
     {
@@ -1305,8 +1303,7 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
         }
       else if (alen)
         {
-          if (UNLIKELY (a_is_utf8))
-            {
+          {
               UV uv;
               STRLEN clen = 0;
 #if PERL_VERSION > 36
@@ -1336,11 +1333,6 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
                     a_unit = (U16)uv;
                 }
             }
-          else
-            {
-              a_unit = *ap++;
-              alen--;
-            }
         }
       else
         a_unit = 0x10000; /* sentinel: beyond valid 16-bit range */
@@ -1352,8 +1344,7 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
         }
       else if (blen)
         {
-          if (UNLIKELY (b_is_utf8))
-            {
+          {
               UV uv;
               STRLEN clen = 0;
 #if PERL_VERSION > 36
@@ -1382,11 +1373,6 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
                   else
                     b_unit = (U16)uv;
                 }
-            }
-          else
-            {
-              b_unit = *bp++;
-              blen--;
             }
         }
       else
@@ -2574,8 +2560,10 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       else {
         NV intpart;
         if (!( inf_or_nan || (had_nokp && Perl_modf(SvNVX(sv), &intpart))
+#if NV_DIG < 31
             || (!force_conversion && had_nokp
                 && (SvNVX(sv) > (NV)UV_MAX || SvNVX(sv) < (NV)IV_MIN))
+#endif
             || (!force_conversion && SvIOK(sv))
             || strchr(enc->cur,'e')
             || strchr(enc->cur,'E')
