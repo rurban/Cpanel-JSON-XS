@@ -1278,12 +1278,137 @@ he_cmp_fast (const void *a_, const void *b_)
   return cmp;
 }
 
+/*
+ * Compare two UTF-8 strings by UTF-16 code unit order per RFC 8785 (JCS).
+ * Characters outside the BMP (U+10000+) expand to surrogate pairs,
+ * and the comparison is by the resulting 16-bit code unit array.
+ * Returns negative if a_sv < b_sv, 0 if equal, positive if a_sv > b_sv.
+ */
+static int
+utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
+{
+  STRLEN alen, blen;
+  U8 *ap = (U8 *)SvPV_const (a_sv, alen);
+  U8 *bp = (U8 *)SvPV_const (b_sv, blen);
+  U16 pending_a = 0, pending_b = 0;
+  int a_is_utf8 = SvUTF8 (a_sv);
+  int b_is_utf8 = SvUTF8 (b_sv);
+
+  for (;;)
+    {
+      U32 a_unit, b_unit;
+
+      if (pending_a)
+        {
+          a_unit = pending_a;
+          pending_a = 0;
+        }
+      else if (alen)
+        {
+          if (UNLIKELY (a_is_utf8))
+            {
+              UV uv;
+              STRLEN clen = 0;
+#if PERL_VERSION > 36
+              uv = utf8n_to_uvchr (ap, alen, &clen, UTF8_CHECK_ONLY);
+#elif PERL_VERSION >= 8
+              uv = utf8n_to_uvuni (ap, alen, &clen, UTF8_CHECK_ONLY);
+#else
+              uv = utf8_to_uv (ap, alen, &clen, UTF8_CHECK_ONLY);
+#endif
+              if (UNLIKELY (clen <= 0))
+                {
+                  /* invalid UTF-8, treat as raw byte */
+                  a_unit = *ap++;
+                  alen--;
+                }
+              else
+                {
+                  ap += clen;
+                  alen -= clen;
+                  if (uv >= 0x10000)
+                    {
+                      uv -= 0x10000;
+                      a_unit = 0xD800 | (uv >> 10);
+                      pending_a = 0xDC00 | (uv & 0x3FF);
+                    }
+                  else
+                    a_unit = (U16)uv;
+                }
+            }
+          else
+            {
+              a_unit = *ap++;
+              alen--;
+            }
+        }
+      else
+        a_unit = 0x10000; /* sentinel: beyond valid 16-bit range */
+
+      if (pending_b)
+        {
+          b_unit = pending_b;
+          pending_b = 0;
+        }
+      else if (blen)
+        {
+          if (UNLIKELY (b_is_utf8))
+            {
+              UV uv;
+              STRLEN clen = 0;
+#if PERL_VERSION > 36
+              uv = utf8n_to_uvchr (bp, blen, &clen, UTF8_CHECK_ONLY);
+#elif PERL_VERSION >= 8
+              uv = utf8n_to_uvuni (bp, blen, &clen, UTF8_CHECK_ONLY);
+#else
+              uv = utf8_to_uv (bp, blen, &clen, UTF8_CHECK_ONLY);
+#endif
+              if (UNLIKELY (clen <= 0))
+                {
+                  /* invalid UTF-8, treat as raw byte */
+                  b_unit = *bp++;
+                  blen--;
+                }
+              else
+                {
+                  bp += clen;
+                  blen -= clen;
+                  if (uv >= 0x10000)
+                    {
+                      uv -= 0x10000;
+                      b_unit = 0xD800 | (uv >> 10);
+                      pending_b = 0xDC00 | (uv & 0x3FF);
+                    }
+                  else
+                    b_unit = (U16)uv;
+                }
+            }
+          else
+            {
+              b_unit = *bp++;
+              blen--;
+            }
+        }
+      else
+        b_unit = 0x10000;
+
+      if (a_unit == 0x10000 && b_unit == 0x10000)
+        return 0;
+      if (a_unit == 0x10000)
+        return -1;
+      if (b_unit == 0x10000)
+        return 1;
+      if (a_unit != b_unit)
+        return a_unit < b_unit ? -1 : 1;
+    }
+}
+
 /* compare hash entries, used when some keys are SV's or UTF-8 */
 static int
 he_cmp_slow (const void *a, const void *b)
 {
   dTHX;
-  return sv_cmp (HeSVKEY_force (*(HE **)b), HeSVKEY_force (*(HE **)a));
+  return utf16_cmp (aTHX_ HeSVKEY_force (*(HE **)b), HeSVKEY_force (*(HE **)a));
 }
 
 /* compare tied hash entries, guaranteed SV's */
@@ -1292,7 +1417,7 @@ he_cmp_tied (const void *a, const void *b)
 {
   dTHX;
   /* skip GMAGIC */
-  return sv_cmp_flags (HeKEY_sv (*(HE **)b), HeKEY_sv (*(HE **)a), 0);
+  return utf16_cmp (aTHX_ HeKEY_sv (*(HE **)b), HeKEY_sv (*(HE **)a));
 }
 
 static void
