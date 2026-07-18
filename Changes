@@ -2,7 +2,7 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-4.43 2026-xx-xx (rurban)
+4.43 2026-07-18 (rurban)
 	- Fix canonical sort: compare by UTF-16 code units per RFC 8785 (GH #248, leont)
         - Fix canonical sort on Perl 5.8-5.18: utf16_cmp now always attempts
           UTF-8 decoding instead of checking SvUTF8 flag, since older Perls
