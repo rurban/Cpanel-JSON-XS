@@ -2,8 +2,8 @@
 # extended with RFC 8785 surrogate ordering tests (GH #248)
 
 use Test::More;
+BEGIN { plan tests => 8 };
 use strict;
-BEGIN { plan tests => 6 };
 use Cpanel::JSON::XS;
 use utf8;
 #########################
@@ -48,4 +48,16 @@ is($pc->encode({ "\x{1F602}" => 3, "\x{1F600}" => 1, "\x{1F601}" => 2 }),
 is($pc->encode({ "\x{1F600}" => 1, "z" => 2, "a" => 3 }),
    q|{"a":3,"z":2,"\ud83d\ude00":1}|,
    'RFC 8785: ASCII sorts before non-BMP');
+
+# GH #252: Latin-1 byte-string keys (no utf8 flag) mixed with Unicode keys
+# must not hang (malformed UTF-8 decode in utf16_cmp returned (STRLEN)-1,
+# wrapping the buffer pointer) and sort by UTF-16 code unit order
+is($pc->encode({ "\x{c0}" => 0, "\x{c1}" => 0, "\x{2603}" => 0 }),
+   q|{"\u00c0":0,"\u00c1":0,"\u2603":0}|,
+   'GH #252: Latin-1 byte keys mixed with Unicode do not hang');
+
+# byte-string keys decode as raw bytes (Latin-1) and sort before U+0100
+is($pc->encode({ "\x{c0}" => 0, "\x{ff}" => 0, "\x{100}" => 0 }),
+   q|{"\u00c0":0,"\u00ff":0,"\u0100":0}|,
+   'GH #252: Latin-1 byte keys sort before Unicode BMP');
 

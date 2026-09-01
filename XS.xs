@@ -1313,7 +1313,7 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
 #else
               uv = utf8_to_uv (ap, alen, &clen, UTF8_CHECK_ONLY);
 #endif
-              if (UNLIKELY (clen <= 0))
+              if (UNLIKELY (clen == 0 || clen > alen))
                 {
                   /* invalid UTF-8, treat as raw byte */
                   a_unit = *ap++;
@@ -1354,7 +1354,7 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
 #else
               uv = utf8_to_uv (bp, blen, &clen, UTF8_CHECK_ONLY);
 #endif
-              if (UNLIKELY (clen <= 0))
+              if (UNLIKELY (clen == 0 || clen > blen))
                 {
                   /* invalid UTF-8, treat as raw byte */
                   b_unit = *bp++;

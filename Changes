@@ -2,6 +2,12 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.44 2026-xx-xx (rurban)
+	- Fix canonical sort infinite loop (GH #252): malformed UTF-8 keys
+	  (e.g. Latin-1 byte strings mixed with Unicode) made utf16_cmp
+	  treat the decoder's (STRLEN)-1 malformed sentinel as a length,
+	  wrapping the buffer pointer. Now checked as 0 or > remaining length.
+
 4.43 2026-07-18 (rurban)
 	- Fix canonical sort: compare by UTF-16 code units per RFC 8785 (GH #248, leont)
         - Fix canonical sort on Perl 5.8-5.18: utf16_cmp now always attempts
