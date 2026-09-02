@@ -2,8 +2,8 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-4.44 2026-xx-xx (rurban)
-	- Fix canonical sort infinite loop (GH #252): malformed UTF-8 keys
+4.44 2026-09-02 (rurban)
+	- Fix canonical sort infinite loop (GH #252 amelchio): malformed UTF-8 keys
 	  (e.g. Latin-1 byte strings mixed with Unicode) made utf16_cmp
 	  treat the decoder's (STRLEN)-1 malformed sentinel as a length,
 	  wrapping the buffer pointer. Now checked as 0 or > remaining length.
