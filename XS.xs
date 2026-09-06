@@ -5072,7 +5072,7 @@ void new (char *klass)
           if (!stash)
             croak ("Cannot create a %s object from an unblessed reference", klass);
         } else {
-          stash = strEQc (klass, "Cpanel::JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1);
+          stash = strlen(klass) == 16 && strEQc (klass, "Cpanel::JSON::XS") ? JSON_STASH : gv_stashpv (klass, 1);
         }
         XPUSHs (sv_2mortal (sv_bless (
            newRV_noinc (pv), stash
