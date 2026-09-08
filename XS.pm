@@ -1175,6 +1175,29 @@ values. Neither C<true> nor C<false> values will be generated.
 
 For the type argument see L<Cpanel::JSON::XS::Type>.
 
+=item $bytes_written = $json->encode_to ($filehandle, $perl_scalar, $json_type)
+
+Like C<encode>, but writes the JSON representation directly to
+C<$filehandle> as it is generated, instead of building the whole result
+in memory and returning it as a string. Returns the number of bytes
+(octets) written, and croaks (as C<encode> does) if C<$perl_scalar>
+cannot be represented, and if the write to C<$filehandle> fails.
+
+This is useful for very large data structures, where it lowers peak
+memory usage and gives the reader on the other end a head start instead
+of waiting for the whole document to be assembled first:
+
+   open my $fh, ">", "big.json" or die $!;
+   $json->encode_to ($fh, $data);
+   close $fh;
+
+C<encode_to> always writes raw bytes: character data is emitted using
+the same octet encoding C<encode> would produce for the object's current
+flags (see C<utf8>, C<ascii>, C<latin1>, C<binary>), regardless of any
+PerlIO encoding layer already present on C<$filehandle>. As with
+C<encode>, do not additionally push a C<:encoding(UTF-8)> (or similar)
+layer onto the handle, or the output will be double-encoded.
+
 =item $perl_scalar = $json->decode ($json_text, my $json_type)
 
 The opposite of C<encode>: expects a JSON text and tries to parse it,

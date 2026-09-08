@@ -2,6 +2,13 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.45 (unreleased) (rurban)
+	- Add $json->encode_to($fh, $data, [$type]) to stream encoded JSON directly
+	  to a filehandle instead of building the whole result in memory
+	  (GH #250, requested by yairlenga. designed 2016 in GH #58).
+	  Internally flushes a bounded 8k chunk buffer as it fills, keeping
+	  peak memory bounded for large data structures.
+
 4.44 2026-09-02 (rurban)
 	- Fix canonical sort infinite loop (GH #252 amelchio): malformed UTF-8 keys
 	  (e.g. Latin-1 byte strings mixed with Unicode) made utf16_cmp
