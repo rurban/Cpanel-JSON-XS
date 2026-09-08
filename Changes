@@ -2,7 +2,7 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-4.45 (unreleased) (rurban)
+4.45 2026-09-08 (rurban)
 	- Add $json->encode_to($fh, $data, [$type]) to stream encoded JSON directly
 	  to a filehandle instead of building the whole result in memory
 	  (GH #250, requested by yairlenga. designed 2016 in GH #58).

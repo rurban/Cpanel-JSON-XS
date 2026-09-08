@@ -24,4 +24,12 @@ inline.h.gcov
 XS.gcda
 XS.gcno
 XS.xs.gcov
-cover_db/
+cover_db
+.claude
+.mcp.json
+.opencode
+AGENTS.md
+CLAUDE.md
+fuzzing
+json_xs_fuzz_src.zip
+validate.pl

@@ -424,6 +424,7 @@ xt/leaktrace.t
 xt/manifest.t
 xt/meta.t
 xt/perl_minimum_version.t
+xt/pod-checker.t
 xt/pod-coverage.t
 xt/pod-spell-mistakes.t
 xt/pod-spelling.t

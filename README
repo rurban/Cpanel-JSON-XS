@@ -22,7 +22,7 @@ SYNOPSIS
      # Note that L<JSON::MaybeXS> will automatically use Cpanel::JSON::XS
      # if available, at virtually no speed overhead either, so you should
      # be able to just:
- 
+
      use JSON::MaybeXS;
 
      # and do the same things, except that you have a pure-perl fallback now.
