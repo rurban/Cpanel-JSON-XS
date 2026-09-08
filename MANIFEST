@@ -14,6 +14,7 @@ XS/Boolean.pm
 XS/Type.pm
 bin/cpanel_json_xs
 eg/bench
+eg/bench_large.pl
 ppport.h
 t/00_load.t
 t/01_utf8.t
