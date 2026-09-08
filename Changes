@@ -8,6 +8,13 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 	  (GH #250, requested by yairlenga. designed 2016 in GH #58).
 	  Internally flushes a bounded 8k chunk buffer as it fills, keeping
 	  peak memory bounded for large data structures.
+	- Encoder performance improvements suggested in GH #237 (17dec):
+	  * Large-integer encoding now uses a 100-digit lookup table instead of
+	    snprintf, roughly 2x faster for integers outside the existing
+	    branchless small-integer fast path (|value| > 59000).
+	  * encode_str now bulk-copies runs of consecutive bytes that need no
+	    escaping instead of a need()+store per byte, notably faster for
+	    strings with few or no characters to escape.
 
 4.44 2026-09-02 (rurban)
 	- Fix canonical sort infinite loop (GH #252 amelchio): malformed UTF-8 keys

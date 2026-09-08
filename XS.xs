@@ -999,10 +999,28 @@ encode_str (pTHX_ enc_t *enc, char *str, STRLEN len, int is_utf8)
               *enc->cur++ = '/';
               ++len;
             }
-          else {
-            need (aTHX_ enc, 1);
-            *enc->cur++ = ch;
-          }
+          else
+            {
+              /* fast path: bulk-copy a run of consecutive bytes that need no
+               * escaping, instead of a need()+store per byte (GH #237). */
+              char *run_start = str;
+              int esc_slash = !!(enc->json.flags & F_ESCAPE_SLASH);
+              STRLEN run;
+
+              do
+                ++str;
+              while (str < end
+                     && (ch = *(unsigned char *)str) >= 0x20 && ch < 0x80
+                     && ch != '"' && ch != '\\'
+                     && !(esc_slash && ch == '/'));
+
+              run = str - run_start;
+              need (aTHX_ enc, run);
+              memcpy (enc->cur, run_start, run);
+              enc->cur += run;
+              len -= run;
+              continue;
+            }
 
           ++str;
         }
@@ -2129,6 +2147,48 @@ sv_to_ivuv (pTHX_ SV *sv, int *is_neg, IV *iv, UV *uv)
     }
 }
 
+/* 2 ASCII digits for every value 0..99, used by uv_to_str() below (GH #237) */
+static const char digits_100[] =
+  "00010203040506070809"
+  "10111213141516171819"
+  "20212223242526272829"
+  "30313233343536373839"
+  "40414243444546474849"
+  "50515253545556575859"
+  "60616263646566676869"
+  "70717273747576777879"
+  "80818283848586878889"
+  "90919293949596979899";
+
+/* format uv in decimal into the buffer ending at bufend (exclusive),
+ * writing backwards, and return a pointer to the first digit written.
+ * uses a 2-digits-at-a-time lookup table, much faster than snprintf for
+ * both small and large integers. */
+static char *
+uv_to_str (char *bufend, UV uv)
+{
+  char *p = bufend;
+
+  while (uv >= 100)
+    {
+      UV rem = (uv % 100) * 2;
+      uv /= 100;
+      *--p = digits_100[rem + 1];
+      *--p = digits_100[rem];
+    }
+
+  if (uv >= 10)
+    {
+      UV idx = uv * 2;
+      *--p = digits_100[idx + 1];
+      *--p = digits_100[idx];
+    }
+  else
+    *--p = '0' + (char)uv;
+
+  return p;
+}
+
 static void
 encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
 {
@@ -2876,14 +2936,27 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
         }
       else
         {
-          /* large integer, use the (rather slow) snprintf way. */
+          /* large integer: 100-digit lookup table (GH #237), much faster
+           * than the snprintf-based formatting used before. */
+          char ibuf[IVUV_MAXCHARS];
+          char *ibufend = ibuf + sizeof (ibuf);
+          char *idigits;
+          STRLEN ilen;
+          int ineg = is_neg && iv < 0;
+          UV auv = !is_neg ? uv : ineg ? (UV)0 - (UV)iv : (UV)iv;
+
           need (aTHX_ enc, IVUV_MAXCHARS);
           savecur = enc->cur;
           saveend = enc->end;
-          enc->cur +=
-             !is_neg
-                ? snprintf (enc->cur, IVUV_MAXCHARS, "%" UVuf, uv)
-                : snprintf (enc->cur, IVUV_MAXCHARS, "%" IVdf, iv);
+
+          idigits = uv_to_str (ibufend, auv);
+          if (ineg)
+            *--idigits = '-';
+
+          ilen = ibufend - idigits;
+          memcpy (enc->cur, idigits, ilen);
+          enc->cur += ilen;
+          *enc->cur = 0;
         }
 
       if (!force_conversion && SvPOKp (sv) && !strEQ(savecur, SvPVX (sv))) {
