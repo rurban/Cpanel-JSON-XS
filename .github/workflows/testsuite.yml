@@ -45,6 +45,8 @@ jobs:
             Text::CSV_XS
             List::MoreUtils
             Test::Kwalitee
+            Test2::Harness
+            App::Yath
       - run: perl Makefile.PL
       - run: make test
 

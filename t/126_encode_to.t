@@ -1,3 +1,4 @@
+# HARNESS-NO-PRELOAD
 #
 # encode_to: streaming encode directly to a filehandle (GH #250)
 #

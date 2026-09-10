@@ -46,6 +46,7 @@ EOT
     unlink("tmp.c", $exe, "tmp$Config{obj_ext}");
   }
 }
+my $yath = MM->maybe_command("yath");
 
 WriteMakefile(
   dist	 => {
@@ -238,7 +239,8 @@ release : xtest dist
 
 xtest :: test
 	\$(MAKE) test TEST_FILES=xt/*.t
-
+" . ($yath ? "\tyath .\n" : "") .
+"
 const-c.inc const-xs.inc : Makefile.PL
 
 # versioned gcc needs overrides

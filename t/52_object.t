@@ -3,7 +3,7 @@ BEGIN { $^W = 0 } # hate
 
 use Cpanel::JSON::XS;
 
-$json = Cpanel::JSON::XS->new->convert_blessed->allow_tags;
+my $json = Cpanel::JSON::XS->new->convert_blessed->allow_tags;
 
 print "ok 1\n";
 
@@ -14,11 +14,11 @@ sub Cpanel::JSON::XS::tojson::TO_JSON {
    7
 }
 
-$obj = bless { k => 1 }, Cpanel::JSON::XS::tojson::;
+my $obj = bless { k => 1 }, Cpanel::JSON::XS::tojson::;
 
 print "ok 2\n";
 
-$enc = $json->encode ($obj);
+my $enc = $json->encode ($obj);
 print $enc eq 7 ? "" : "not ", "ok 6 # $enc\n";
 
 print "ok 7\n";
@@ -45,7 +45,7 @@ $obj = bless { k => 1 }, Cpanel::JSON::XS::freeze::;
 $enc = $json->encode ($obj);
 print $enc eq '("Cpanel::JSON::XS::freeze")[3,1,2]' ? "" : "not ", "ok 12 # $enc\n";
 
-$dec = $json->decode ($enc);
+my $dec = $json->decode ($enc);
 print $dec eq 777 ? "" : "not ", "ok 19\n";
 
 print "ok 20\n";

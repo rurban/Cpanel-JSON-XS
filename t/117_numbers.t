@@ -159,7 +159,7 @@ is encode_json([3.14]), '[3.14]', 'GH#112 fractional float unchanged';
 # The NV is the accurate full value (with fraction), prefer it.
 {
     my $f = 1.5;
-    int($f);  # sets IOK (IV=1), keeps NOK (NV=1.5)
+    my $i = int($f);  # sets IOK (IV=1), keeps NOK (NV=1.5)
     is encode_json([$f]), '[1.5]',
         'GH#197 int($float) still encodes as float (NOK set)';
 }

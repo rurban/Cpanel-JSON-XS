@@ -29,8 +29,8 @@ use Cpanel::JSON::XS;
 }
 
 my $json = Cpanel::JSON::XS->new;
-$js  = q|[-12.34]|;
-$obj = $json->decode($js);
+my $js  = q|[-12.34]|;
+my $obj = $json->decode($js);
 is($obj->[0], -12.34, 'digit -12.34');
 $js = $json->encode($obj);
 is($js,'[-12.34]', 'digit -12.34');
