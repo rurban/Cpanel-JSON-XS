@@ -2,7 +2,7 @@ print "1..5\n";
 use Cpanel::JSON::XS;
 
 sub FREEZE { ( 123, 456 ); }
-@foo = Cpanel::JSON::XS->new->allow_tags->encode(bless {}, 'main');
+my @foo = Cpanel::JSON::XS->new->allow_tags->encode(bless {}, 'main');
 
 print "ok 1\n";
 

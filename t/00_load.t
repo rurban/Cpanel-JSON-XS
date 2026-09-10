@@ -1,7 +1,7 @@
 BEGIN { $| = 1; print "1..5\n"; }
+my $loaded = 1;
 END {print "not ok 1\n" unless $loaded;}
 use Cpanel::JSON::XS;
-$loaded = 1;
 print "ok 1\n";
 
 # GH #93: $obj->new must work (not create a broken object)

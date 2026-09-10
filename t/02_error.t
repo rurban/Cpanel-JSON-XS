@@ -11,6 +11,7 @@ eval { Cpanel::JSON::XS->new->encode ([\{}]) }; ok $@ =~ /cannot encode referenc
 eval { Cpanel::JSON::XS->new->encode ([\[]]) }; ok $@ =~ /cannot encode reference/;
 eval { Cpanel::JSON::XS->new->encode ([\\1]) }; ok $@ =~ /cannot encode reference/;
 
+my $x;
 eval { $x = Cpanel::JSON::XS->new->ascii->decode ('croak') }; ok $@ =~ /malformed JSON/, $@;
 
 SKIP: {
