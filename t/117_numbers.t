@@ -149,10 +149,13 @@ is encode_json([3.14]), '[3.14]', 'GH#112 fractional float unchanged';
 # scalar to PVNV and sets pNOK, but not NOK (NV lost precision).
 # We must encode the accurate integer, not the imprecise float.
 {
-    my $l = 412345678901234567;
-    my $g = $l + 1.2;  # upgrades $l: sets pNOK, keeps IOK, does NOT set NOK
-    is encode_json([$l]), '[412345678901234567]',
-        'GH#197 large int with stale NV: use IOK, not pNOK';
+    SKIP: {
+        skip "GH#197 requires a 64-bit IV", 1 if $Config{ivsize} < 8;
+        my $l = 412345678901234567;
+        my $g = $l + 1.2;  # upgrades $l: sets pNOK, keeps IOK, does NOT set NOK
+        is encode_json([$l]), '[412345678901234567]',
+            'GH#197 large int with stale NV: use IOK, not pNOK';
+    }
 }
 
 # GH #197: after int($float), both NOK and IOK are set.
