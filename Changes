@@ -2,6 +2,15 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.51 2026-09-11 (rurban)
+	- Add faster SIMD UTF-8 validation (GH #213, Zhang Boyang)
+	  https://github.com/cyb70289/utf8, MIT.
+	- Fix tests for yath (GH #255, with H.Merijn Brand): the test files now
+	  work with Test2::Harness instead of only Test::Harness, and a yath
+	  run is added to `make xtest` when yath is installed.
+	- Skip one t/117_numbers.t test on Perls with 32-bit IVs (GH #254,
+	  Jeremy Hansen).
+
 4.50 2026-09-08 (rurban)
 	- Add $json->encode_to($fh, $data, [$type]) to stream encoded JSON directly
 	  to a filehandle instead of building the whole result in memory

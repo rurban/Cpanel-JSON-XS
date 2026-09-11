@@ -10,6 +10,8 @@ Makefile.PL
 README
 XS.pm
 XS.xs
+utf8_range.c
+utf8_range.h
 XS/Boolean.pm
 XS/Type.pm
 bin/cpanel_json_xs

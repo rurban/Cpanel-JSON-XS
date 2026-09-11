@@ -21,6 +21,17 @@
 #include <float.h>
 #include <errno.h>
 
+/* SIMD UTF-8 validation (GH #213), see the header for provenance */
+#include "utf8_range.h"
+
+/* The validator is a once-per-buffer cold path; keeping it out of line keeps
+   the parser's hot loops' register allocation unchanged. */
+#if defined(__GNUC__) || defined(__clang__)
+# define CJSON_NOINLINE __attribute__((noinline))
+#else
+# define CJSON_NOINLINE
+#endif
+
 #ifndef OutputStream
 # define OutputStream PerlIO *
 #endif
@@ -539,6 +550,7 @@ shrink (pTHX_ SV *sv)
     }
 }
 
+
 /* Decode an utf-8 character and return it, or (UV)-1 in
    case of an error.
    We special-case "safe" characters from U+80 .. U+7FF,
@@ -627,6 +639,22 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
     return c;
 #endif
   }
+}
+
+/* Length of the UTF-8 sequence at s[0] for input already proven well-formed
+   by cjson_utf8_validate(): the lead byte is then 0xc2..0xf4, so 2..4 bytes
+   and no bounds check is needed (GH #213). */
+#define CJSON_UTF8_CLEN(c) (2 + ((c) >= 0xe0) + ((c) >= 0xf0))
+
+/* One-shot, per buffer: run the SIMD validation and cache the verdict in
+   *checked / *trusted.  Deliberately out of line and cold -- it only ever
+   runs once, and this way the caller's hot ascii loop keeps its registers. */
+static CJSON_NOINLINE void
+utf8_ensure_checked (pTHX_ const unsigned char *s, STRLEN len,
+                     char *checked, char *trusted)
+{
+  *checked = 1;
+  *trusted = len >= 16 && cjson_utf8_validate (s, (size_t)len);
 }
 
 /* Likewise for encoding, also never called for ascii codepoints. */
@@ -3104,7 +3132,11 @@ typedef struct
   JSON json;
   U32 depth; /* recursion depth */
   U32 maxdepth; /* recursion depth limit */
+  char utf8_checked; /* cjson_utf8_validate ran on the rest of the buffer */
+  char utf8_trusted; /* ... and the rest of the buffer is valid UTF-8 */
 } dec_t;
+
+
 
 INLINE void
 decode_comment (dec_t *dec)
@@ -3894,9 +3926,26 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
 
               --dec_cur;
 
-              decode_utf8 (aTHX_ (U8*)dec_cur, dec->end - dec_cur,
-                           dec->json.flags & F_RELAXED, &clen);
-              if (clen == (STRLEN)-1)
+              /* The first non-ascii byte of the document triggers one SIMD
+                 validation of the rest of the buffer.  While that holds, a
+                 character's length follows from its lead byte alone and the
+                 per-character checks in decode_utf8() are redundant; those
+                 checks are what make 3- and 4-byte sequences call into perl's
+                 utf8n_to_uvchr(), so that is where the saving is (GH #213).
+                 utf8_ensure_checked() is out of line because it runs only
+                 once; a failed validation falls back to the old path, so
+                 relaxed mode and every error message stay unchanged. */
+              if (UNLIKELY (!dec->utf8_checked))
+                utf8_ensure_checked (aTHX_ (U8*)dec_cur, dec->end - dec_cur,
+                                     &dec->utf8_checked, &dec->utf8_trusted);
+
+              if (LIKELY (dec->utf8_trusted))
+                clen = CJSON_UTF8_CLEN (ch);
+              else
+                decode_utf8 (aTHX_ (U8*)dec_cur, dec->end - dec_cur,
+                             dec->json.flags & F_RELAXED, &clen);
+
+              if (UNLIKELY (clen == (STRLEN)-1))
                 ERR ("malformed UTF-8 character in JSON string");
 
               do
@@ -4873,6 +4922,8 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
   dec.end   = SvEND (string);
   dec.err   = 0;
   dec.depth = 0;
+  dec.utf8_checked = 0;
+  dec.utf8_trusted = 0;
 
   if (dec.json.cb_object || dec.json.cb_sk_object)
     dec.json.flags |= F_HOOK;

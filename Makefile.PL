@@ -57,6 +57,9 @@ WriteMakefile(
   EXE_FILES    => [ "bin/cpanel_json_xs" ],
   VERSION_FROM => "XS.pm",
   NAME         => "Cpanel::JSON::XS",
+  # the SIMD utf8 validator is its own object so its inlining cannot affect
+  # the parser's hot loops (GH #213)
+  OBJECT       => 'XS$(OBJ_EXT) utf8_range$(OBJ_EXT)',
   CONFIGURE_REQUIRES => {
     'Config'              => 0,
     'ExtUtils::MakeMaker' => 0,
