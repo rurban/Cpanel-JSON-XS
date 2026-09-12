@@ -91,7 +91,7 @@ WriteMakefile(
   DEFINE       => $define,
   ($] >= 5.005 ?
    (ABSTRACT_FROM  => 'XS.pm',
-    AUTHOR         => 'Reini Urban <rurban@cpan.org>',
+    AUTHOR         => 'Reini Urban <reini.urban@gmail.com>',
     # ORIGINAL_AUTHOR => 'Marc Lehmann <schmorp@schmorp.de>'
    ) : ()),
   ($ExtUtils::MakeMaker::VERSION >= 6.3002 ?

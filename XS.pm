@@ -2489,13 +2489,13 @@ L<https://tools.ietf.org/html/rfc4627>
 
 =head1 AUTHOR
 
-Reini Urban <rurban@cpan.org>
+Reini Urban <reini.urban@gmail.com>
 
 Marc Lehmann <schmorp@schmorp.de>, http://home.schmorp.de/
 
 =head1 MAINTAINER
 
-Reini Urban <rurban@cpan.org>
+Reini Urban <reini.urban@gmail.com>
 
 =cut
 
