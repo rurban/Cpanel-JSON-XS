@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.52 2026-09-12 (rurban)
+	- OSX 10.9 fix for SIMD UTF-8 (Christian Carey)
+	- Change my maintainer email to reini.urban@gmail.com
+
 4.51 2026-09-11 (rurban)
 	- Add faster SIMD UTF-8 validation (GH #213, Zhang Boyang)
 	  https://github.com/cyb70289/utf8, MIT.
