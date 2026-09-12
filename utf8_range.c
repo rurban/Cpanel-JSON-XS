@@ -12,7 +12,7 @@
  * baseline on aarch64, so no dispatch is needed there. */
 #if defined(__x86_64__) || defined(__i386__)
 # if defined(__clang__)
-#  if __clang_major__ >= 4
+#  if __clang_major__ >= 4 && (!defined __apple_build_version__ || __apple_build_version__ > 5030040)
 #   define CJSON_HAVE_X86_SIMD 1
 #  endif
 # elif defined(__GNUC__)
