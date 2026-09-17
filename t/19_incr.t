@@ -2,7 +2,7 @@
 
 use strict;
 no warnings;
-use Test::More $] < 5.008 ? (tests => 39) : (tests => 713);
+use Test::More $] < 5.008 ? (tests => 39) : (tests => 717);
 
 use Cpanel::JSON::XS;
 
@@ -157,4 +157,31 @@ exit if $] < 5.008;
    $r = $coder->incr_parse("llo}']");
    ok (defined $r, "sqstr-incr array: completes");
    is_deeply ($r, ['hello}'], "sqstr-incr array: value correct");
+}
+
+
+# Changing input scalar UTF-8ness after partial parsing preserves incr_pos.
+{
+   my $coder = Cpanel::JSON::XS->new->utf8;
+   my $first = qq|{"\x{e9}|;
+   utf8::downgrade ($first, 1);
+   my $second = q|":1}|;
+   utf8::upgrade ($second);
+
+   ok (!defined $coder->incr_parse ($first), "incr-pos upgrade: partial input waits");
+   $coder->utf8 (0);
+   is_deeply ($coder->incr_parse ($second), { "\x{e9}" => 1 },
+              "incr-pos upgrade: preserves position across byte-to-UTF-8 conversion");
+}
+
+{
+   my $coder = Cpanel::JSON::XS->new;
+   my $first = qq|{"\x{c3}\x{a9}|;
+   utf8::upgrade ($first);
+   my $second = q|":1}|;
+
+   ok (!defined $coder->incr_parse ($first), "incr-pos downgrade: partial input waits");
+   $coder->utf8 (1);
+   is_deeply ($coder->incr_parse ($second), { "\x{e9}" => 1 },
+              "incr-pos downgrade: preserves position across UTF-8-to-byte conversion");
 }

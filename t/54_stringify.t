@@ -10,7 +10,7 @@ BEGIN {
     or plan skip_all => 'JSON 2.09 required for cross testing';
   $ENV{PERL_JSON_BACKEND} = 'JSON::PP';
 }
-plan $] < 5.008 ? (skip_all => "5.6 no AMG yet") : (tests => 21);
+plan $] < 5.008 ? (skip_all => "5.6 no AMG yet") : (tests => 22);
 use Cpanel::JSON::XS;
 
 my $time = localtime;
@@ -100,3 +100,7 @@ SKIP: {
     or diag "Error: $@";
   is($result, '"null"', 'GH #128: recursion returns null from allow_blessed');
 }
+
+eval { Cpanel::JSON::XS->new->stringify_infnan(4) };
+like($@, qr/invalid stringify_infnan mode 4/,
+     'stringify_infnan rejects an unsupported mode');

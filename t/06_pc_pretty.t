@@ -4,7 +4,7 @@
 
 use strict;
 use Test::More;
-BEGIN { plan tests => 10 };
+BEGIN { plan tests => 11 };
 
 use Cpanel::JSON::XS;
 
@@ -79,3 +79,7 @@ is($js,q|{
 }
 |);
 
+
+my $compact = Cpanel::JSON::XS->new->space_after;
+is($compact->encode([1, 2, 3]), '[1, 2, 3]',
+   'space_after separates compact array elements');

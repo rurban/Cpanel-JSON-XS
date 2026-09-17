@@ -1,6 +1,6 @@
 use strict;
 use Cpanel::JSON::XS;
-use Test::More tests => 24;
+use Test::More tests => 26;
 
 package ZZ;
 use overload ('""' => sub { "<ZZ:".${$_[0]}.">" } );
@@ -96,3 +96,20 @@ SKIP: {
   $js->filter_json_single_key_object (a => sub { });
   ok (4 == $js->decode ('[{"a":4}]')->[0]{a});
 }
+
+{
+  package SameObjectFreeze;
+  sub FREEZE { $_[0] }
+
+  package SameObjectTOJSON;
+  sub TO_JSON { $_[0] }
+
+  package main;
+}
+
+eval { Cpanel::JSON::XS->new->allow_tags->encode(bless {}, 'SameObjectFreeze') };
+like($@, qr/FREEZE method returned same object/,
+     'allow_tags rejects FREEZE returning its invocant');
+eval { Cpanel::JSON::XS->new->convert_blessed->encode(bless {}, 'SameObjectTOJSON') };
+like($@, qr/TO_JSON method returned same object/,
+     'convert_blessed rejects TO_JSON returning its invocant');
