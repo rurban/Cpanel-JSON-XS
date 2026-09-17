@@ -3,7 +3,7 @@ use Cpanel::JSON::XS;
 use Test::More;
 use Config;
 plan skip_all => "Yet unhandled inf/nan with $^O" if $^O eq 'dec_osf';
-plan tests => 30;
+plan tests => 32;
 
 # infnan_mode = 0:
 is encode_json([9**9**9]),         '[null]', "inf -> null stringify_infnan(0)";
@@ -166,3 +166,11 @@ is encode_json([3.14]), '[3.14]', 'GH#112 fractional float unchanged';
     is encode_json([$f]), '[1.5]',
         'GH#197 int($float) still encodes as float (NOK set)';
 }
+
+my $decode_numbers = Cpanel::JSON::XS->new->allow_nonref;
+is_deeply($decode_numbers->decode('[-1234,-12345,-123456]'),
+          [-1234, -12345, -123456],
+          'decode negative integers across fast and generic paths');
+eval { $decode_numbers->decode('1.2e3.5') };
+like($@, qr/malformed number \(two decimal points\)/,
+     'decode rejects a decimal point after an exponent');

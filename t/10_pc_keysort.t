@@ -2,10 +2,11 @@
 # extended with RFC 8785 surrogate ordering tests (GH #248)
 
 use Test::More;
-BEGIN { plan tests => 8 };
+BEGIN { plan tests => 10 };
 use strict;
 use Cpanel::JSON::XS;
 use utf8;
+use Tie::Hash ();
 #########################
 
 my ($js,$obj);
@@ -61,3 +62,14 @@ is($pc->encode({ "\x{c0}" => 0, "\x{ff}" => 0, "\x{100}" => 0 }),
    q|{"\u00c0":0,"\u00ff":0,"\u0100":0}|,
    'GH #252: Latin-1 byte keys sort before Unicode BMP');
 
+
+my %tied;
+tie %tied, 'Tie::StdHash';
+@tied{qw(z a m)} = (1, 2, 3);
+is($pc->encode(\%tied), q|{"a":2,"m":3,"z":1}|,
+   'canonical output sorts tied hash keys');
+
+my %large = map { ("key$_", $_) } 1 .. 100;
+my $large_expected = '{' . join(',', map { qq{"$_":$large{$_}} } sort keys %large) . '}';
+is($pc->encode(\%large), $large_expected,
+   'canonical output sorts hashes beyond the stack key buffer');

@@ -11,7 +11,11 @@ my $json = Cpanel::JSON::XS->new;
 
 my $x = '{"some": "json"}';
 $json->decode($x, my $types);
-is(Devel::Peek::SvREFCNT(%{$types}), 1);
+SKIP: {
+  skip 'wrong refcounts under Devel::Cover', 1
+        if exists $INC{'Devel/Cover.pm'};
+  is(Devel::Peek::SvREFCNT(%{$types}), 1);
+}
 
 __END__
 # Following code triggers memory leak when SvREFCNT is not 1

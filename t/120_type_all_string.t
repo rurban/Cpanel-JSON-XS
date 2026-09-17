@@ -3,7 +3,7 @@ use warnings;
 
 use Cpanel::JSON::XS;
 
-use Test::More tests => 12;
+use Test::More tests => 14;
 
 my $sjson = Cpanel::JSON::XS->new->canonical->require_types->type_all_string;
 
@@ -15,6 +15,12 @@ is($sjson->encode([ 1, "2", { key1 => 3.5 }, [ "string", -10 ] ]), '["1","2",{"k
 is($sjson->encode([ Cpanel::JSON::XS::false, Cpanel::JSON::XS::true ]), '["false","true"]');
 is($sjson->encode([ 1 < 0, 1 > 0 ]), '["","1"]');
 is($sjson->encode(undef), 'null');
+
+# Direct XS boolean return values retain PL_sv_yes/PL_sv_no identity.
+is($sjson->encode(UNIVERSAL::isa('UNIVERSAL', 'UNIVERSAL')), '"true"',
+   'type_all_string stringifies PL_sv_yes as true');
+is($sjson->encode(UNIVERSAL::isa('0', '1')), '"false"',
+   'type_all_string stringifies PL_sv_no as false');
 
 # GH #175: type_all_string must not interfere with allow_blessed/convert_blessed
 {

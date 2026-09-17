@@ -1,4 +1,4 @@
-use Test::More tests => 300;
+use Test::More tests => 305;
 use Cpanel::JSON::XS;
 use B ();
 
@@ -41,3 +41,14 @@ for (1..25) {
      test_bin join "", map chr (rand (2**20) & ~0x800), 0..$_;
    }
 }
+
+# Binary mode accepts its two non-standard byte escape forms explicitly.
+is($bs->decode(q{"\x41\x42"}), 'AB', 'binary decode accepts hex escapes');
+is($bs->decode(q{"\101\102"}), 'AB', 'binary decode accepts octal escapes');
+
+eval { $bs->decode(q{"\xZZ"}) };
+like($@, qr/exactly two hexadecimal digits expected/, 'binary decode rejects malformed hex escape');
+eval { $bs->decode(q{"\089"}) };
+like($@, qr/exactly three octal digits expected/, 'binary decode rejects malformed octal escape');
+eval { $bs->decode(q{"\u0041"}) };
+like($@, qr/illegal unicode character in binary string/, 'binary decode rejects Unicode escape');
