@@ -1,7 +1,8 @@
 #package utf8;
-package _unicode_handling;
+package
+    _unicode_handling;
 
-our $VERSION = '4.53_001';
+our $VERSION = '4.80';
 
 # this is a dummy pragma for 5.005.
 

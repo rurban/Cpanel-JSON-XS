@@ -1,6 +1,6 @@
 package Cpanel::JSON::XS::Type;
 
-our $VERSION = '4.53_001';
+our $VERSION = '4.80';
 
 =pod
 
@@ -251,6 +251,21 @@ key to be present but allows its value to be C<null>).
   my $schema = { name => 'Str', nickname => json_type_optional('Str') };
   check_type({ name => 'Joe' }, $schema); # ok, nickname is optional
 
+The encoder also understands C<json_type_optional>: when it
+encounters one in a type spec it simply unwraps it and encodes the
+wrapped type, since C<encode> only ever sees keys that are actually
+present and has no use for "may be absent" (GH #242). This lets one
+type spec, built once with C<json_type_optional> for the keys that
+are sometimes missing, be handed to both C<encode> and
+L</check_type>/L<C<decode_and_validate>|Cpanel::JSON::XS/decode_and_validate>.
+Note that this only unwraps the C<json_type_optional> wrapper itself;
+the encoder does not understand the short scalar type name sugar
+(C<'Str'>, C<'Int'>, ...), so a spec shared with C<encode> must wrap an
+actual C<JSON_TYPE_*> constant, e.g. C<json_type_optional(JSON_TYPE_STRING)>.
+
+  my $type_spec = { name => JSON_TYPE_STRING, nickname => json_type_optional(JSON_TYPE_STRING) };
+  encode_json({ name => "Joe" }, $type_spec); # '{"name":"Joe"}', no croak
+
 =back
 
 =head2 Schema validation
@@ -350,7 +365,6 @@ our @EXPORT = our @EXPORT_OK = qw(
 );
 
 use constant JSON_TYPE_WEAKEN_CLASS => 'Cpanel::JSON::XS::Type::Weaken';
-use constant JSON_TYPE_OPTIONAL_CLASS => 'Cpanel::JSON::XS::Type::Optional';
 use constant JSON_TYPE_SCALAR => 0; # matches C JSON_TYPE_SCALAR: "no constraint" / Any
 
 

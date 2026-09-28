@@ -2,7 +2,7 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-4.54 2026-09-30 (rurban)
+4.80 2026-09-?? (rurban)
 	- Add version markers to all module files. (PR #260 demerphq)
 	- Use utf8n_to_uvchr on Perl 5.32 and later to avoid the deprecated
 	  utf8n_to_uvuni API. (PR #260 demerphq)
@@ -24,9 +24,19 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 	- json_type_optional() and the nullable '?' type-name suffixes
 	  ('Str?', 'Int?', 'Float?', 'Bool?') give schemas an explicit way
 	  to declare a key/value as optional instead of demanding a
-	  complete type specification for every key (GH #242).
+	  complete type specification for every key. The encoder now also
+	  understands json_type_optional() directly (it unwraps to the
+	  wrapped type, since encode() only ever sees keys that are
+	  actually present): the exact same type spec built for
+	  check_type()/decode_and_validate() can now be handed to encode()
+	  as-is, instead of croaking with "no type was specified for hash
+	  key '...'" for every optional key. Encoding stays strict by
+	  default otherwise: a hash key with no entry at all in the type
+	  spec still croaks (GH #242).
+          eg/bench_large.pl:
+          old encode: 20.5–22.9/s   decode: 16.2–16.5/s for 4.53
+          new encode: 21.1–22.5/s   decode: 15.7–16.3/s for 4.80
 
->>>>>>> 7645c08 (Add schema validation for decoded JSON (GH #238))
 4.53 2026-09-28 (rurban)
 	- Fix C90 violations with arm neon (GH #258 rjbs)
 	- Added a native arm64 test runner.

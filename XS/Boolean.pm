@@ -20,7 +20,7 @@ package Cpanel::JSON::XS::Boolean;
 
 use Cpanel::JSON::XS ();
 
-our $VERSION = '4.53_001';
+our $VERSION = '4.80';
 
 1;
 
