@@ -16,7 +16,11 @@ L<Cpanel::JSON::XS> for more info about this class.
 
 =cut
 
+package Cpanel::JSON::XS::Boolean;
+
 use Cpanel::JSON::XS ();
+
+our $VERSION = '4.53_001';
 
 1;
 
@@ -26,4 +30,3 @@ use Cpanel::JSON::XS ();
  http://home.schmorp.de/
 
 =cut
-
