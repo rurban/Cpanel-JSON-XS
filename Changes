@@ -2,6 +2,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.53_001 (unreleased)
+	- Add development-version markers to all module files.
+	- Use utf8n_to_uvchr on Perl 5.32 and later to avoid the deprecated
+	  utf8n_to_uvuni API.
+
 4.53 2026-09-28 (rurban)
 	- Fix C90 violations with arm neon (GH #258 rjbs)
 	- Added a native arm64 test runner.
@@ -1163,4 +1168,3 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
  
 0.01  2007-03-22 06:08:12
 	- original version; cloned from Convert-Scalar
-
