@@ -4,7 +4,7 @@ use warnings;
 use Cpanel::JSON::XS;
 use Cpanel::JSON::XS::Type;
 
-use Test::More tests => 24;
+use Test::More tests => 30;
 
 # GH #240: encode with type_spec must not modify the type_spec hash
 
@@ -73,4 +73,49 @@ my $cjson = Cpanel::JSON::XS->new->utf8->canonical;
     is($result, '{"a":"test","b":42}', 'encode with decoded-integer type_spec works');
     is($type_spec->{a}, JSON_TYPE_STRING_OR_NULL, 'type_spec unchanged after encode with decoded-integer types');
     is($type_spec->{b}, JSON_TYPE_INT,            'type_spec b unchanged after encode with decoded-integer types');
+}
+
+# GH #242: json_type_optional() must unwrap to its inner type for encode(),
+# so a schema written for Cpanel::JSON::XS::Type::check_type() (where
+# json_type_optional marks a hash key as allowed to be absent) can be
+# reused as-is for encode().
+{
+    my $type_spec = {
+        a => JSON_TYPE_INT,
+        b => json_type_optional(JSON_TYPE_BOOL),
+        c => json_type_optional(JSON_TYPE_STRING_OR_NULL),
+    };
+
+    is($cjson->encode({ a => 10, b => 1, c => undef }, $type_spec),
+       '{"a":10,"b":true,"c":null}',
+       'json_type_optional(BOOL) encodes like its wrapped type when the key is present');
+
+    is($cjson->encode({ a => 10, b => 0 }, $type_spec),
+       '{"a":10,"b":false}',
+       'a json_type_optional key may simply be absent from the data');
+}
+
+# json_type_optional() unwraps everywhere a type is accepted, not just as a
+# hash value: standalone, and nested inside arrayof/hashof.
+{
+    is($cjson->encode(5, json_type_optional(JSON_TYPE_INT)), '5',
+       'json_type_optional() as the whole top-level type spec');
+
+    is($cjson->encode([1, "2", 3], json_type_arrayof(json_type_optional(JSON_TYPE_INT))),
+       '[1,2,3]',
+       'json_type_optional() as the arrayof element type');
+
+    is($cjson->encode({ a => 5 }, json_type_hashof(json_type_optional(JSON_TYPE_INT))),
+       '{"a":5}',
+       'json_type_optional() as the hashof value type');
+}
+
+# Strict-by-default is unchanged: a hash key with no entry at all in the
+# type spec still croaks, even though the spec uses json_type_optional()
+# elsewhere.
+{
+    my $type_spec = { b => json_type_optional(JSON_TYPE_BOOL) };
+    eval { $cjson->encode({ a => 10, b => 1 }, $type_spec) };
+    like($@, qr/no type was specified for hash key 'a'/,
+         'undeclared hash keys still croak (GH #242 stays strict by default)');
 }

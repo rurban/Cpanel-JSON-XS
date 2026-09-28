@@ -348,6 +348,7 @@ mingw_modfl(long double x, long double *ip)
 #define JSON_TYPE_ARRAYOF_CLASS  "Cpanel::JSON::XS::Type::ArrayOf"
 #define JSON_TYPE_HASHOF_CLASS   "Cpanel::JSON::XS::Type::HashOf"
 #define JSON_TYPE_ANYOF_CLASS    "Cpanel::JSON::XS::Type::AnyOf"
+#define JSON_TYPE_OPTIONAL_CLASS "Cpanel::JSON::XS::Type::Optional"
 
 #define JSON_TYPE_ANYOF_SCALAR_INDEX  0
 #define JSON_TYPE_ANYOF_ARRAY_INDEX   1
@@ -2227,6 +2228,23 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
 
   SvGETMAGIC (sv);
   SvGETMAGIC (typesv);
+
+  /* Unwrap json_type_optional() markers: encode() only ever sees
+     values that are actually present in the data, so a key's "may be
+     absent" marker is irrelevant here -- just use the wrapped type.
+     This lets one schema be shared between encode() and
+     Cpanel::JSON::XS::Type::check_type() / decode_and_validate(),
+     where json_type_optional() marks a hash key as not required
+     (GH #242). */
+  while (UNLIKELY (SvROK (typesv) && SvOBJECT (SvRV (typesv))))
+    {
+      HV *stash = SvSTASH (SvRV (typesv));
+      char *name = LIKELY (!!stash) ? HvNAME (stash) : NULL;
+      if (!(name && strEQ (name, JSON_TYPE_OPTIONAL_CLASS)))
+        break;
+      typesv = SvRV (typesv);
+      SvGETMAGIC (typesv);
+    }
 
   if (UNLIKELY (!(SvOK (typesv)) && (enc->json.flags & F_REQUIRE_TYPES) && !(enc->json.flags & F_TYPE_ALL_STRING)))
     croak ("type for '%s' was not specified", SvPV_nolen (sv));
@@ -5230,6 +5248,7 @@ BOOT:
         newCONSTSUB(stash, "JSON_TYPE_ARRAYOF_CLASS", newSVpvs(JSON_TYPE_ARRAYOF_CLASS));
         newCONSTSUB(stash, "JSON_TYPE_HASHOF_CLASS", newSVpvs(JSON_TYPE_HASHOF_CLASS));
         newCONSTSUB(stash, "JSON_TYPE_ANYOF_CLASS", newSVpvs(JSON_TYPE_ANYOF_CLASS));
+        newCONSTSUB(stash, "JSON_TYPE_OPTIONAL_CLASS", newSVpvs(JSON_TYPE_OPTIONAL_CLASS));
 
         NODEBUG_ON; /* the debugger completely breaks lvalue subs */
 }
