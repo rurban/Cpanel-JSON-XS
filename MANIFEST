@@ -49,6 +49,7 @@ t/121_memleak.t
 t/122_type_encode.t
 t/125_shared_boolean.t
 t/126_encode_to.t
+t/127_schema_validate.t
 t/12_blessed.t
 t/13_limit.t
 t/14_latin1.t

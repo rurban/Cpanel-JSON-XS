@@ -2,11 +2,31 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
-4.53_001 (unreleased)
-	- Add development-version markers to all module files.
+4.54 2026-09-30 (rurban)
+	- Add version markers to all module files. (PR #260 demerphq)
 	- Use utf8n_to_uvchr on Perl 5.32 and later to avoid the deprecated
-	  utf8n_to_uvuni API.
+	  utf8n_to_uvuni API. (PR #260 demerphq)
+	- Add schema-based validation for decoded JSON (GH #238):
+	  Cpanel::JSON::XS::Type now provides check_type($data, $schema[,
+	  $found_type]), which validates an already-decoded perl structure
+	  against a type spec built from the existing encoder building
+	  blocks (JSON_TYPE_* / json_type_arrayof / json_type_hashof /
+	  json_type_anyof), plus the new json_type_optional() for hash keys
+	  that may be absent, and short scalar type name sugar ('Str',
+	  'Int', 'Float', 'Bool', 'Null', 'Any', and nullable 'Str?' etc.)
+	  so a schema reads as "just a hash of keys and types", as
+	  requested. Unlike the encoder's hash type spec, a plain hashref
+	  schema is closed: unknown keys and missing required keys are
+	  reported. New $json->decode_and_validate($json_text, $schema)
+	  method decodes and croaks with all mismatches if validation
+	  fails, using decode()'s own type introspection as ground truth to
+	  avoid perl's usual dual-var/stringified-number ambiguity.
+	- json_type_optional() and the nullable '?' type-name suffixes
+	  ('Str?', 'Int?', 'Float?', 'Bool?') give schemas an explicit way
+	  to declare a key/value as optional instead of demanding a
+	  complete type specification for every key (GH #242).
 
+>>>>>>> 7645c08 (Add schema validation for decoded JSON (GH #238))
 4.53 2026-09-28 (rurban)
 	- Fix C90 violations with arm neon (GH #258 rjbs)
 	- Added a native arm64 test runner.

@@ -220,6 +220,80 @@ use C<type_all_string> method of L<Cpanel::JSON::XS> itself:
 
 =back
 
+=head2 Short scalar type names
+
+As sugar for the constants above, anywhere a scalar JSON type is
+accepted (currently: L</check_type> and the encoder's type spec) a
+plain string may be used instead:
+
+  Str Int Float Bool Null Any
+
+C<Any> matches any scalar, including C<undef> (it is exactly
+C<JSON_TYPE_SCALAR>, the "no constraint, use perl's own flags" type).
+Suffix a name with C<?> for the C<_OR_NULL> variant: C<Str?>, C<Int?>,
+C<Float?>, C<Bool?>. So a schema can be written the way the L<issue
+that requested it|https://github.com/rurban/Cpanel-JSON-XS/issues/238>
+suggested, as a plain hash of keys and types:
+
+  my $schema = { name => 'Str', age => 'Int?', active => 'Bool' };
+
+=head2 Optional hash keys
+
+=over 4
+
+=item json_type_optional
+
+Wraps a type so that, when used as a hash schema value for
+L</check_type>, the corresponding key is allowed to be entirely
+absent from the data (as opposed to C<_OR_NULL>, which requires the
+key to be present but allows its value to be C<null>).
+
+  my $schema = { name => 'Str', nickname => json_type_optional('Str') };
+  check_type({ name => 'Joe' }, $schema); # ok, nickname is optional
+
+=back
+
+=head2 Schema validation
+
+=over 4
+
+=item check_type
+
+  my @errors = check_type($data, $schema);
+  my @errors = check_type($data, $schema, $found_type);
+
+Validates an already-decoded perl structure C<$data> against
+C<$schema>, a type specification using the same building blocks as
+the encoder's type spec above (C<JSON_TYPE_*> constants or the short
+names, C<[...]>/C<json_type_arrayof>, C<{...}>/C<json_type_hashof>,
+C<json_type_anyof>, plus C<json_type_optional> for hash keys).
+Returns a list of human readable error strings (one per mismatch,
+prefixed with a C<$>-rooted path such as C<$-E<gt>{users}-E<gt>[0]-E<gt>{id}>);
+an empty list means C<$data> matches C<$schema>.
+
+Unlike the encoder's plain C<{...}> hash type spec (which silently
+ignores hash keys not mentioned in the spec), a plain hashref schema
+here is I<closed>: every key present in C<$data> must be declared in
+C<$schema>, and every key declared in C<$schema> must be present in
+C<$data> unless wrapped in C<json_type_optional>. Use
+C<json_type_hashof> for an open, homogeneous-value hash, exactly like
+the encoder.
+
+The optional third argument C<$found_type> is the type structure
+L<decode|Cpanel::JSON::XS/decode> fills in via its own third
+argument. When given, it is used as the ground truth for scalar
+leaves instead of guessing from perl's internal scalar flags, which
+removes the usual dual-var / stringified-number ambiguities. This is
+exactly what
+L<C<$json-E<gt>decode_and_validate>|Cpanel::JSON::XS/decode_and_validate>
+does:
+
+  my $json   = Cpanel::JSON::XS->new;
+  my $schema = { id => JSON_TYPE_INT, name => 'Str', tags => json_type_arrayof('Str') };
+  my $data   = $json->decode_and_validate($json_text, $schema); # croaks on mismatch
+
+=back
+
 =head1 AUTHOR
 
 Pali E<lt>pali@cpan.orgE<gt>
@@ -238,9 +312,12 @@ use warnings;
 
 BEGIN {
   if (eval { require Scalar::Util }) {
-    Scalar::Util->import('weaken');
+    Scalar::Util->import('weaken', 'looks_like_number');
   } else {
     *weaken = sub($) { die 'Scalar::Util is required for weaken' };
+    *looks_like_number = sub($) {
+      defined($_[0]) && $_[0] =~ /^\s*-?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?\s*\z/;
+    };
   }
 }
 
@@ -255,6 +332,8 @@ our @EXPORT = our @EXPORT_OK = qw(
   json_type_anyof
   json_type_null_or_anyof
   json_type_weaken
+  json_type_optional
+  check_type
   JSON_TYPE_NULL
   JSON_TYPE_BOOL
   JSON_TYPE_INT
@@ -267,9 +346,13 @@ our @EXPORT = our @EXPORT_OK = qw(
   JSON_TYPE_ARRAYOF_CLASS
   JSON_TYPE_HASHOF_CLASS
   JSON_TYPE_ANYOF_CLASS
+  JSON_TYPE_OPTIONAL_CLASS
 );
 
 use constant JSON_TYPE_WEAKEN_CLASS => 'Cpanel::JSON::XS::Type::Weaken';
+use constant JSON_TYPE_OPTIONAL_CLASS => 'Cpanel::JSON::XS::Type::Optional';
+use constant JSON_TYPE_SCALAR => 0; # matches C JSON_TYPE_SCALAR: "no constraint" / Any
+
 
 sub json_type_anyof {
   my ($scalar, $array, $hash);
@@ -337,6 +420,175 @@ sub json_type_weaken {
   die 'Exactly one type must be specified in weaken' if scalar @_ != 1;
   die 'Scalar cannot be specfied in weaken' if ref($_[0]) eq '';
   return bless \(my $type = $_[0]), JSON_TYPE_WEAKEN_CLASS;
+}
+
+sub json_type_optional {
+  die 'Exactly one type must be specified in optional' if scalar @_ != 1;
+  return bless \(my $type = $_[0]), JSON_TYPE_OPTIONAL_CLASS;
+}
+
+# ---------------------------------------------------------------------
+# Schema validation (GH #238): validate an already-decoded perl
+# structure against a type specification built from the same pieces
+# as the encoder's type spec above, plus json_type_optional() and the
+# short scalar type names documented in the POD.
+# ---------------------------------------------------------------------
+
+my %SCALAR_TYPE_ALIAS = (
+  Any      => JSON_TYPE_SCALAR,
+  Str      => JSON_TYPE_STRING,
+  Int      => JSON_TYPE_INT,
+  Float    => JSON_TYPE_FLOAT,
+  Bool     => JSON_TYPE_BOOL,
+  Null     => JSON_TYPE_NULL,
+  'Str?'   => JSON_TYPE_STRING_OR_NULL,
+  'Int?'   => JSON_TYPE_INT_OR_NULL,
+  'Float?' => JSON_TYPE_FLOAT_OR_NULL,
+  'Bool?'  => JSON_TYPE_BOOL_OR_NULL,
+);
+
+my %SCALAR_TYPE_NAME = (
+  JSON_TYPE_SCALAR() => 'Any',
+  JSON_TYPE_STRING() => 'Str',
+  JSON_TYPE_INT()    => 'Int',
+  JSON_TYPE_FLOAT()  => 'Float',
+  JSON_TYPE_BOOL()   => 'Bool',
+  JSON_TYPE_NULL()   => 'Null',
+);
+
+sub _schema_scalar_type {
+  my ($type) = @_;
+  return $type if $type =~ /^-?[0-9]+\z/;
+  return $SCALAR_TYPE_ALIAS{$type} if exists $SCALAR_TYPE_ALIAS{$type};
+  die "invalid scalar type '$type' in schema (expected a JSON_TYPE_* constant".
+      " or one of: " . join(', ', sort keys %SCALAR_TYPE_ALIAS) . ")";
+}
+
+sub _scalar_type_name {
+  my ($type) = @_;
+  return exists $SCALAR_TYPE_NAME{$type} ? $SCALAR_TYPE_NAME{$type} : "type($type)";
+}
+
+sub _detect_scalar_type {
+  my ($value) = @_;
+  return JSON_TYPE_NULL unless defined $value;
+  return JSON_TYPE_BOOL if Cpanel::JSON::XS::is_bool($value);
+  if (!ref($value) && looks_like_number($value)) {
+    return $value =~ /^-?[0-9]+\z/ ? JSON_TYPE_INT : JSON_TYPE_FLOAT;
+  }
+  return JSON_TYPE_STRING;
+}
+
+sub check_type {
+  my ($data, $schema, $found) = @_;
+  my @errors;
+  _check_type($data, $schema, $found, '$', \@errors);
+  return @errors;
+}
+
+sub _check_type {
+  my ($data, $schema, $found, $path, $errors) = @_;
+
+  if (ref($schema) eq JSON_TYPE_OPTIONAL_CLASS) {
+    $schema = ${$schema};
+    return unless defined $data;
+  }
+
+  my $ref = ref($schema);
+
+  if ($ref eq JSON_TYPE_ANYOF_CLASS) {
+    my ($scalar_alt, $array_alt, $hash_alt) = @$schema;
+    my $dref = ref($data);
+    if ($dref eq 'ARRAY') {
+      return push @$errors, "$path: array not allowed by schema" unless defined $array_alt;
+      return _check_type($data, $array_alt, $found, $path, $errors);
+    } elsif ($dref eq 'HASH') {
+      return push @$errors, "$path: hash not allowed by schema" unless defined $hash_alt;
+      return _check_type($data, $hash_alt, $found, $path, $errors);
+    } else {
+      return push @$errors, "$path: scalar not allowed by schema" unless defined $scalar_alt;
+      return _check_type($data, $scalar_alt, $found, $path, $errors);
+    }
+  }
+  elsif ($ref eq JSON_TYPE_ARRAYOF_CLASS) {
+    if (ref($data) ne 'ARRAY') {
+      push @$errors, "$path: expected array, got " . (ref($data) || 'scalar');
+      return;
+    }
+    my $sub = $$schema;
+    my $i = 0;
+    for my $elem (@$data) {
+      my $f = ref($found) eq 'ARRAY' ? $found->[$i] : undef;
+      _check_type($elem, $sub, $f, $path . "->[$i]", $errors);
+      $i++;
+    }
+  }
+  elsif ($ref eq 'ARRAY') {
+    if (ref($data) ne 'ARRAY') {
+      push @$errors, "$path: expected array, got " . (ref($data) || 'scalar');
+      return;
+    }
+    if (@$data != @$schema) {
+      push @$errors, "$path: expected array of length " . scalar(@$schema) . ", got " . scalar(@$data);
+      return;
+    }
+    for my $i (0 .. $#$schema) {
+      my $f = ref($found) eq 'ARRAY' ? $found->[$i] : undef;
+      _check_type($data->[$i], $schema->[$i], $f, $path . "->[$i]", $errors);
+    }
+  }
+  elsif ($ref eq JSON_TYPE_HASHOF_CLASS) {
+    if (ref($data) ne 'HASH') {
+      push @$errors, "$path: expected hash, got " . (ref($data) || 'scalar');
+      return;
+    }
+    my $sub = $$schema;
+    for my $key (sort keys %$data) {
+      my $f = ref($found) eq 'HASH' ? $found->{$key} : undef;
+      _check_type($data->{$key}, $sub, $f, $path . "->{$key}", $errors);
+    }
+  }
+  elsif ($ref eq 'HASH') {
+    if (ref($data) ne 'HASH') {
+      push @$errors, "$path: expected hash, got " . (ref($data) || 'scalar');
+      return;
+    }
+    for my $key (sort keys %$schema) {
+      my $subschema = $schema->{$key};
+      unless (exists $data->{$key}) {
+        push @$errors, "$path: missing required key '$key'"
+          unless ref($subschema) eq JSON_TYPE_OPTIONAL_CLASS;
+        next;
+      }
+      my $f = ref($found) eq 'HASH' ? $found->{$key} : undef;
+      _check_type($data->{$key}, $subschema, $f, $path . "->{$key}", $errors);
+    }
+    for my $key (sort keys %$data) {
+      push @$errors, "$path: unexpected key '$key'" unless exists $schema->{$key};
+    }
+  }
+  else {
+    my $want = _schema_scalar_type($schema);
+    if ($want == JSON_TYPE_SCALAR) {
+      # 'Any': matches every value, including undef/null
+      return;
+    }
+    if ($want == JSON_TYPE_NULL) {
+      push @$errors, "$path: expected null, got " . _scalar_type_name(_detect_scalar_type($data))
+        if defined $data;
+      return;
+    }
+    my $can_null = $want & JSON_TYPE_CAN_BE_NULL;
+    my $base = $want & ~JSON_TYPE_CAN_BE_NULL;
+    if (!defined $data) {
+      push @$errors, "$path: expected " . _scalar_type_name($base) . ", got null"
+        unless $can_null;
+      return;
+    }
+    my $actual = defined($found) && !ref($found) ? ($found & ~JSON_TYPE_CAN_BE_NULL) : _detect_scalar_type($data);
+    push @$errors, "$path: expected " . _scalar_type_name($base) . ", got " . _scalar_type_name($actual)
+      if $actual != $base;
+  }
 }
 
 1;
