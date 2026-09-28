@@ -1079,6 +1079,24 @@ OBJECT-ORIENTED INTERFACE
 
         For the type argument see Cpanel::JSON::XS::Type.
 
+    $perl_scalar = $json->decode_and_validate ($json_text, $schema)
+        Like "decode", but additionally validates the decoded structure
+        against $schema, a schema hash built from the type spec building
+        blocks in Cpanel::JSON::XS::Type (plain "JSON_TYPE_*" constants or
+        their short names, "json_type_arrayof", "json_type_hashof",
+        "json_type_anyof", "json_type_optional", ...). Croaks with one line
+        per mismatch (missing/unexpected hash keys, wrong scalar type, wrong
+        array length/element type) if $data doesn't match $schema; otherwise
+        returns the decoded data exactly like "decode" would.
+
+          use Cpanel::JSON::XS::Type;
+          my $schema = { id => JSON_TYPE_INT, name => 'Str', tags => json_type_arrayof('Str') };
+          my $data = $json->decode_and_validate($json_text, $schema);
+
+        See "check_type" in Cpanel::JSON::XS::Type for the full schema
+        semantics, including how it differs from the encoder's permissive
+        hash type spec.
+
     ($perl_scalar, $characters) = $json->decode_prefix ($json_text)
         This works like the "decode" method, but instead of raising an
         exception when there is trailing garbage after the first JSON

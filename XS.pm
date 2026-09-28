@@ -1209,6 +1209,25 @@ C<1>, C<false> becomes C<0> and C<null> becomes C<undef>.
 
 For the type argument see L<Cpanel::JSON::XS::Type>.
 
+=item $perl_scalar = $json->decode_and_validate ($json_text, $schema)
+
+Like C<decode>, but additionally validates the decoded structure
+against C<$schema>, a schema hash built from the type spec building
+blocks in L<Cpanel::JSON::XS::Type> (plain C<JSON_TYPE_*> constants
+or their short names, C<json_type_arrayof>, C<json_type_hashof>,
+C<json_type_anyof>, C<json_type_optional>, ...). Croaks with one line
+per mismatch (missing/unexpected hash keys, wrong scalar type, wrong
+array length/element type) if C<$data> doesn't match C<$schema>;
+otherwise returns the decoded data exactly like C<decode> would.
+
+  use Cpanel::JSON::XS::Type;
+  my $schema = { id => JSON_TYPE_INT, name => 'Str', tags => json_type_arrayof('Str') };
+  my $data = $json->decode_and_validate($json_text, $schema);
+
+See L<Cpanel::JSON::XS::Type/check_type> for the full schema
+semantics, including how it differs from the encoder's permissive
+hash type spec.
+
 =item ($perl_scalar, $characters) = $json->decode_prefix ($json_text)
 
 This works like the C<decode> method, but instead of raising an exception
@@ -2395,6 +2414,18 @@ license and the GPL.
 
 sub allow_bigint {
     Carp::carp("allow_bigint() is obsoleted. use allow_bignum() instead.");
+}
+
+sub decode_and_validate {
+    my ($self, $json_text, $schema) = @_;
+    require Cpanel::JSON::XS::Type;
+    my $data = $self->decode($json_text, my $found_type);
+    my @errors = Cpanel::JSON::XS::Type::check_type($data, $schema, $found_type);
+    if (@errors) {
+        require Carp;
+        Carp::croak("JSON does not match schema:\n  " . join("\n  ", @errors));
+    }
+    return $data;
 }
 
 BEGIN {
