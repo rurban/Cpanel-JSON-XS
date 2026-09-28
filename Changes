@@ -2,6 +2,10 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.53 2026-09-28 (rurban)
+	- Fix C90 violations with arm neon (GH #258 rjbs)
+	- Added a native arm64 test runner.
+
 4.52 2026-09-12 (rurban)
 	- OSX 10.9 fix for SIMD UTF-8 (Christian Carey)
 	- Change my maintainer email to reini.urban@gmail.com
