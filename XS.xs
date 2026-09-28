@@ -577,7 +577,7 @@ decode_utf8 (pTHX_ unsigned char *s, STRLEN len, int relaxed, STRLEN *clen)
    handling.
    SUPER, above U+10FFFF is not allowed, unless we are in the relaxed mode.
 */
-#if PERL_VERSION > 36
+#if PERL_VERSION >= 32
     UV c = utf8n_to_uvchr (s, len, clen,
                           UTF8_CHECK_ONLY | UTF8_DISALLOW_SURROGATE | (relaxed ? 0 : UTF8_DISALLOW_SUPER));
 #elif PERL_VERSION > 12
@@ -1387,7 +1387,7 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
           {
               UV uv;
               STRLEN clen = 0;
-#if PERL_VERSION > 36
+#if PERL_VERSION >= 32
               uv = utf8n_to_uvchr (ap, alen, &clen, UTF8_CHECK_ONLY);
 #elif PERL_VERSION >= 8
               uv = utf8n_to_uvuni (ap, alen, &clen, UTF8_CHECK_ONLY);
@@ -1428,7 +1428,7 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
           {
               UV uv;
               STRLEN clen = 0;
-#if PERL_VERSION > 36
+#if PERL_VERSION >= 32
               uv = utf8n_to_uvchr (bp, blen, &clen, UTF8_CHECK_ONLY);
 #elif PERL_VERSION >= 8
               uv = utf8n_to_uvuni (bp, blen, &clen, UTF8_CHECK_ONLY);
@@ -5670,4 +5670,3 @@ void decode_json (SV *jsonstr, SV *allow_nonref = NULL, SV *typesv = NULL)
         PUTBACK; jsonstr = decode_json (aTHX_ jsonstr, &json, 0, typesv); SPAGAIN;
         XPUSHs (jsonstr);
 }
-

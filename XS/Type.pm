@@ -1,5 +1,7 @@
 package Cpanel::JSON::XS::Type;
 
+our $VERSION = '4.53_001';
+
 =pod
 
 =head1 NAME

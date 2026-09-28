@@ -1,6 +1,8 @@
 #package utf8;
 package _unicode_handling;
 
+our $VERSION = '4.53_001';
+
 # this is a dummy pragma for 5.005.
 
     if ($] < 5.006) {
