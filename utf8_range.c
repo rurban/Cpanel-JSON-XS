@@ -732,6 +732,7 @@ static const uint8_t cjson_neon_range_adjust_tbl[] = {
 static int cjson_utf8_range_neon(const unsigned char *data, int len)
 {
     if (len >= 16) {
+        uint32_t token4;
         uint8x16_t prev_input = vdupq_n_u8(0);
         uint8x16_t prev_first_len = vdupq_n_u8(0);
 
@@ -752,7 +753,9 @@ static int cjson_utf8_range_neon(const unsigned char *data, int len)
         uint8x16_t error2 = vdupq_n_u8(0);
 
         while (len >= 16) {
+            uint8x16_t tmp1, tmp2;
             const uint8x16_t input = vld1q_u8(data);
+            uint8x16_t shift1, pos, minv, maxv;
 
             /* high_nibbles = input >> 4 */
             const uint8x16_t high_nibbles = vshrq_n_u8(input, 4);
@@ -775,7 +778,6 @@ static int cjson_utf8_range_neon(const unsigned char *data, int len)
 
             /* Third Byte: set range index to saturate_sub(first_len, 1) */
             /* 0 for 00~7F, 0 for C0~DF, 1 for E0~EF, 2 for F0~FF */
-            uint8x16_t tmp1, tmp2;
             /* tmp1 = (first_len, prev_first_len) << 2 bytes */
             tmp1 = vextq_u8(prev_first_len, first_len, 14);
             /* tmp1 = saturate_sub(tmp1, 1) */
@@ -809,13 +811,13 @@ static int cjson_utf8_range_neon(const unsigned char *data, int len)
             /* Adjust Second Byte range for special First Bytes(E0,ED,F0,F4) */
             /* See cjson_neon_range_adjust_tbl[] definition for details */
             /* Overlaps lead to index 9~15, which are illegal in range table */
-            uint8x16_t shift1 = vextq_u8(prev_input, input, 15);
-            uint8x16_t pos = vsubq_u8(shift1, const_e0);
+            shift1 = vextq_u8(prev_input, input, 15);
+            pos = vsubq_u8(shift1, const_e0);
             range = vaddq_u8(range, vqtbl2q_u8(range_adjust_tbl, pos));
 
             /* Load min and max values per calculated range index */
-            uint8x16_t minv = vqtbl1q_u8(range_min_tbl, range);
-            uint8x16_t maxv = vqtbl1q_u8(range_max_tbl, range);
+            minv = vqtbl1q_u8(range_min_tbl, range);
+            maxv = vqtbl1q_u8(range_max_tbl, range);
 
             /* Check value range */
             error1 = vorrq_u8(error1, vcltq_u8(input, minv));
@@ -835,20 +837,21 @@ static int cjson_utf8_range_neon(const unsigned char *data, int len)
             return -1;
 
         /* Find previous token (not 80~BF) */
-        uint32_t token4;
+        token4;
         vst1q_lane_u32(&token4, vreinterpretq_u32_u8(prev_input), 3);
 
-        const int8_t *token = (const int8_t *)&token4;
-        int lookahead = 0;
-        if (token[3] > (int8_t)0xBF)
-            lookahead = 1;
-        else if (token[2] > (int8_t)0xBF)
-            lookahead = 2;
-        else if (token[1] > (int8_t)0xBF)
-            lookahead = 3;
-
-        data -= lookahead;
-        len += lookahead;
+        {
+            const int8_t *token = (const int8_t *)&token4;
+            int lookahead = 0;
+            if (token[3] > (int8_t)0xBF)
+                lookahead = 1;
+            else if (token[2] > (int8_t)0xBF)
+                lookahead = 2;
+            else if (token[1] > (int8_t)0xBF)
+                lookahead = 3;
+            data -= lookahead;
+            len += lookahead;
+        }
     }
 
     /* Check remaining bytes with naive method */
