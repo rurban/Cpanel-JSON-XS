@@ -472,6 +472,27 @@ typedef struct {
   U32 magic;
 } JSON;
 
+#if defined(USE_ITHREADS) && (PERL_VERSION > 8 || (PERL_VERSION == 8 && PERL_SUBVERSION >= 9))
+#define JSON_MG_DUP
+#ifndef sv_dup_inc
+#define sv_dup_inc(s,t) SvREFCNT_inc (sv_dup (s,t))
+#endif
+/* the object's PV is copied byte for byte into a new thread: give the copy its own SVs */
+static int
+json_mg_dup (pTHX_ MAGIC *mg, CLONE_PARAMS *param)
+{
+  JSON *json = (JSON *)SvPVX (mg->mg_obj);
+  if (SvLEN (mg->mg_obj) < sizeof (JSON))
+    return 0;
+  json->cb_object    = sv_dup_inc (json->cb_object, param);
+  json->cb_sk_object = (HV *)sv_dup_inc ((SV *)json->cb_sk_object, param);
+  json->cb_sort_by   = sv_dup_inc (json->cb_sort_by, param);
+  json->incr_text    = sv_dup_inc (json->incr_text, param);
+  return 0;
+}
+static MGVTBL json_mg_vtbl = { 0, 0, 0, 0, 0, 0, json_mg_dup, 0 };
+#endif
+
 INLINE void
 json_init (JSON *json)
 {
@@ -5418,6 +5439,9 @@ void new (char *klass)
         SV *pv = NEWSV (0, sizeof (JSON));
         SvPOK_only (pv);
         json_init ((JSON *)SvPVX (pv));
+#ifdef JSON_MG_DUP
+        sv_magicext (pv, pv, PERL_MAGIC_ext, &json_mg_vtbl, NULL, 0)->mg_flags |= MGf_DUP;
+#endif
         if (SvROK (ST(0))) {
           /* called as $obj->new — extract real class name from the object */
           stash = SvSTASH (SvRV (ST(0)));
