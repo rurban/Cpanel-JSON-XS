@@ -857,6 +857,58 @@ is_bignum_obj (pTHX_ SV *sv)
   return (stash == gv_stashpvs ("Math::BigInt", 0) || stash == gv_stashpvs ("Math::BigFloat", 0)) ? 1 : 0;
 }
 
+/* Math::BigFloat with a large exponent: return its scientific form (bsstr), else NULL */
+#define BIGNUM_MAX_PLAIN_EXP 64
+static SV *
+bignum_compact (pTHX_ SV *rv)
+{
+  SV *res = NULL;
+  HV *stash;
+  int count;
+  dSP;
+
+  if (!SvROK (rv) || !SvOBJECT (SvRV (rv)))
+    return NULL;
+  stash = gv_stashpvs ("Math::BigFloat", 0);
+  if (!stash || SvSTASH (SvRV (rv)) != stash)
+    return NULL;
+
+  ENTER; SAVETMPS;
+  PUSHMARK (SP);
+  XPUSHs (rv);
+  PUTBACK;
+  count = call_method ("bsstr", G_SCALAR);
+  SPAGAIN;
+  if (count == 1)
+    res = newSVsv (POPs);
+  PUTBACK;
+  FREETMPS; LEAVE;
+
+  if (res)
+    {
+      STRLEN len;
+      const char *s = SvPV (res, len);
+      const char *end = s + len;
+      const char *d = (const char *) memchr (s, 'e', len);
+      UV ev = 0;
+
+      if (d)
+        {
+          d++;
+          if (d < end && (*d == '+' || *d == '-'))
+            d++;
+          for (; d < end && *d >= '0' && *d <= '9'; d++)
+            {
+              ev = ev * 10 + (UV)(*d - '0');
+              if (ev > BIGNUM_MAX_PLAIN_EXP)
+                return sv_2mortal (res);
+            }
+        }
+      SvREFCNT_dec (res);
+    }
+  return NULL;
+}
+
 INLINE int
 is_bool_obj (pTHX_ SV *sv)
 {
@@ -2044,7 +2096,17 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
           FREETMPS; LEAVE;
         }
       else if ((enc->json.flags & F_ALLOW_BIGNUM) && is_bignum_obj (aTHX_ sv))
-        encode_stringify(aTHX_ enc, rv, 1);
+        {
+          SV *compact = bignum_compact (aTHX_ rv);
+          if (compact)
+            {
+              STRLEN clen;
+              char *cstr = SvPV (compact, clen);
+              encode_str (aTHX_ enc, cstr, clen, 0);
+            }
+          else
+            encode_stringify(aTHX_ enc, rv, 1);
+        }
       else if (enc->json.flags & F_CONV_BLESSED)
         encode_stringify(aTHX_ enc, sv, 0);
       else if (enc->json.flags & F_ALLOW_BLESSED)
@@ -2368,7 +2430,8 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
       if (UNLIKELY (is_bigobj))
         {
           STRLEN len;
-          char *str = SvPV_nomg (sv, len);
+          SV *compact = bignum_compact (aTHX_ sv);
+          char *str = compact ? SvPV (compact, len) : SvPV_nomg (sv, len);
           if (UNLIKELY (str[0] == '+'))
             {
               str++;
@@ -2443,7 +2506,10 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                     PUTBACK;
                   }
 
-                  str = SvPV (pv, len);
+                  {
+                    SV *compact = bignum_compact (aTHX_ pv);
+                    str = compact ? SvPV (compact, len) : SvPV (pv, len);
+                  }
                   if (UNLIKELY (str[0] == '+'))
                     {
                       str++;
@@ -2863,6 +2929,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
             }
 
           if ((numtype & (IS_NUMBER_GREATER_THAN_UV_MAX|IS_NUMBER_NOT_INT))
+              && !(numtype & (IS_NUMBER_NAN|IS_NUMBER_INFINITY))
               && (enc->json.flags & F_ALLOW_BIGNUM))
             {
               STRLEN len;
