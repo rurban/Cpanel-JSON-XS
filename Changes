@@ -3,6 +3,38 @@ Revision history for Perl extension Cpanel::JSON::XS
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
 4.80 2026-09-?? (rurban)
+	- Security fixes, reported by Stig Palmquist (CPANSec):
+	  * CVE-2026-110672 decode: free the hash key on "Duplicate keys not
+	    allowed" and on a missing ':' (leak).
+	  * CVE-2026-110673 decode: charge allow_tags "(" nesting against
+	    max_depth (stack overflow).
+	  * CVE-2026-110674 decode: look bare keys up as UTF-8, so the
+	    duplicate check no longer misses or crashes on non-ASCII keys.
+	  * CVE-2026-110675 decode: validate bare hash keys as UTF-8 like
+	    quoted keys (malformed keys).
+	  * CVE-2026-110676 encode: compact allow_bignum Math::BigFloat
+	    values with huge exponents (30MB from 12 bytes).
+	  * CVE-2026-110677 decode: fix the dupkeys_as_arrayref reference
+	    counts (leaked every array).
+	  * CVE-2026-110678 incr_parse: apply max_size to the buffered text
+	    in every context.
+	  * CVE-2026-110680 encode: bound the canonical key snapshot for
+	    growing tied or shared hashes (overflow).
+	  * CVE-2026-110681 new: clone the callbacks and buffer SVs on
+	    ithread clone instead of sharing the parent's pointers.
+	  * CVE-2026-110682 incr_parse: reject a top-level number, true,
+	    false or null unless allow_nonref was set explicitly, as
+	    chunking changes their value. Strings, arrays and objects are
+	    unchanged.
+	  * CVE-2026-110684 encode: release the temporary references when
+	    stringifying overloaded objects (leak).
+	  * CVE-2026-110685 decode_tag: free the tag and its arguments when
+	    THAW dies (leak).
+	  * CVE-2026-110686 decode: keep the filter callbacks alive while
+	    they run (use-after-free when a filter removes itself).
+	  * CVE-2026-110687 canonical: sort byte-string keys as Latin-1.
+	  * CVE-2026-110688 incr_parse: validate UTF-8 only up to the end of
+	    the decoded text (quadratic CPU).
 	- Add version markers to all module files. (PR #260 demerphq)
 	- Use utf8n_to_uvchr on Perl 5.32 and later to avoid the deprecated
 	  utf8n_to_uvuni API. (PR #260 demerphq)
