@@ -3258,6 +3258,7 @@ typedef struct
   U32 maxdepth; /* recursion depth limit */
   char utf8_checked; /* cjson_utf8_validate ran on the rest of the buffer */
   char utf8_trusted; /* ... and the rest of the buffer is valid UTF-8 */
+  char *utf8_end; /* end of what that validation covers */
 } dec_t;
 
 
@@ -4060,10 +4061,11 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
                  once; a failed validation falls back to the old path, so
                  relaxed mode and every error message stay unchanged. */
               if (UNLIKELY (!dec->utf8_checked))
-                utf8_ensure_checked (aTHX_ (U8*)dec_cur, dec->end - dec_cur,
+                utf8_ensure_checked (aTHX_ (U8*)dec_cur,
+                                     dec->utf8_end > dec_cur ? dec->utf8_end - dec_cur : 0,
                                      &dec->utf8_checked, &dec->utf8_trusted);
 
-              if (LIKELY (dec->utf8_trusted))
+              if (LIKELY (dec->utf8_trusted && dec_cur < dec->utf8_end))
                 clen = CJSON_UTF8_CLEN (ch);
               else
                 decode_utf8 (aTHX_ (U8*)dec_cur, dec->end - dec_cur,
@@ -5104,6 +5106,9 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
   dec.depth = 0;
   dec.utf8_checked = 0;
   dec.utf8_trusted = 0;
+  /* incr_parse: validate only the text being decoded, not everything buffered after it */
+  dec.utf8_end = string == json->incr_text && json->incr_pos && json->incr_pos <= SvCUR (string)
+               ? SvPVX (string) + json->incr_pos : dec.end;
 
   /* a filter may replace or remove these while this decode still uses them */
   if (dec.json.cb_object)

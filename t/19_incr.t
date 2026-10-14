@@ -2,7 +2,7 @@
 
 use strict;
 no warnings;
-use Test::More $] < 5.008 ? (tests => 39) : (tests => 722);
+use Test::More $] < 5.008 ? (tests => 39) : (tests => 724);
 
 use Cpanel::JSON::XS;
 
@@ -196,3 +196,11 @@ exit if $] < 5.008;
 ok( !eval { my @v = Cpanel::JSON::XS->new->incr_parse('1'); 1 }, "require explicit allow_nonref for bare scalars" );
 is_deeply( [ Cpanel::JSON::XS->new->incr_parse('"a" [1]') ], [ 'a', [1] ] );
 is_deeply( [ Cpanel::JSON::XS->new->allow_nonref->incr_parse('1 ') ], [1] );
+
+{
+    # the first text is long enough for the one-shot validation, the second is malformed
+    my $text = '["' . "\xc3\xa9" x 20 . qq("] ["\xff\xfe"]);
+    eval { my @v = Cpanel::JSON::XS->new->utf8->incr_parse($text) };
+    like( $@, qr/malformed UTF-8/, "Catch malformed UTF-8" );
+    is_deeply( [ Cpanel::JSON::XS->new->utf8->incr_parse(qq(["\xc3\xa9"] [1])) ], [ ["\x{e9}"], [1] ] );
+}
