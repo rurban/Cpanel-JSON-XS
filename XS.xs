@@ -448,6 +448,8 @@ enum {
 };
 
 #define INCR_DONE(json) ((json)->incr_nest <= 0 && (json)->incr_mode == INCR_M_JSON)
+/* the first text once complete, else everything buffered */
+#define INCR_SIZE(json) (INCR_DONE (json) ? (json)->incr_pos : SvCUR ((json)->incr_text))
 
 typedef struct {
   U32 flags;
@@ -5667,6 +5669,10 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
             }
           }
 
+        if (GIMME_V == G_VOID && UNLIKELY(self->max_size && SvCUR (self->incr_text) > self->max_size))
+          croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
+                 (unsigned long)SvCUR (self->incr_text), (unsigned long)self->max_size);
+
         if (GIMME_V != G_VOID)
           do
             {
@@ -5678,9 +5684,9 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
                 {
                   incr_parse (self);
 
-                  if (UNLIKELY(self->incr_pos > self->max_size && self->max_size))
+                  if (UNLIKELY(self->max_size && INCR_SIZE (self) > self->max_size))
                     croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
-                           (unsigned long)self->incr_pos, (unsigned long)self->max_size);
+                           (unsigned long)INCR_SIZE (self), (unsigned long)self->max_size);
 
                   if (!INCR_DONE (self))
                     {

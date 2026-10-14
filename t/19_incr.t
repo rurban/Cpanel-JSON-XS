@@ -2,7 +2,7 @@
 
 use strict;
 no warnings;
-use Test::More $] < 5.008 ? (tests => 39) : (tests => 717);
+use Test::More $] < 5.008 ? (tests => 39) : (tests => 719);
 
 use Cpanel::JSON::XS;
 
@@ -184,4 +184,11 @@ exit if $] < 5.008;
    $coder->utf8 (1);
    is_deeply ($coder->incr_parse ($second), { "\x{e9}" => 1 },
               "incr-pos downgrade: preserves position across UTF-8-to-byte conversion");
+}
+
+{
+    my $json = Cpanel::JSON::XS->new->max_size(64);
+    ok( !eval { my $v = $json->incr_parse("\0" . 'x' x 100); 1 }, 'raw NUL' );
+    $json = Cpanel::JSON::XS->new->max_size(64);
+    ok( !eval { $json->incr_parse('[' . 'x' x 100); 1 }, 'void context' );
 }
