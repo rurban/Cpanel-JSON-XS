@@ -1,4 +1,4 @@
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Cpanel::JSON::XS;
 use Tie::Hash;
 use Tie::Array;
@@ -21,3 +21,17 @@ is ($js->encode (\@a), '[1,2]');
 
 push @a, 0;
 is ($js->canonical->encode (\@a), '[1,2,0]');
+
+# a tied hash with one key on the first pass and many on the second
+package Growing;
+our @ISA = ('Tie::StdHash');
+my $pass = 0;
+sub FIRSTKEY {
+    my $self = shift; %$self = map { ($_ => 1) } 1 .. ($pass++ ? 100000 : 1);
+    each %$self
+}
+
+package main;
+tie my %h, 'Growing';
+eval { Cpanel::JSON::XS->new->canonical->encode(\%h) };
+like( $@, qr/Unstable tied hash key counts/, "Unstable tied hash key counts" );

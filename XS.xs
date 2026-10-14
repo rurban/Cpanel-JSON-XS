@@ -1645,6 +1645,9 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
           /* fill the HE vector and check if SVKEY or UTF8 */
           while ((he = hv_iternext (hv)))
             {
+              if (UNLIKELY(i >= count))
+                croak ("Unstable %shash key counts %d vs %d in subsequent runs",
+                       is_tied ? "tied " : "", (int)count, (int)i + 1);
               if (UNLIKELY(is_tied))
                 { // tied entries are completely freed in the next iteration
                   HE *he1;
