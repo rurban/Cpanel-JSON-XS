@@ -1863,7 +1863,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
 #if PERL_VERSION > 7
     pv = newSVpvs("");
     if (!isref && !(enc->json.flags & F_ALLOW_STRINGIFY)) {
-      sv_copypv(pv, newRV(sv));
+      sv_copypv(pv, sv_2mortal (newRV_inc (sv)));
     } else {
       sv_copypv(pv, sv);
     }
@@ -1899,7 +1899,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
     if (SvGMAGICAL(sv))
       mg_get(sv);
     if (MyAMG(sv)) { /* force a RV here */
-      SV* rv = newRV(SvREFCNT_inc(sv));
+      SV* rv = newRV_inc(sv);
 #if PERL_VERSION <= 8
       HV *stash = SvSTASH(sv);
       if (!SvSTASH(rv) || !(SvFLAGS(sv) & SVf_AMAGIC)) {
@@ -1931,6 +1931,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
         return;
       }
       SvREFCNT_dec(rv);
+      pv = NULL; /* owned by the overload call */
     }
   }
   if (UNLIKELY(isref == 1
@@ -1973,6 +1974,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
     if (isref != 1)
       encode_ch (aTHX_ enc, '"');
   }
+  if (pv) SvREFCNT_dec(pv);
 #undef MyAMG
 }
 
