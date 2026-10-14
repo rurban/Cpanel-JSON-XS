@@ -4714,7 +4714,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
               XPUSHs (HeVAL (he));
               sv_2mortal (sv);
 
-              PUTBACK; count = call_sv (HeVAL (cb), G_ARRAY); SPAGAIN;
+              PUTBACK; count = call_sv (sv_2mortal (SvREFCNT_inc (HeVAL (cb))), G_ARRAY); SPAGAIN;
 
               if (!json_validate (&dec->json))
                   croak (NULL);
@@ -5094,6 +5094,12 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
   dec.depth = 0;
   dec.utf8_checked = 0;
   dec.utf8_trusted = 0;
+
+  /* a filter may replace or remove these while this decode still uses them */
+  if (dec.json.cb_object)
+    sv_2mortal (SvREFCNT_inc (dec.json.cb_object));
+  if (dec.json.cb_sk_object)
+    sv_2mortal (SvREFCNT_inc ((SV *)dec.json.cb_sk_object));
 
   if (dec.json.cb_object || dec.json.cb_sk_object)
     dec.json.flags |= F_HOOK;
