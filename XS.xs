@@ -4390,7 +4390,10 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                   key_exists = hv_exists_ent (hv, keysv, 0);
                   if (UNLIKELY (key_exists)) {
                     if (!allow_dupkeys)
-                      ERR ("Duplicate keys not allowed");
+                      {
+                        SvREFCNT_dec (keysv);
+                        ERR ("Duplicate keys not allowed");
+                      }
                     else if (dupkeys_as_arrayref) {
                       // extend the value to arrayref or push
                       old_value = HeVAL(hv_fetch_ent (hv, keysv, 0, 0));
@@ -4413,6 +4416,8 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                     } // else overwrite it below
                   }
                   decode_ws (dec);
+                  if (*dec->cur != ':')
+                    SvREFCNT_dec (keysv);
                   EXPECT_CH (':');
                   decode_ws (dec);
 
