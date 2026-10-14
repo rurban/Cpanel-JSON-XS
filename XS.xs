@@ -4830,6 +4830,8 @@ decode_tag (pTHX_ dec_t *dec)
       ERR ("cannot decode perl-object (package does not have a THAW method)");
 
     ENTER; SAVETMPS;
+    SAVEFREESV (tag); /* also freed when THAW dies */
+    SAVEFREESV (val);
     PUSHMARK (SP);
     EXTEND (SP, len + 2);
     /* we re-bless the reference to get overload and other niceties right */
@@ -4845,8 +4847,6 @@ decode_tag (pTHX_ dec_t *dec)
 
     if (!json_validate (&dec->json))
         croak (NULL);
-    SvREFCNT_dec (tag);
-    SvREFCNT_dec (val);
     sv = SvREFCNT_inc (POPs);
 
     PUTBACK;
