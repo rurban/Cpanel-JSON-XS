@@ -4472,6 +4472,24 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                   if (UNLIKELY(p - key > I32_MAX))
                     ERR ("Hash key too large");
 #endif
+                  if (is_bare)
+                    for (i = 0; i < len; )
+                      {
+                        unsigned char c = (unsigned char)key[i];
+                        if (c >= 0x80)
+                          {
+                            STRLEN clen;
+                            decode_utf8 (aTHX_ (U8*)key + i, len - i,
+                                         dec->json.flags & F_RELAXED, &clen);
+                            if (clen == (STRLEN)-1 || clen == 0)
+                              ERR ("malformed UTF-8 character in bare hash key");
+                            i += clen;
+                          }
+                        else if (c < 0x20 || c == '\\')
+                          ERR ("invalid character in bare hash key");
+                        else
+                          i++;
+                      }
                   /* negative klen: look the key up as UTF-8, as hv_store_str stores it */
                   for (i = 0; i < len; i++)
                     if ((signed char)key[i] < 0)

@@ -1,5 +1,5 @@
 
-use Test::More tests => 9;
+use Test::More tests => 12;
 use strict;
 use utf8;
 use Cpanel::JSON::XS;
@@ -43,3 +43,9 @@ SKIP: {
   ok($err, 'truncated bare key {ab: errors');
 }
 
+{
+  my $json1 = Cpanel::JSON::XS->new->utf8->allow_barekey;
+  ok( !eval { $json1->decode("{ab\xff\xfe:1}") }, "malformed UTF-8 barekeys" );
+  ok( !eval { $json1->decode("{a\x01b:1}") } );
+  is_deeply( $json1->decode("{a\xc3\xa9:1}"), { "a\x{e9}" => 1 } );
+}
