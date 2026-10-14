@@ -4471,7 +4471,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                           AV *av = newAV ();
                           av_extend (av, 2);
                           if (av_store (av, 0, old_value))
-                            old_value = newRV ((SV*)av);
+                            old_value = newRV_noinc ((SV*)av);
                           if (!dupkeys_seen)
                             {
                               dupkeys_seen = newHV ();
@@ -4480,6 +4480,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                           (void)hv_store_ent (dupkeys_seen, keysv,
                                               newSV (0), 0);
                         }
+                      sv_2mortal (old_value); /* also freed on every error exit */
                     } // else overwrite it below
                   }
                   decode_ws (dec);
@@ -4507,12 +4508,11 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                                     || SvTYPE (SvRV (old_value)) != SVt_PVAV))
                         {
                           SvREFCNT_dec (value);
-                          SvREFCNT_dec (old_value);
                           SvREFCNT_dec (keysv);
                           ERR ("Invalid dupkeys_as_arrayref hash key");
                         }
                       av_push ((AV*)SvRV (old_value), value);
-                      (void)hv_store_ent (hv, keysv, old_value, 0);
+                      (void)hv_store_ent (hv, keysv, SvREFCNT_inc (old_value), 0);
                     }
                   else
                     {
@@ -4579,7 +4579,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                           AV *av = newAV ();
                           av_extend (av, 2);
                           if (av_store (av, 0, old_value))
-                            old_value = newRV ((SV*)av);
+                            old_value = newRV_noinc ((SV*)av);
                           if (!dupkeys_seen)
                             {
                               dupkeys_seen = newHV ();
@@ -4588,6 +4588,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                           (void)hv_store (dupkeys_seen, key, klen,
                                           newSV (0), 0);
                         }
+                      sv_2mortal (old_value); /* also freed on every error exit */
                     } // else overwrite it below
                   }
 
@@ -4614,11 +4615,10 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                                     || SvTYPE (SvRV (old_value)) != SVt_PVAV))
                         {
                           SvREFCNT_dec (value);
-                          SvREFCNT_dec (old_value);
                           ERR ("Invalid dupkeys_as_arrayref hash key");
                         }
                       av_push ((AV*)SvRV (old_value), value);
-                      hv_store_str (aTHX_ hv, key, len, old_value);
+                      hv_store_str (aTHX_ hv, key, len, SvREFCNT_inc (old_value));
                     }
                   else
                     {

@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 19;
+use Test::More tests => 21;
 use Cpanel::JSON::XS;
 
 my $json = Cpanel::JSON::XS->new;
@@ -82,3 +82,14 @@ my $key = "a\xc3\xa9";
 my $json1 = Cpanel::JSON::XS->new->utf8->relaxed->dupkeys_as_arrayref;
 is_deeply( $json1->decode(qq({$key:1,"$key":2,$key:3}))->{"a\x{e9}"}, [1, 2, 3], "UTF8 duplicate checks" );
 ok( !eval { Cpanel::JSON::XS->new->utf8->allow_barekey->decode(qq({$key:1,$key:2})) } );
+
+SKIP: {
+  # Devel::Peek::SvREFCNT(@array) is supported since 5.19.3
+  skip "v5.19.3" if $] < 5.019003;
+  use Devel::Peek;
+
+  my $h = Cpanel::JSON::XS->new->dupkeys_as_arrayref->decode('{"a":1,"a":2}');
+  is( Devel::Peek::SvREFCNT(@{$h->{a}}), 1, "leak dupkeys_as_arrayref decode" );
+  $h = Cpanel::JSON::XS->new->relaxed->dupkeys_as_arrayref->decode('{a:1,a:2}');
+  is( Devel::Peek::SvREFCNT(@{$h->{a}}), 1, "leak releaxed dupkeys_as_arrayref decode" );
+}
