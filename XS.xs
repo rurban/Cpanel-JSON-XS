@@ -4436,6 +4436,14 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
 
                   if (UNLIKELY (key_exists && dupkeys_as_arrayref && old_value))
                     {
+                      if (UNLIKELY (!SvROK (old_value)
+                                    || SvTYPE (SvRV (old_value)) != SVt_PVAV))
+                        {
+                          SvREFCNT_dec (value);
+                          SvREFCNT_dec (old_value);
+                          SvREFCNT_dec (keysv);
+                          ERR ("Invalid dupkeys_as_arrayref hash key");
+                        }
                       av_push ((AV*)SvRV (old_value), value);
                       (void)hv_store_ent (hv, keysv, old_value, 0);
                     }
@@ -4455,6 +4463,8 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                   /* fast path, got a simple key */
                   char *key = dec->cur;
                   U32 len = p - key;
+                  I32 klen = (I32)len;
+                  U32 i;
                   assert(p >= key && (p - key) < I32_MAX);
 #if PTRSIZE >= 8
                   /* hv_store can only handle I32 len, which might overflow */
@@ -4462,17 +4472,24 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                   if (UNLIKELY(p - key > I32_MAX))
                     ERR ("Hash key too large");
 #endif
-                  key_exists = hv_exists (hv, key, len);
+                  /* negative klen: look the key up as UTF-8, as hv_store_str stores it */
+                  for (i = 0; i < len; i++)
+                    if ((signed char)key[i] < 0)
+                      {
+                        klen = -klen;
+                        break;
+                      }
+                  key_exists = hv_exists (hv, key, klen);
                   if (UNLIKELY (key_exists)) {
                     if (!allow_dupkeys)
                       ERR ("Duplicate keys not allowed");
                     else if (dupkeys_as_arrayref) {
                       // extend the value to arrayref or push
-                      SV** rv = hv_fetch (hv, key, len, 0);
+                      SV** rv = hv_fetch (hv, key, klen, 0);
                       old_value = *rv;
                       SvREFCNT_inc (old_value);
                       if (!dupkeys_seen
-                          || !hv_exists (dupkeys_seen, key, len))
+                          || !hv_exists (dupkeys_seen, key, klen))
                         {
                           AV *av = newAV ();
                           av_extend (av, 2);
@@ -4483,7 +4500,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                               dupkeys_seen = newHV ();
                               sv_2mortal ((SV *)dupkeys_seen);
                             }
-                          (void)hv_store (dupkeys_seen, key, len,
+                          (void)hv_store (dupkeys_seen, key, klen,
                                           newSV (0), 0);
                         }
                     } // else overwrite it below
@@ -4499,7 +4516,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
                   if (typesv)
                     {
                       value_typesv = newSV (0);
-                      (void)hv_store (typehv, key, len, value_typesv, 0);
+                      (void)hv_store (typehv, key, klen, value_typesv, 0);
                     }
 
                   value = decode_sv (aTHX_ dec, value_typesv);
@@ -4508,6 +4525,13 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
 
                   if (UNLIKELY (key_exists && dupkeys_as_arrayref))
                     {
+                      if (UNLIKELY (!SvROK (old_value)
+                                    || SvTYPE (SvRV (old_value)) != SVt_PVAV))
+                        {
+                          SvREFCNT_dec (value);
+                          SvREFCNT_dec (old_value);
+                          ERR ("Invalid dupkeys_as_arrayref hash key");
+                        }
                       av_push ((AV*)SvRV (old_value), value);
                       hv_store_str (aTHX_ hv, key, len, old_value);
                     }

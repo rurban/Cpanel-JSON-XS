@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 17;
+use Test::More tests => 19;
 use Cpanel::JSON::XS;
 
 my $json = Cpanel::JSON::XS->new;
@@ -77,3 +77,8 @@ is_deeply ($json->decode ('{"a":1,"a":2,"b":3,"b":4,"b":5}'),
 is_deeply ($json->decode ('{"a":["x"],"a":"y","b":["p"],"b":"q"}'),
            { a => [['x'], 'y'], b => [['p'], 'q'] },
            'dupkeys_as_arrayref: existing array values, two distinct keys');
+
+my $key = "a\xc3\xa9";
+my $json1 = Cpanel::JSON::XS->new->utf8->relaxed->dupkeys_as_arrayref;
+is_deeply( $json1->decode(qq({$key:1,"$key":2,$key:3}))->{"a\x{e9}"}, [1, 2, 3], "UTF8 duplicate checks" );
+ok( !eval { Cpanel::JSON::XS->new->utf8->allow_barekey->decode(qq({$key:1,$key:2})) } );
