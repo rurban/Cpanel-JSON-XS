@@ -1,6 +1,6 @@
 use strict;
 use Cpanel::JSON::XS;
-use Test::More tests => 26;
+use Test::More tests => 30;
 
 package ZZ;
 use overload ('""' => sub { "<ZZ:".${$_[0]}.">" } );
@@ -113,3 +113,9 @@ like($@, qr/FREEZE method returned same object/,
 eval { Cpanel::JSON::XS->new->convert_blessed->encode(bless {}, 'SameObjectTOJSON') };
 like($@, qr/TO_JSON method returned same object/,
      'convert_blessed rejects TO_JSON returning its invocant');
+
+my $json = Cpanel::JSON::XS->new->allow_tags->max_depth(32);
+ok( !eval { $json->decode('(' x 1000) }, "catch deeply nested allow_tags->max_depth" );
+like( $@, qr/maximum nesting level/, "caught allow_tags->max_depth" );
+ok( !eval { $json->decode('("a")' x 1000) }, , "catch large linear allow_tags->max_depth" );
+like( $@, qr/maximum nesting level/, "caught allow_tags->max_depth" );
