@@ -383,6 +383,7 @@ mingw_modfl(long double x, long double *ip)
 #define F_REQUIRE_TYPES   0x01000000UL
 #define F_TYPE_ALL_STRING 0x02000000UL
 #define F_DUPKEYS_AS_AREF 0x04000000UL
+#define F_NONREF_SET      0x08000000UL /* allow_nonref was called explicitly */
 #define F_HOOK            0x80000000UL /* some hooks exist, so slow-path processing */
 
 #define F_PRETTY    F_INDENT | F_SPACE_BEFORE | F_SPACE_AFTER
@@ -5159,6 +5160,25 @@ decode_json (pTHX_ SV *string, JSON *json, STRLEN *offset_return, SV *typesv)
 /*/////////////////////////////////////////////////////////////////////////// */
 /* incremental parser */
 
+/* a number or true/false/null at the start of the buffer: not self-delimiting, so its
+   end depends on how the input was chunked */
+static int
+incr_starts_bare_scalar (JSON *self)
+{
+  const char *p = SvPVX (self->incr_text);
+  for (;;)
+    {
+      while (*p == 0x20 || *p == 0x09 || *p == 0x0a || *p == 0x0d)
+        ++p;
+      if (*p != '#' || !(self->flags & F_RELAXED))
+        break;
+      while (*p && *p != 0x0a && *p != 0x0d)
+        ++p;
+    }
+  return *p == '-' || (*p >= '0' && *p <= '9')
+      || strnEQ (p, "true", 4) || strnEQ (p, "false", 5) || strnEQ (p, "null", 4);
+}
+
 /* Note that our good friend gcc-9.x crashes here, which looks like one of the
    well-known internal gcc tree-optimizer bugs. */
 #ifdef BROKEN_GCC_OPT
@@ -5491,6 +5511,8 @@ void ascii (JSON *self, int enable = 1)
         # But turning off DUPKEYS_AS_AREF does not
         if (ix == F_DUPKEYS_AS_AREF && enable != 0)
           self->flags |= F_ALLOW_DUPKEYS;
+        if (ix == F_ALLOW_NONREF)
+          self->flags |= F_NONREF_SET;
         XPUSHs (ST (0));
 
 void get_ascii (JSON *self)
@@ -5727,6 +5749,9 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
                       break;
                     }
                 }
+
+              if (!(self->flags & F_NONREF_SET) && incr_starts_bare_scalar (self))
+                croak ("incremental parsing of a top-level number, true, false or null needs an explicit allow_nonref");
 
               PUTBACK; sv = decode_json (aTHX_ self->incr_text, self, &offset, NULL); SPAGAIN;
               XPUSHs (sv);

@@ -1066,7 +1066,7 @@ OBJECT-ORIENTED INTERFACE
         the same octet encoding "encode" would produce for the object's
         current flags (see "utf8", "ascii", "latin1", "binary"), regardless
         of any PerlIO encoding layer already present on $filehandle. As with
-        "encode", do not additionally push a :encoding(UTF-8) (or similar)
+        "encode", do not additionally push a ":encoding(UTF-8)" (or similar)
         layer onto the handle, or the output will be double-encoded.
 
     $perl_scalar = $json->decode ($json_text, my $json_type)
@@ -1212,6 +1212,11 @@ INCREMENTAL PARSING
     start of 12? Or is 12 a single JSON number, or the concatenation of 1
     and 2? In neither case you can tell, and this is why Cpanel::JSON::XS
     takes the conservative route and disallows this case.
+
+    Since "allow_nonref" became the default (4.42), "incr_parse" still
+    rejects a top-level number, "true", "false" or "null" unless
+    "allow_nonref" was enabled explicitly, in which case the ambiguity above
+    applies.
 
   EXAMPLES
     Some examples will make all this clearer. First, a simple example that

@@ -2,7 +2,7 @@
 
 use strict;
 no warnings;
-use Test::More $] < 5.008 ? (tests => 39) : (tests => 719);
+use Test::More $] < 5.008 ? (tests => 39) : (tests => 722);
 
 use Cpanel::JSON::XS;
 
@@ -192,3 +192,7 @@ exit if $] < 5.008;
     $json = Cpanel::JSON::XS->new->max_size(64);
     ok( !eval { $json->incr_parse('[' . 'x' x 100); 1 }, 'void context' );
 }
+
+ok( !eval { my @v = Cpanel::JSON::XS->new->incr_parse('1'); 1 }, "require explicit allow_nonref for bare scalars" );
+is_deeply( [ Cpanel::JSON::XS->new->incr_parse('"a" [1]') ], [ 'a', [1] ] );
+is_deeply( [ Cpanel::JSON::XS->new->allow_nonref->incr_parse('1 ') ], [1] );

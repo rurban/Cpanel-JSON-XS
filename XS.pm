@@ -1361,6 +1361,11 @@ concatenation of C<1> and C<2>? In neither case you can tell, and this
 is why Cpanel::JSON::XS takes the conservative route and disallows
 this case.
 
+Since C<allow_nonref> became the default (4.42), C<incr_parse> still
+rejects a top-level number, C<true>, C<false> or C<null> unless
+C<allow_nonref> was enabled explicitly, in which case the ambiguity above
+applies.
+
 =head2 EXAMPLES
 
 Some examples will make all this clearer. First, a simple example that
