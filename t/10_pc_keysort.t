@@ -2,7 +2,7 @@
 # extended with RFC 8785 surrogate ordering tests (GH #248)
 
 use Test::More;
-BEGIN { plan tests => 10 };
+BEGIN { plan tests => 11 };
 use strict;
 use Cpanel::JSON::XS;
 use utf8;
@@ -73,3 +73,6 @@ my %large = map { ("key$_", $_) } 1 .. 100;
 my $large_expected = '{' . join(',', map { qq{"$_":$large{$_}} } sort keys %large) . '}';
 is($pc->encode(\%large), $large_expected,
    'canonical output sorts hashes beyond the stack key buffer');
+
+is( Cpanel::JSON::XS->new->canonical->encode({ "\xc3\xa9" => 1, "\x{d0}" => 2, "\x{2603}" => 3 }),
+    qq({"\x{c3}\x{a9}":1,"\x{d0}":2,"\x{2603}":3}), 'canonical byte sort: "\xc3\xa9" is two Latin-1 characters' );

@@ -1459,6 +1459,11 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
           a_unit = pending_a;
           pending_a = 0;
         }
+      else if (alen && !SvUTF8 (a_sv))
+        {
+          a_unit = *ap++; /* byte string: each byte is one Latin-1 character */
+          alen--;
+        }
       else if (alen)
         {
           {
@@ -1499,6 +1504,11 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
         {
           b_unit = pending_b;
           pending_b = 0;
+        }
+      else if (blen && !SvUTF8 (b_sv))
+        {
+          b_unit = *bp++; /* byte string: each byte is one Latin-1 character */
+          blen--;
         }
       else if (blen)
         {
