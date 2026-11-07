@@ -2,6 +2,11 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.81 20YY-MM-DD (rurban)
+
+	- Fix memory leak when croak is called while encoding a tied hash
+	  in canonical mode (PR #261, Nikolay Shaplov, ISP RAS)
+
 4.80 2026-09-?? (rurban)
 	- Security fixes, reported by Stig Palmquist (CPANSec):
 	  * CVE-2026-110672 decode: free the hash key on "Duplicate keys not

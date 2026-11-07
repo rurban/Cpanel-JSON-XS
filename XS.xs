@@ -1565,6 +1565,14 @@ he_cmp_slow (const void *a, const void *b)
   return utf16_cmp (aTHX_ HeSVKEY_force (*(HE **)b), HeSVKEY_force (*(HE **)a));
 }
 
+/* Private copy of one entry of a tied hash: a HE plus room for a
+   HEK which holds only an SV* key */
+struct tied_entry_copy
+{
+  HE he;
+  char hek[sizeof (struct hek) + sizeof (SV *) + 2];
+};
+
 /* compare tied hash entries, guaranteed SV's */
 static int
 he_cmp_tied (const void *a, const void *b)
@@ -1665,12 +1673,22 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
       if (count > 0)
         {
           int has_utf8 = 0;
+          struct tied_entry_copy *tied_entries = NULL;
 
           /* allocate larger arrays on the heap */
           if (count > STACK_HES)
             {
               SV *sv = sv_2mortal (NEWSV (0, count * sizeof (*hes)));
               hes = (HE **)SvPVX (sv);
+            }
+
+          /* one zeroed mortal buffer for the copies of all tied entries.
+             i < count is enforced below, so it cannot overflow. */
+          if (UNLIKELY (is_tied))
+            {
+              SV *copies_sv = sv_2mortal (NEWSV (0, count * sizeof (struct tied_entry_copy)));
+              tied_entries = (struct tied_entry_copy *)SvPVX (copies_sv);
+              Zero (tied_entries, count, struct tied_entry_copy);
             }
 
           i = 0;
@@ -1681,10 +1699,13 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
                 croak ("Unstable %shash key counts %d vs %d in subsequent runs",
                        is_tied ? "tied " : "", (int)count, (int)i + 1);
               if (UNLIKELY(is_tied))
-                { // tied entries are completely freed in the next iteration
-                  HE *he1;
-                  Newz(0,he1,1,HE);
-                  he1->hent_hek = (HEK*)safecalloc (1, sizeof (struct hek) + sizeof (SV*) + 2);
+                { /* tied entries are completely freed by perl on each scan iteration,
+                     so we will make a private copy here. It lives in the mortal buffer
+                     allocated above, so perl frees it later (at the next FREETMPS),
+                     no matter how this function is left, by a normal return()
+                     or by croak() */
+                  HE *he1 = &tied_entries[i].he;
+                  he1->hent_hek = (HEK *)tied_entries[i].hek;
                   HeVAL(he1) = hv_iterval(hv, he);
                   HeSVKEY_set (he1, hv_iterkeysv(he));
                   hes[i++] = he1;
@@ -1768,11 +1789,6 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
                         : hv_iterval(hv, he),
                         typesv);
 
-              if (is_tied)
-                {
-                  Safefree (he->hent_hek);
-                  Safefree (he);
-                }
               if (count)
                 encode_comma(aTHX_ enc);
             }

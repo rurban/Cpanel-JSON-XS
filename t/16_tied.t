@@ -1,4 +1,4 @@
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Cpanel::JSON::XS;
 use Tie::Hash;
 use Tie::Array;
@@ -35,3 +35,10 @@ package main;
 tie my %h, 'Growing';
 eval { Cpanel::JSON::XS->new->canonical->encode(\%h) };
 like( $@, qr/Unstable tied hash key counts/, "Unstable tied hash key counts" );
+
+# One more check for croak inside encode XS-code
+# This might expose memory leaks, if we have any, when we run tests with ASan or valgrind
+tie my %h2, 'Tie::StdHash';
+%h2 = (a => 1, b => 2, c => sub { 1 }, d => 4);
+eval { Cpanel::JSON::XS->new->canonical->encode(\%h2) };
+like( $@, qr/encountered CODE/, "croak on unencodable value in a canonical tied hash" );
