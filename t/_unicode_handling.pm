@@ -2,7 +2,7 @@
 package
     _unicode_handling;
 
-our $VERSION = '4.80';
+our $VERSION = '4.81';
 
 # this is a dummy pragma for 5.005.
 
