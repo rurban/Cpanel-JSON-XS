@@ -2595,7 +2595,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                       str++;
                       len--;
                     }
-                  need (aTHX_ enc, len+1);
+                  need (aTHX_ enc, len+1+2); /* +2 for '.0' */
                   savecur = enc->cur;
                   saveend = enc->end;
                   memcpy (enc->cur, str, len);
