@@ -4171,6 +4171,8 @@ _decode_str (pTHX_ dec_t *dec, char endstr)
   return sv;
 
 fail:
+  if (sv)
+    SvREFCNT_dec (sv);
   dec->cur = dec_cur;
   return 0;
 }
