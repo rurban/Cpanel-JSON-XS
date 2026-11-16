@@ -2,7 +2,7 @@
 
 use strict;
 no warnings;
-use Test::More $] < 5.008 ? (tests => 39) : (tests => 729);
+use Test::More $] < 5.008 ? (tests => 39) : (tests => 733);
 
 use Cpanel::JSON::XS;
 
@@ -212,4 +212,16 @@ is_deeply( [ Cpanel::JSON::XS->new->allow_nonref->incr_parse('1 ') ], [1] );
   eval { $dec->incr_parse("[1]\x{feff}[2]") };
   eval { $dec->incr_skip };
   ok( 1, "incr_skip after a failed downgrade does not corrupt the buffer" );
+}
+
+# a NUL byte between values must not stall the parser
+{
+  my $dec = Cpanel::JSON::XS->new;
+  my @v = $dec->incr_parse("[1]\x00[2]");
+  is( scalar @v, 1, "complete value before a NUL byte is returned" );
+  my $x = eval { $dec->incr_parse("[3]") };
+  like( $@, qr/unexpected NUL byte/, "NUL byte in incr_parse is an error" );
+  $dec->incr_skip;
+  is( $dec->incr_text, "[2][3]", "incr_skip drops the NUL byte" );
+  is( scalar(() = Cpanel::JSON::XS->new->incr_parse("[1]")), 1, "no NUL, no error" );
 }

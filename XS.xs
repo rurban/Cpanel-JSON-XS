@@ -5262,7 +5262,7 @@ incr_starts_bare_scalar (JSON *self)
 // or __attribute__((optimize("no-tree-vectorize")))
 __attribute__((optimize("O0")))
 #endif
-static void
+static int
 incr_parse (JSON *self)
 {
   const char *p = SvPVX (self->incr_text) + self->incr_pos;
@@ -5458,6 +5458,11 @@ incr_parse (JSON *self)
 
 interrupt:
   self->incr_pos = p - SvPVX (self->incr_text);
+
+  /* a NUL before the end of the buffer is not "need more data": without
+     this the parser would stall silently and the buffer grow forever.
+     The caller decides, so that values already complete are still returned. */
+  return p < SvEND (self->incr_text) && !INCR_DONE (self);
   /*printf ("interrupt<%.*s>\n", self->incr_pos, SvPVX(self->incr_text));//D */
   /*printf ("return pos %d mode %d nest %d\n", self->incr_pos, self->incr_mode, self->incr_nest);//D */
 }
@@ -5814,7 +5819,18 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
 
               if (!INCR_DONE (self))
                 {
-                  incr_parse (self);
+                  if (UNLIKELY (incr_parse (self)))
+                    {
+                      /* nothing returned yet: report it */
+                      if (SP <= PL_stack_base + ax - 1)
+                        {
+                          /* count the NUL as consumed so that incr_skip drops it */
+                          ++self->incr_pos;
+                          croak ("malformed JSON string, unexpected NUL byte in incremental text, at character offset %lu",
+                                 (unsigned long)(self->incr_pos - 1));
+                        }
+                      break;
+                    }
 
                   if (UNLIKELY(self->max_size && INCR_SIZE (self) > self->max_size))
                     croak ("attempted decode of JSON text of %lu bytes size, but max_size is set to %lu",
