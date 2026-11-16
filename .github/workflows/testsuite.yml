@@ -28,9 +28,9 @@ jobs:
             Data::Dumper
             Devel::Peek
             Mojo::JSON
-            JSON::XS
             JSON
             JSON::PP
+            JSON::XS
             Test::LeakTrace
             Test::MinimumVersion
             Perl::MinimumVersion
@@ -99,6 +99,12 @@ jobs:
           install: |
             Data::Dumper
             Devel::Peek
+      # JSON::XS does not install with perls older than 5.15. The interop tests skip without it.
+      - name: install optional interop deps
+        continue-on-error: true
+        uses: perl-actions/install-with-cpanm@0f3cc9bc0b055cc20750d218061ebbdebd101bb3 # stable
+        with:
+          install: |
             JSON::XS
             JSON
       - run: perl Makefile.PL
