@@ -2285,7 +2285,7 @@ encode_bool (pTHX_ enc_t *enc, SV *sv)
           if (!encode_bool_ref (aTHX_ enc, sv))
             {
               /* Use default stringification, bypassing any "" overload (GH #191). */
-              const char *name = HvNAME(SvSTASH(sv));
+              const char *name = SvOBJECT(sv) ? HvNAME(SvSTASH(sv)) : NULL;
               SV *desc = sv_2mortal(newSVpvf("%s=%s(0x%p)",
                 name ? name : "(unknown)", sv_reftype(sv, 0), sv));
               croak ("cannot encode reference to scalar '%s' unless the scalar is 0 or 1",
