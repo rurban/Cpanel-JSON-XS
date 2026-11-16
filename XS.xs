@@ -5754,10 +5754,16 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
           if (DECODE_WANTS_OCTETS (self))
             {
               if (self->incr_pos)
-                self->incr_pos = utf8_length ((U8 *)SvPVX (self->incr_text),
-                                              (U8 *)SvPVX (self->incr_text) + self->incr_pos);
-
-              sv_utf8_downgrade (self->incr_text, 0);
+                {
+                  /* may croak on wide characters, so only update the offset
+                     once the text really has been downgraded */
+                  STRLEN newpos = utf8_length ((U8 *)SvPVX (self->incr_text),
+                                               (U8 *)SvPVX (self->incr_text) + self->incr_pos);
+                  sv_utf8_downgrade (self->incr_text, 0);
+                  self->incr_pos = newpos;
+                }
+              else
+                sv_utf8_downgrade (self->incr_text, 0);
             }
           else
             {
@@ -5883,6 +5889,8 @@ void incr_skip (JSON *self)
 {
         if (self->incr_pos)
           {
+            if (self->incr_pos > SvCUR (self->incr_text))
+              self->incr_pos = SvCUR (self->incr_text);
             sv_chop (self->incr_text, SvPV_nolen (self->incr_text) + self->incr_pos);
             self->incr_pos  = 0;
             self->incr_nest = 0;
