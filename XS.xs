@@ -5856,7 +5856,9 @@ void incr_parse (JSON *self, SV *jsonstr = 0)
               XPUSHs (sv);
 
               endp = SvPVX(self->incr_text) + offset;
-              self->incr_pos -= offset;
+              /* the incremental scanner may have stopped earlier than the real parser,
+                 e.g. with allow_barekey, so never let this underflow */
+              self->incr_pos = self->incr_pos > offset ? self->incr_pos - offset : 0;
               self->incr_nest = 0;
               self->incr_mode = 0;
 #if PERL_VERSION > 9

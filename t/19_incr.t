@@ -2,7 +2,7 @@
 
 use strict;
 no warnings;
-use Test::More $] < 5.008 ? (tests => 39) : (tests => 733);
+use Test::More $] < 5.008 ? (tests => 39) : (tests => 730);
 
 use Cpanel::JSON::XS;
 
@@ -224,4 +224,11 @@ is_deeply( [ Cpanel::JSON::XS->new->allow_nonref->incr_parse('1 ') ], [1] );
   $dec->incr_skip;
   is( $dec->incr_text, "[2][3]", "incr_skip drops the NUL byte" );
   is( scalar(() = Cpanel::JSON::XS->new->incr_parse("[1]")), 1, "no NUL, no error" );
+}
+
+# allow_barekey: the incr scanner ends the value earlier than the decoder
+{
+  my $dec = Cpanel::JSON::XS->new->allow_barekey;
+  my @v = eval { $dec->incr_parse("\x7b\x5d\x22\x3a\x22\x23\x22\x7d") };
+  is( scalar @v, 1, "allow_barekey incr_parse does not underflow incr_pos" );
 }
