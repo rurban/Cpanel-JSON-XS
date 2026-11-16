@@ -8,7 +8,7 @@ BEGIN {
 }
 
 use Test::More $has_bignum
-  ? (tests => 23 + scalar(@DOS_DIGITS))
+  ? (tests => 24 + scalar(@DOS_DIGITS))
   : (skip_all => "Can't load Math::BigInt");
 use Cpanel::JSON::XS;
 use Scalar::Util ();
@@ -111,4 +111,11 @@ SKIP: {
   is( $json1->encode($json->decode('[1e30000000]')), '[1e+30000000]', "encode_compact large Math::BigFloat exponents" );
   is( $json1->encode($json->decode('[1e20]')), '[100000000000000000000]', "compact" );
   unlike( $json1->encode(['NaN'], [JSON_TYPE_INT]), qr/NaN/, "Catch typed int NaN" );
+}
+
+SKIP: {
+  skip "no Math::BigFloat", 1 unless $has_bignum;
+  my $v = Cpanel::JSON::XS->new->allow_bignum->decode('2e100000000');
+  my $out = Cpanel::JSON::XS->new->convert_blessed->encode([$v]);
+  ok( length $out < 100, "convert_blessed keeps huge Math::BigFloat exponents compact" );
 }

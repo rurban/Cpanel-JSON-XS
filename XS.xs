@@ -2177,7 +2177,18 @@ encode_rv (pTHX_ enc_t *enc, SV *rv)
             encode_stringify(aTHX_ enc, rv, 1);
         }
       else if (enc->json.flags & F_CONV_BLESSED)
-        encode_stringify(aTHX_ enc, sv, 0);
+        {
+          /* do not expand huge Math::BigFloat exponents into digits */
+          SV *compact = bignum_compact (aTHX_ rv);
+          if (compact)
+            {
+              STRLEN clen;
+              char *cstr = SvPV (compact, clen);
+              encode_str (aTHX_ enc, cstr, clen, 0);
+            }
+          else
+            encode_stringify(aTHX_ enc, sv, 0);
+        }
       else if (enc->json.flags & F_ALLOW_BLESSED)
         encode_const_str (aTHX_ enc, "null", 4, 0);
       else
