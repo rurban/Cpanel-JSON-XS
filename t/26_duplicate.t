@@ -85,7 +85,7 @@ ok( !eval { Cpanel::JSON::XS->new->utf8->allow_barekey->decode(qq({$key:1,$key:2
 
 SKIP: {
   # Devel::Peek::SvREFCNT(@array) is supported since 5.19.3
-  skip "v5.19.3" if $] < 5.019003;
+  skip "v5.19.3", 2 if $] < 5.019003;
   use Devel::Peek;
 
   my $h = Cpanel::JSON::XS->new->dupkeys_as_arrayref->decode('{"a":1,"a":2}');
