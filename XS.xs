@@ -4369,6 +4369,11 @@ decode_av (pTHX_ dec_t *dec, SV *typesv)
   AV *av = newAV ();
   AV *typeav = NULL;
   SV *typerv;
+  int hooked = (dec->json.flags & F_HOOK) != 0;
+  /* a croaking filter callback would leak this container, which is only
+     referenced from the C stack; hold a mortal reference while hooks can run */
+  if (UNLIKELY (hooked))
+    sv_2mortal ((SV *)av);
 
   DEC_INC_DEPTH;
   decode_ws (dec);
@@ -4425,10 +4430,11 @@ decode_av (pTHX_ dec_t *dec, SV *typesv)
       }
 
   DEC_DEC_DEPTH;
-  return newRV_noinc ((SV *)av);
+  return hooked ? newRV_inc ((SV *)av) : newRV_noinc ((SV *)av);
 
 fail:
-  SvREFCNT_dec (av);
+  if (!hooked)
+    SvREFCNT_dec (av);
   DEC_DEC_DEPTH;
   return 0;
 }
@@ -4474,6 +4480,10 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
   int dupkeys_as_arrayref = dec->json.flags & F_DUPKEYS_AS_AREF;
   HV *dupkeys_seen = NULL;
   char endstr = '"';
+  int hooked = (dec->json.flags & F_HOOK) != 0;
+
+  if (UNLIKELY (hooked))
+    sv_2mortal ((SV *)hv);
 
   DEC_INC_DEPTH;
   decode_ws (dec);
@@ -4741,7 +4751,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
       }
 
   DEC_DEC_DEPTH;
-  sv = newRV_noinc ((SV *)hv);
+  sv = hooked ? newRV_inc ((SV *)hv) : newRV_noinc ((SV *)hv);
 
   /* check filter callbacks */
   if (dec->json.flags & F_HOOK)
@@ -4817,7 +4827,8 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
   return sv;
 
 fail:
-  SvREFCNT_dec (hv);
+  if (!hooked)
+    SvREFCNT_dec (hv);
   DEC_DEC_DEPTH;
   return 0;
 }
