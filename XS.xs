@@ -1557,12 +1557,26 @@ utf16_cmp (pTHX_ SV *a_sv, SV *b_sv)
     }
 }
 
+/* HeSVKEY_force passes HeKUTF8 as the newSVpvn_flags flags on perls < 5.20,
+   which loses the UTF8 flag. Build the key SV ourselves. */
+static SV *
+he_key_sv (pTHX_ HE *he)
+{
+  SV *sv;
+  if (He_IS_SVKEY (he))
+    return HeKEY_sv (he);
+  sv = sv_2mortal (newSVpvn (HeKEY (he), HeKLEN (he)));
+  if (HeKUTF8 (he))
+    SvUTF8_on (sv);
+  return sv;
+}
+
 /* compare hash entries, used when some keys are SV's or UTF-8 */
 static int
 he_cmp_slow (const void *a, const void *b)
 {
   dTHX;
-  return utf16_cmp (aTHX_ HeSVKEY_force (*(HE **)b), HeSVKEY_force (*(HE **)a));
+  return utf16_cmp (aTHX_ he_key_sv (aTHX_ *(HE **)b), he_key_sv (aTHX_ *(HE **)a));
 }
 
 /* Private copy of one entry of a tied hash: a HE plus room for a
