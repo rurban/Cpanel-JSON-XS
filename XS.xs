@@ -4289,7 +4289,7 @@ decode_num (pTHX_ dec_t *dec, SV *typesv)
           if (numtype & IS_NUMBER_NEG)
             {
               if (uv <= (UV)(IV_MAX) + 1)
-                return newSViv (-(IV)uv);
+                return newSViv (uv == (UV)IV_MAX + 1 ? IV_MIN : -(IV)uv);
             }
           else
             return newSVuv (uv);

@@ -3,7 +3,7 @@ use Cpanel::JSON::XS;
 use Test::More;
 use Config;
 plan skip_all => "Yet unhandled inf/nan with $^O" if $^O eq 'dec_osf';
-plan tests => 32;
+plan tests => 33;
 
 # infnan_mode = 0:
 is encode_json([9**9**9]),         '[null]', "inf -> null stringify_infnan(0)";
@@ -174,3 +174,6 @@ is_deeply($decode_numbers->decode('[-1234,-12345,-123456]'),
 eval { $decode_numbers->decode('1.2e3.5') };
 like($@, qr/malformed number \(two decimal points\)/,
      'decode rejects a decimal point after an exponent');
+
+is(Cpanel::JSON::XS->new->decode('[-9223372036854775808]')->[0], '-9223372036854775808',
+   'decode IV_MIN');
