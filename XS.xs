@@ -4369,7 +4369,7 @@ decode_av (pTHX_ dec_t *dec, SV *typesv)
   AV *av = newAV ();
   AV *typeav = NULL;
   SV *typerv;
-  int hooked = (dec->json.flags & F_HOOK) != 0;
+  int hooked = (dec->json.flags & (F_HOOK | F_ALLOW_TAGS)) != 0;
   /* a croaking filter callback would leak this container, which is only
      referenced from the C stack; hold a mortal reference while hooks can run */
   if (UNLIKELY (hooked))
@@ -4480,7 +4480,7 @@ decode_hv (pTHX_ dec_t *dec, SV *typesv)
   int dupkeys_as_arrayref = dec->json.flags & F_DUPKEYS_AS_AREF;
   HV *dupkeys_seen = NULL;
   char endstr = '"';
-  int hooked = (dec->json.flags & F_HOOK) != 0;
+  int hooked = (dec->json.flags & (F_HOOK | F_ALLOW_TAGS)) != 0;
 
   if (UNLIKELY (hooked))
     sv_2mortal ((SV *)hv);
