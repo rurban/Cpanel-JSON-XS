@@ -16,6 +16,9 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 	  * encode: encode_stringify freed neither its string copy nor the
 	    overloaded object when encode_str croaked on malformed UTF-8,
 	    e.g. with allow_stringify (leak). CVE-2026-134879
+	- encode: no signed overflow negating IV_MIN with JSON_TYPE_INT, and
+	  no read of uninitialized memory when checking short formatted numbers
+	  and bignum strings for inf and nan.
 
 4.82 2026-11-16 (rurban)
 

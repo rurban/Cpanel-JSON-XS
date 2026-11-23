@@ -289,11 +289,13 @@ mingw_modfl(long double x, long double *ip)
 #define SvREFCNT_dec_NN(sv) SvREFCNT_dec(sv)
 #endif
 /* from cperl */
-#ifndef strEQc
-/* the buffer ends with \0, includes comparison of the \0.
-   better than strEQ as it uses memcmp, word-wise comparison. */
-# define strEQc(s, c) memEQ(s, ("" c ""), sizeof(c))
-#endif
+/* s is a \0-terminated string: compares the \0 too, but never reads past it
+   (a formatted number is shorter than the constant, the buffer after its \0
+   is uninitialized). */
+#undef strEQc
+#define strEQc(s, c) (strncmp((s), ("" c ""), sizeof(c)) == 0)
+/* s is a \0-terminated string starting with c, the string s may continue */
+#define strPrefixc(s, c) (strncmp((s), ("" c ""), sizeof(c)-1) == 0)
 #ifndef memEQc
 /* excluding the final \0, so the string s may continue */
 # define memEQc(s, c) memEQ(s, ("" c ""), sizeof(c)-1)
@@ -1983,8 +1985,8 @@ encode_stringify_(pTHX_ enc_t *enc, SV *sv, int isref)
         (enc->json.flags & F_ALLOW_BIGNUM)
         && str
         && SvROK(sv)
-        && (memEQc(str, "NaN") || memEQc(str, "nan") ||
-            memEQc(str, "inf") || memEQc(str, "-inf"))))
+        && (strPrefixc(str, "NaN") || strPrefixc(str, "nan") ||
+            strPrefixc(str, "inf") || strPrefixc(str, "-inf"))))
   {
     if (is_bignum_obj (aTHX_ SvRV (sv)))
     {
@@ -1993,9 +1995,9 @@ encode_stringify_(pTHX_ enc_t *enc, SV *sv, int isref)
         /* pv is mortal */
         return;
       } else if (enc->json.infnan_mode == 3) {
-        if (memEQc(str, "NaN") || memEQc(str, "nan"))
+        if (strPrefixc(str, "NaN") || strPrefixc(str, "nan"))
           encode_const_str (aTHX_ enc, "nan", 3, 0);
-        else if (memEQc(str, "inf"))
+        else if (strPrefixc(str, "inf"))
           encode_const_str (aTHX_ enc, "inf", 3, 0);
         else
           encode_const_str (aTHX_ enc, "-inf", 4, 0);
@@ -2526,17 +2528,17 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
               str++;
               len--;
             }
-          if (UNLIKELY (memEQc (str, "NaN") || memEQc (str, "nan")))
+          if (UNLIKELY (strPrefixc (str, "NaN") || strPrefixc (str, "nan")))
             {
               nv = NV_NAN;
               is_bigobj = 0;
             }
-          else if (UNLIKELY (memEQc (str, "inf")))
+          else if (UNLIKELY (strPrefixc (str, "inf")))
             {
               nv = NV_INF;
               is_bigobj = 0;
             }
-          else if (UNLIKELY (memEQc (str, "-inf")))
+          else if (UNLIKELY (strPrefixc (str, "-inf")))
             {
               nv = -NV_INF;
               is_bigobj = 0;
@@ -2991,7 +2993,7 @@ encode_sv (pTHX_ enc_t *enc, SV *sv, SV *typesv)
                 {
                   is_neg = 1;
                   if (LIKELY(uv <= (UV)(IV_MAX) + 1))
-                    iv = -(IV)uv;
+                    iv = (IV)(0 - uv); /* unsigned negate: uv may be IV_MAX + 1 */
                   else
                     {
                       iv = IV_MIN; /* underflow, but F_ALLOW_BIGNUM can handle this */
