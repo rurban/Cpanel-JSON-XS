@@ -19,6 +19,8 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 	- encode: no signed overflow negating IV_MIN with JSON_TYPE_INT, and
 	  no read of uninitialized memory when checking short formatted numbers
 	  and bignum strings for inf and nan.
+	- utf8_range: cast byte constants to char for _mm_set1_epi8
+	  (clang -Wconstant-conversion).
 
 4.82 2026-11-16 (rurban)
 
