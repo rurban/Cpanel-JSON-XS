@@ -284,14 +284,14 @@ static int cjson_utf8_range_sse(const unsigned char *data, int len)
             /* Overlaps lead to index 9~15, which are illegal in range table */
             /* shift1 = (input, prev_input) << 1 byte */
             shift1 = _mm_alignr_epi8(input, prev_input, 15);
-            pos = _mm_sub_epi8(shift1, _mm_set1_epi8(0xEF));
+            pos = _mm_sub_epi8(shift1, _mm_set1_epi8((char)0xEF));
             /*
              * shift1:  | EF  F0 ... FE | FF  00  ... ...  DE | DF  E0 ... EE |
              * pos:     | 0   1      15 | 16  17           239| 240 241    255|
              * pos-240: | 0   0      0  | 0   0            0  | 0   1      15 |
              * pos+112: | 112 113    127|       >= 128        |     >= 128    |
              */
-            tmp = _mm_subs_epu8(pos, _mm_set1_epi8(0xF0));
+            tmp = _mm_subs_epu8(pos, _mm_set1_epi8((char)0xF0));
             range2 = _mm_shuffle_epi8(df_ee_tbl, tmp);
             tmp = _mm_adds_epu8(pos, _mm_set1_epi8(0x70));
             range2 = _mm_add_epi8(range2, _mm_shuffle_epi8(ef_fe_tbl, tmp));
@@ -555,14 +555,14 @@ static int cjson_utf8_range_avx2(const unsigned char *data, int len)
             /* Overlaps lead to index 9~15, which are illegal in range table */
             /* shift1 = (input, prev_input) << 1 byte */
             shift1 = push_last_byte_of_a_to_b(prev_input, input);
-            pos = _mm256_sub_epi8(shift1, _mm256_set1_epi8(0xEF));
+            pos = _mm256_sub_epi8(shift1, _mm256_set1_epi8((char)0xEF));
             /*
              * shift1:  | EF  F0 ... FE | FF  00  ... ...  DE | DF  E0 ... EE |
              * pos:     | 0   1      15 | 16  17           239| 240 241    255|
              * pos-240: | 0   0      0  | 0   0            0  | 0   1      15 |
              * pos+112: | 112 113    127|       >= 128        |     >= 128    |
              */
-            tmp1 = _mm256_subs_epu8(pos, _mm256_set1_epi8(240));
+            tmp1 = _mm256_subs_epu8(pos, _mm256_set1_epi8((char)0xF0));
             range2 = _mm256_shuffle_epi8(df_ee_tbl, tmp1);
             tmp2 = _mm256_adds_epu8(pos, _mm256_set1_epi8(112));
             range2 = _mm256_add_epi8(range2, _mm256_shuffle_epi8(ef_fe_tbl, tmp2));
