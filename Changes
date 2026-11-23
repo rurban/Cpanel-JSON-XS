@@ -10,6 +10,9 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 	    not). CVE-2026-134876
 	  * decode: with allow_tags free the enclosing arrays and hashes when
 	    a THAW method dies (leak). CVE-2026-134877
+	  * decode: free the key of every enclosing object member when a
+	    filter_json_object or filter_json_single_key_object callback dies
+	    or a THAW method dies (leak). CVE-2026-134878
 
 4.82 2026-11-16 (rurban)
 
