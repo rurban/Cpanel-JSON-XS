@@ -6,22 +6,23 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
 	- Security fixes, reported by Albert Gierlach (rivit):
 	  * encode: JSON_TYPE_BOOL of a reference to a scalar other than 0 or 1
-	    crashed (NULL stash) instead of croaking.
+	    crashed (NULL stash) instead of croaking. CVE-2026-130883
 	  * encode: JSON_TYPE_FLOAT with allow_bignum and an integer value
-	    overflowed the buffer by the appended ".0".
+	    overflowed the buffer by the appended ".0". CVE-2026-130882
 	  * encode: convert_blessed no longer expands Math::BigFloat objects
-	    with a huge exponent into digits (memory exhaustion).
+	    with a huge exponent into digits (memory exhaustion). CVE-2026-110676
 	  * decode: free the partial string on errors (leak of ~16KB per
-	    document with strings > 16KB).
+	    document with strings > 16KB). CVE-2026-131934
 	  * decode: free enclosing arrays and hashes when a filter_json_object
-	    or filter_json_single_key_object callback dies (leak).
+	    or filter_json_single_key_object callback dies (leak). CVE-2026-131932
 	  * decode: -9223372036854775808 negated IV_MIN (undefined behaviour).
+            CVE-2026-131931
 	  * incr_parse: a NUL byte between values is now an error and no longer
-	    stalls the parser while the buffer grows forever.
+	    stalls the parser while the buffer grows forever. CVE-2026-131937
 	  * incr_parse: keep incr_pos consistent when the downgrade fails with
 	    wide characters, and never underflow it when the incremental scanner
 	    and the decoder disagree (allow_barekey). Fixes out-of-bounds
-	    writes in incr_parse after incr_skip.
+	    writes in incr_parse after incr_skip. CVE-2026-130881
 	- t/10_pc_keysort fix for perls older then 5.20, introduced with 4.81 (GH #262 eserte)
 
 4.81 2026-11-09 (rurban)
