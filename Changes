@@ -13,6 +13,9 @@ TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 	  * decode: free the key of every enclosing object member when a
 	    filter_json_object or filter_json_single_key_object callback dies
 	    or a THAW method dies (leak). CVE-2026-134878
+	  * encode: encode_stringify freed neither its string copy nor the
+	    overloaded object when encode_str croaked on malformed UTF-8,
+	    e.g. with allow_stringify (leak). CVE-2026-134879
 
 4.82 2026-11-16 (rurban)
 

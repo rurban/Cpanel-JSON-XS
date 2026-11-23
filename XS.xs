@@ -1855,7 +1855,7 @@ encode_hv (pTHX_ enc_t *enc, HV *hv, SV *typesv)
 
 /* implement convert_blessed, sv is already unref'ed here */
 static void
-encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
+encode_stringify_(pTHX_ enc_t *enc, SV *sv, int isref)
 {
   char *str = NULL;
   STRLEN len;
@@ -1901,7 +1901,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
   if (type != SVt_PVAV && type != SVt_PVHV && type != SVt_PVFM) {
     /* the essential of pp_stringify */
 #if PERL_VERSION > 7
-    pv = newSVpvs("");
+    pv = sv_2mortal (newSVpvs(""));
     if (!isref && !(enc->json.flags & F_ALLOW_STRINGIFY)) {
       sv_copypv(pv, sv_2mortal (newRV_inc (sv)));
     } else {
@@ -1915,10 +1915,10 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
       pv = AMG_CALLun(sv,string);
       len = SvCUR(pv);
       str = SvPVX(pv);
-      SvREFCNT_inc(pv);
+      sv_2mortal (SvREFCNT_inc(pv));
     }
     else {
-      pv = newSVpvs("");
+      pv = sv_2mortal (newSVpvs(""));
       s = SvPV(sv,len);
       sv_setpvn(pv,s,len);
       if (SvUTF8(sv))
@@ -1931,7 +1931,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
 #endif
     if (!len && !SvOBJECT (sv)) {
       encode_const_str (aTHX_ enc, "null", 4, 0);
-      SvREFCNT_dec(pv);
+      /* pv is mortal */
       return;
     }
   } else {
@@ -1939,7 +1939,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
     if (SvGMAGICAL(sv))
       mg_get(sv);
     if (MyAMG(sv)) { /* force a RV here */
-      SV* rv = newRV_inc(sv);
+      SV* rv = sv_2mortal (newRV_inc(sv));
 #if PERL_VERSION <= 8
       HV *stash = SvSTASH(sv);
       if (!SvSTASH(rv) || !(SvFLAGS(sv) & SVf_AMAGIC)) {
@@ -1967,10 +1967,9 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
         encode_ch (aTHX_ enc, '"');
         encode_str (aTHX_ enc, str, len, 1);
         encode_ch (aTHX_ enc, '"');
-        SvREFCNT_dec(rv);
+        /* rv is mortal */
         return;
       }
-      SvREFCNT_dec(rv);
       pv = NULL; /* owned by the overload call */
     }
   }
@@ -1991,7 +1990,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
     {
       if (enc->json.infnan_mode == 0) {
         encode_const_str (aTHX_ enc, "null", 4, 0);
-        if (pv) SvREFCNT_dec(pv);
+        /* pv is mortal */
         return;
       } else if (enc->json.infnan_mode == 3) {
         if (memEQc(str, "NaN") || memEQc(str, "nan"))
@@ -2000,7 +1999,7 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
           encode_const_str (aTHX_ enc, "inf", 3, 0);
         else
           encode_const_str (aTHX_ enc, "-inf", 4, 0);
-        if (pv) SvREFCNT_dec(pv);
+        /* pv is mortal */
         return;
       }
     }
@@ -2014,8 +2013,18 @@ encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
     if (isref != 1)
       encode_ch (aTHX_ enc, '"');
   }
-  if (pv) SvREFCNT_dec(pv);
+  /* pv and rv are mortal: freed by encode_stringify's scope, also when encode_str croaks */
 #undef MyAMG
+}
+
+/* The temporaries of encode_stringify_ (string copy, overload object) are
+   freed on return and when encode_str croaks (malformed UTF-8). */
+static void
+encode_stringify(pTHX_ enc_t *enc, SV *sv, int isref)
+{
+  ENTER; SAVETMPS;
+  encode_stringify_(aTHX_ enc, sv, isref);
+  FREETMPS; LEAVE;
 }
 
 INLINE int
