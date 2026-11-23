@@ -2,7 +2,8 @@
 #
 # https://tools.ietf.org/html/rfc7159#section-8.1
 # JSON text SHALL be encoded in UTF-8, UTF-16, or UTF-32.
-use Test::More ($] >= 5.008) ? (tests => 9 + 6) : (skip_all => "needs 5.8");;
+use Test::More ($] >= 5.008) ? (tests => 9 + 6 + 1) : (skip_all => "needs 5.8");;
+use Config;
 use Cpanel::JSON::XS;
 use Encode; # Currently required for <5.20
 use charnames qw(:short);
@@ -88,3 +89,18 @@ assert_preserved (
   '("BomFilterCorruption::Thaw")[]',
   sub { $_[0]->allow_tags (1) },
 );
+
+# a BOM decode leaks nothing
+SKIP: {
+  skip "RSS is not meaningful under a sanitizer", 1 if $Config{ccflags} =~ /-fsanitize/;
+  skip "RSS is read from /proc/self/status on Linux only", 1 unless $^O eq 'linux';
+  open my $f, '<', '/proc/self/status' or skip "no /proc/self/status", 1;
+  my $rss = sub { seek $f, 0, 0; while (<$f>) { return $1 if /^VmRSS:\s+(\d+)/ } };
+  defined $rss->() or skip "no VmRSS in /proc/self/status", 1;
+  my $dec = Cpanel::JSON::XS->new;
+  my $bom = "\xfe\xff\0[\0001\0]";
+  for (1 .. 20_000) { $dec->decode($bom) }
+  my $r0 = $rss->();
+  for (1 .. 200_000) { $dec->decode($bom) }
+  cmp_ok( $rss->() - $r0, '<', 4000, 'UTF-16 BOM decode: no leak' );
+}

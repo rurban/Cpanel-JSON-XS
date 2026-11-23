@@ -5037,7 +5037,7 @@ decode_bom(pTHX_ const char* encoding, SV* string, STRLEN offset)
   LEAVE;
   ENTER;
   PUSHMARK(SP);
-  XPUSHs(newSVpvn(encoding, strlen(encoding)));
+  XPUSHs(sv_2mortal (newSVpvn(encoding, strlen(encoding))));
   XPUSHs(string);
   PUTBACK;
   /* Calling Encode::Unicode::decode_xs would be faster, but we'd need the blessed

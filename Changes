@@ -2,6 +2,13 @@ Revision history for Perl extension Cpanel::JSON::XS
 
 TODO: http://stevehanov.ca/blog/index.php?id=104 compression
 
+4.83 2026-11-23 (rurban)
+
+	- Security fixes, reported by Albert Gierlach (rivit):
+	  * decode: free the temporary encoding name when the input starts with
+	    a UTF-16 or UTF-32 BOM (leak of a scalar per call, successful or
+	    not). CVE-2026-134876
+
 4.82 2026-11-16 (rurban)
 
 	- Security fixes, reported by Albert Gierlach (rivit):
